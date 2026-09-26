@@ -173,7 +173,29 @@ describe('lyteboatAgentDef', () => {
     const ctx = await harness(new MockAdapter([]))
     let seen: LyteboatAgentHost | undefined
     await mountAgentStandingScope(ctx, join(AGENTS, 'desk'), lyteboatAgentDef({ ...DESK_DEF, tools: (host) => { seen = host; return [] } }))
-    expect([Object.keys(seen?.a2ui ?? {}), Object.keys(seen?.auxLlm ?? {}), Object.keys(seen?.requestContext ?? {})]).toEqual([['renderCard'], ['generate'], ['contextOf']])
+    expect([Object.keys(seen?.a2ui ?? {}), Object.keys(seen?.auxLlm ?? {}), Object.keys(seen?.requestContext ?? {}), Object.keys(seen?.toolPolicy ?? {})])
+      .toEqual([['renderCard'], ['generate'], ['contextOf'], ['activate']])
+  })
+
+  it('lets a pre-assemble listener activate an auto tool for this step', async () => {
+    const adapter = new MockAdapter([textResponse('ok')])
+    const ctx = await harness(adapter)
+    const BareAgent = lyteboatAgentDef({
+      agentId: 'bare',
+      agentName: 'Bare',
+      tools: () => [{ definition: echo('lookup_quote'), visibility: 'auto' }],
+      eventListeners: host => ({
+        'lyteboat/pre-assemble': async (payload, next) => {
+          host.toolPolicy.activate(payload.agent, ['lookup_quote'])
+          await next()
+        },
+      }),
+    })
+    const bareScope = await mountAgentStandingScope(ctx, join(AGENTS, 'bare'), BareAgent)
+
+    await send(await bareScope.createAgentInstance('bare-session'), 'quote ABC')
+
+    expect(adapter.requests[0] === undefined ? [] : toolNames(adapter.requests[0])).toContain('lookup_quote')
   })
 
   it('hands every hook of one mounted agent the same host', async () => {

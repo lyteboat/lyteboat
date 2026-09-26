@@ -301,6 +301,15 @@ describe('an agent without agent.cordis.yml', () => {
     expect(ctx.agentCatalog.failures()[0]?.reason).toMatch(/lib\/agent\.js: its lyteboatAgentDef declares agentId: must be kebab-case/u)
   })
 
+  it('fails an agent whose lib/agent.js cannot be loaded, naming the module', async () => {
+    const root = rootWithAgent('broken', { 'lib/agent.js': 'import { lyteboatAgentDef } from \'@lyteboat/no-such-package\'\nexport default lyteboatAgentDef({})\n' })
+    const ctx = await catalogHost({ roots: [root], strict: false })
+
+    await ctx.agentCatalog.whenReady()
+
+    expect(ctx.agentCatalog.failures()[0]?.reason).toMatch(/lib\/agent\.js cannot be loaded: Cannot find package '@lyteboat\/no-such-package'/u)
+  })
+
   describe('with agent.cordis.yml', () => {
     const composition = '- id: composed-agent\n  name: ./agent.mjs\n- id: extra\n  name: ./extra.mjs\n'
     const extraRow = 'export function apply() {}\n'

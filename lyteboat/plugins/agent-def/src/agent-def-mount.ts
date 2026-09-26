@@ -112,7 +112,7 @@ export async function mountLyteboatAgent(ctx: Context, agentDef: LyteboatAgentDe
     const override = callConfigOverrideOf(modelRequest)
     ctx.on('agent/request', async (_payload, next) => ({ ...await next(), ...override }))
   }
-  // Built on first use: the three services are injected only when the definition has a hook. The host
+  // Built on first use: the four services are injected only when the definition has a hook. The host
   // holds bound methods, not the services, so a hook reaches nothing beyond what its type names.
   let host: LyteboatAgentHost | undefined
   const hostOfAgent = (): LyteboatAgentHost => host ??= {
@@ -120,6 +120,7 @@ export async function mountLyteboatAgent(ctx: Context, agentDef: LyteboatAgentDe
     a2ui: { renderCard: (...cardArgs) => ctx.a2ui.renderCard(...cardArgs) },
     auxLlm: { generate: (...callArgs) => ctx.auxLlm.generate(...callArgs) },
     requestContext: { contextOf: (...contextArgs) => ctx.requestContext.contextOf(...contextArgs) },
+    toolPolicy: { activate: (...activateArgs) => ctx.toolPolicy.activate(...activateArgs) },
   }
   if (admission !== undefined) await step('admission', () => ctx.intakeGuard.register(admission(hostOfAgent())))
   if (tools !== undefined) {

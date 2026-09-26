@@ -195,7 +195,12 @@ export function readAgentDefinition(id: string, dir: string): AgentDirectoryDefi
  */
 async function agentDefIdentityOf(modulePath: string): Promise<LyteboatAgentDefIdentity | undefined> {
   // A file boundary: whatever the module exports is checked against the identity's schema.
-  const agentModule: { default?: { lyteboatAgentDefIdentity?: unknown } } = await import(pathToFileURL(modulePath).href)
+  let agentModule: { default?: { lyteboatAgentDefIdentity?: unknown } }
+  try {
+    agentModule = await import(pathToFileURL(modulePath).href)
+  } catch (error: unknown) {
+    throw new Error(`agent-catalog: ${modulePath} cannot be loaded: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
+  }
   const declared = agentModule.default?.lyteboatAgentDefIdentity
   if (declared === undefined) return undefined
   const identity = lyteboatAgentDefIdentitySchema.safeParse(declared)

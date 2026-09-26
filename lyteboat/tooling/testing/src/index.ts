@@ -9,7 +9,7 @@
 
 import { join, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { Context, type Plugin } from '@deepseek-ai/cordis'
+import { Context, type FiberState, type Plugin } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import * as AgentInvariant from '@deepseek-ai/dsh-agent/invariant'
 import * as AgentLoopInvariant from '@deepseek-ai/dsh-agent-loop/invariant'
@@ -92,11 +92,18 @@ export interface AgentStandingScope {
  * @param agentDir - the agent directory; its rows resolve relative paths against it.
  * @param agentRow - the plugin the directory's row loads, such as its `lyteboatAgentDef`.
  * @returns the scope, once the row has mounted.
+ * @throws when the row fails, or stays waiting for a service `ctx` does not have.
  */
 export async function mountAgentStandingScope(ctx: Context, agentDir: string, agentRow: Plugin): Promise<AgentStandingScope> {
   const standingKey = {}
   const standing = createScope(ctx, standingKey)
-  await standing.ctx.extend({ baseUrl: pathToFileURL(join(agentDir, sep)).href }).plugin(agentRow)
+  const rowFiber = await standing.ctx.extend({ baseUrl: pathToFileURL(join(agentDir, sep)).href }).plugin(agentRow)
+  // cordis's `declare const enum`, which vitest's transform does not inline (see @lyteboat/cli/fiber-state).
+  if (rowFiber.state !== (2 as FiberState.ACTIVE)) {
+    const injected = agentRow.inject === undefined ? [] : Array.isArray(agentRow.inject) ? agentRow.inject : Object.keys(agentRow.inject)
+    const missing = injected.filter(service => ctx.get(service) === undefined)
+    throw new Error(`mountAgentStandingScope: the agent row is not active; mount on the unit host the services it waits for: ${missing.join(', ') || '(none missing; see the row\'s fiber)'}`)
+  }
   return {
     standingKey,
     createAgentInstance: async (sessionId) => {

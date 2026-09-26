@@ -23,7 +23,7 @@ import type { LyteboatAgentDefIdentity, LyteboatInheritedToolVisibility, Lyteboa
 import type { LyteboatAdmission } from '@lyteboat/intake-guard'
 import type { RequestContextService } from '@lyteboat/request-context'
 import type { SkillRouterSettings } from '@lyteboat/skill-router'
-import type { LyteboatToolPolicy } from '@lyteboat/tool-policy'
+import type { LyteboatToolPolicy, ToolPolicyService } from '@lyteboat/tool-policy'
 import { mountLyteboatAgent } from './agent-def-mount.ts'
 
 /** The policy for tools other rows register (dsh's `skill`, a dsh tool row), and whether the inherited tools it does not name reach the model. */
@@ -63,7 +63,7 @@ export type LyteboatAgentEventListeners = { [EventName in LyteboatAgentEventName
 /**
  * What the framework hands to `tools`, `admission`, and `eventListeners`:
  * paths under the agent directory, to find the agent's assets, and what
- * business code calls on three host services. Every hook of one mounted
+ * business code calls on four host services. Every hook of one mounted
  * agent receives the same host, so a data layer the hooks share can be kept
  * per agent in a `WeakMap` keyed on it.
  */
@@ -79,6 +79,8 @@ export interface LyteboatAgentHost {
   readonly auxLlm: Pick<AuxLlmService, 'generate'>
   /** The context of the request a message answers to. */
   readonly requestContext: Pick<RequestContextService, 'contextOf'>
+  /** Makes declared `auto` tools visible to one agent instance, such as from a `lyteboat/pre-assemble` listener. */
+  readonly toolPolicy: Pick<ToolPolicyService, 'activate'>
 }
 
 /** A business agent's declaration. Relative paths resolve against the agent directory. */
@@ -115,7 +117,7 @@ export interface LyteboatAgentPlugin {
 
 /**
  * The services each field reaches through, so a row whose service is missing waits for it where the preset audit sees it.
- * A hook may call any of the host's three, so a definition with a hook waits for all three.
+ * A hook may call any of the host's four, so a definition with a hook waits for all four.
  */
 function injectedServicesOf(agentDef: LyteboatAgentDef): string[] {
   const hasHostHook = agentDef.tools !== undefined || agentDef.admission !== undefined || agentDef.eventListeners !== undefined
@@ -123,7 +125,7 @@ function injectedServicesOf(agentDef: LyteboatAgentDef): string[] {
   if (agentDef.persona !== undefined) services.add('systemPrompt')
   if (agentDef.skillDirs === undefined || agentDef.skillDirs.length > 0) services.add('skills')
   if (agentDef.skillRouting !== undefined) services.add('skillRouter')
-  if (agentDef.toolPolicy !== undefined || agentDef.tools !== undefined) services.add('toolPolicy')
+  if (agentDef.toolPolicy !== undefined || hasHostHook) services.add('toolPolicy')
   if (agentDef.admission !== undefined) services.add('intakeGuard')
   if (agentDef.a2uiRenderTool !== undefined || hasHostHook) services.add('a2ui')
   if (hasHostHook) {
