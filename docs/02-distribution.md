@@ -1093,7 +1093,7 @@ pnpm 11 拒绝安装发布不到一天的包。被钉的版本刚发布时，要
 
 上面两条通道说的是 lyteboat 自己的版本。业务 agent 有自己的版本和发布物：agent 目录里的清单 `agent.yml` 声明 `version` 和 `model`；`lyteboat release` 让 agent 过发布闸门，通过就在 agent 目录写下发布锁 `agent.release.json`；运维用 `lyteboat serve --release <锁>` 服务它。作者这一侧的步骤和闸门的每一步见 [03-agent-development.md](03-agent-development.md) §4.16，这里只写运维要知道的：锁里有什么、serve 查什么、锁管不到什么。
 
-**锁里有什么**（`LyteboatAgentRelease`，`lyteboat/core/contracts/src/index.ts:353-383`，schema 严格，未知键报错）。键的顺序固定、两空格缩进、结尾一个换行，同一个 agent 再发布一次写出相同的字节（`lyteboat/plugins/eval-runner/src/eval-release.ts:141-148`）：
+**锁里有什么**（`LyteboatAgentRelease`，`lyteboat/core/contracts/src/index.ts:374-404`，schema 严格，未知键报错）。键的顺序固定、两空格缩进、结尾一个换行，同一个 agent 再发布一次写出相同的字节（`lyteboat/plugins/eval-runner/src/eval-release.ts:141-148`）：
 
 | 字段 | 内容 |
 |---|---|
@@ -1103,16 +1103,16 @@ pnpm 11 拒绝安装发布不到一天的包。被钉的版本刚发布时，要
 | `files` | 摘要背后的逐文件 sha256（POSIX 相对路径 → 64 位十六进制） |
 | `baseline` | 回放过的基线：`startedAt`，用例、轮次、检查的个数，`results.jsonl` 的 sha256 |
 
-**[实跑]** 在 finance 上（它的基线已经带着身份录好，`examples/agents/finance/evals/baseline`；不需要 key，闸门只回放）：
+**[实跑]** 在 finance 上（它的基线带着录制时的身份，`examples/agents/finance/evals/baseline`；不需要 key，闸门只回放）：
 
 ```console
 $ node lyteboat/apps/cli/lib/bin.js release --agents ./examples/agents --agent finance
-lyteboat release: finance 1.0.0 (sha256:184e1e45…) released; lock: <仓库>/examples/agents/finance/agent.release.json; replay: $LYTEBOAT_HOME/evals/<运行 id>/report.md
+lyteboat release: refused at stamps: the baseline ran finance 1.0.0 (sha256:184e1e45…), but the agent is now finance 1.0.0 (sha256:6f334c44…); record the baseline again
 ```
 
-退出码 0。锁里 `files` 有 94 项：`agent.cordis.yml`、`agent.yml`、`package.json`、`tsconfig.json`，`assets/` 下 20 个、`src/` 下 14 个，以及构建出的 `lib/` 下 56 个；`baseline` 是 `{"startedAt": "2026-09-26T04:24:40.073Z", "cases": 6, "turns": 7, "checks": 30, "results": "sha256:…"}`。摘要随本机构建出的 `lib/` 而定，所以省略。示例 agent 不提交锁，这次写出的文件跑完就删了。
+退出码 1，不写锁。基线录于 finance 成为一个 `lyteboatAgentDef` 之前，记下的是那时的目录摘要；现在目录里没有 `agent.cordis.yml`，`src/` 多了 `finance-persona.ts`，`agent.yml` 也不再写 `name`，摘要变了，闸门停在 stamps 这一步。要再发布，先用真实 key 重录基线（[03-agent-development.md](03-agent-development.md) §4.16）。在那之前，同一条命令退出 0，写出的锁里 `files` 有 94 项：`agent.cordis.yml`、`agent.yml`、`package.json`、`tsconfig.json`，`assets/` 下 20 个、`src/` 下 14 个，以及构建出的 `lib/` 下 56 个；`baseline` 是 `{"startedAt": "2026-09-26T04:24:40.073Z", "cases": 6, "turns": 7, "checks": 30, "results": "sha256:…"}`。现在的目录摘要背后是 98 个文件：`agent.yml`、`package.json`、`tsconfig.json`，`assets/` 下 20 个、`src/` 下 15 个、`lib/` 下 60 个。摘要随本机构建出的 `lib/` 而定。示例 agent 不提交锁。
 
-**serve 查什么**（`lyteboat/bundles/serve/src/startup.ts:60-75,104-139`，`lyteboat/plugins/agent-catalog/src/index.ts:196-232`），按先后：
+**serve 查什么**（`lyteboat/bundles/serve/src/startup.ts:54-69,102-137`，`lyteboat/plugins/agent-catalog/src/index.ts:198-234`），按先后：
 
 1. 锁能按 schema 读出；读不出或有未知键：`error: --release <锁> is not a release lock: …`。
 2. 锁所在的目录就是 agent 目录，目录名必须等于 `agent.id`：`error: --release <锁> releases <id>, but lies in <目录>; a lock stays in its agent's directory`；它的上一级目录作为 agent 根。
