@@ -233,9 +233,11 @@ export class AgentCatalogService extends Service {
     return `agent.yml declares model ${modelName(declared)}, but this process runs ${modelName(running)}; run it with that default model (the agent-default-model row) or change agent.yml`
   }
 
-  /** The preset a built `lyteboatAgentDef` names; the manifest's name, when it gives one, must agree. */
-  private async namedPreset(definition: AgentDirectoryDefinition, entryModule: string): Promise<AgentDirectoryDefinition['preset']> {
-    const { agentName } = await readAgentDefIdentity(entryModule)
+  /** The preset the agent's `lyteboatAgentDef` names, when it has one; the manifest's name, when it gives one, must agree. */
+  private async namedPreset(definition: AgentDirectoryDefinition): Promise<AgentDirectoryDefinition['preset']> {
+    const identity = await readAgentDefIdentity(definition.agentDefSource)
+    if (identity === undefined) return definition.preset
+    const { agentName } = identity
     const manifestName = definition.preset.name
     if (manifestName !== undefined && manifestName !== agentName) {
       throw new Error(`agent.yml names the agent "${manifestName}", but its lyteboatAgentDef names it "${agentName}"; keep one of them`)
@@ -264,7 +266,7 @@ export class AgentCatalogService extends Service {
     // The registry takes the declaration's base URL from its caller's context.
     const presets = this.ctx.extend({ baseUrl: pathToFileURL(join(dir, sep)).href }).agentPresets
     try {
-      if (definition.entryModule !== undefined) presetDefinition = await this.namedPreset(definition, definition.entryModule)
+      presetDefinition = await this.namedPreset(definition)
       const declared = presetDefinition
       this.declared.set(id, this.ctx.effect(() => presets.register(declared), `agent-catalog.declare(${id})`))
     } catch (error: unknown) {
