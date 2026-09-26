@@ -21,7 +21,7 @@ import type {} from '@lyteboat/intake-guard'
 import type {} from '@lyteboat/request-context'
 import type {} from '@lyteboat/skill-router'
 import type {} from '@lyteboat/tool-policy'
-import { checkLyteboatAgentDef } from './agent-def-schema.ts'
+import { checkedLyteboatAgentEventListeners, checkedLyteboatAgentTools, checkLyteboatAgentDef } from './agent-def-schema.ts'
 import type { LyteboatAgentDef, LyteboatAgentEventListeners, LyteboatAgentEventName, LyteboatAgentHost, LyteboatAgentModelRequest } from './index.ts'
 
 /** Where an agent keeps its skills when its definition names no directory. */
@@ -112,18 +112,24 @@ export async function mountLyteboatAgent(ctx: Context, agentDef: LyteboatAgentDe
     const override = callConfigOverrideOf(modelRequest)
     ctx.on('agent/request', async (_payload, next) => ({ ...await next(), ...override }))
   }
-  // Built on first use: the three services are injected only when a hook needs them.
+  // Built on first use: the three services are injected only when the definition has a hook. The host
+  // holds bound methods, not the services, so a hook reaches nothing beyond what its type names.
   let host: LyteboatAgentHost | undefined
-  const hostOfAgent = (): LyteboatAgentHost => host ??= { agentPath, a2ui: ctx.a2ui, auxLlm: ctx.auxLlm, requestContext: ctx.requestContext }
+  const hostOfAgent = (): LyteboatAgentHost => host ??= {
+    agentPath,
+    a2ui: { renderCard: (...cardArgs) => ctx.a2ui.renderCard(...cardArgs) },
+    auxLlm: { generate: (...callArgs) => ctx.auxLlm.generate(...callArgs) },
+    requestContext: { contextOf: (...contextArgs) => ctx.requestContext.contextOf(...contextArgs) },
+  }
   if (admission !== undefined) await step('admission', () => ctx.intakeGuard.register(admission(hostOfAgent())))
   if (tools !== undefined) {
     await step('tools', () => {
-      for (const { definition, ...toolMeta } of tools(hostOfAgent())) ctx.toolPolicy.register(definition, toolMeta)
+      for (const { definition, ...toolMeta } of checkedLyteboatAgentTools(tools(hostOfAgent()))) ctx.toolPolicy.register(definition, toolMeta)
     })
   }
   if (a2uiRenderTool !== undefined) {
     const { templatesDir, ...renderToolOptions } = a2uiRenderTool
     await step('a2uiRenderTool', () => ctx.a2ui.registerRenderTool({ ...renderToolOptions, templates: agentPath(templatesDir) }))
   }
-  if (eventListeners !== undefined) await step('eventListeners', () => registerEventListeners(ctx, eventListeners(hostOfAgent())))
+  if (eventListeners !== undefined) await step('eventListeners', () => registerEventListeners(ctx, checkedLyteboatAgentEventListeners(eventListeners(hostOfAgent()))))
 }

@@ -140,6 +140,24 @@ describe('lyteboatAgentDef', () => {
     await expect(mountAgentStandingScope(ctx, desk, lyteboatAgentDef({ agentId: 'desk' } as never))).rejects.toThrow(/agentName/u)
   })
 
+  it('fails to mount on what a hook returns when it has a key or an event the definition does not know', async () => {
+    const ctx = await harness(new MockAdapter([]))
+    const desk = join(AGENTS, 'desk')
+    await expect(mountAgentStandingScope(ctx, desk, lyteboatAgentDef({ ...DESK_DEF, tools: () => [{ definition: echo('lookup_quote'), visiblity: 'auto' }] } as never)))
+      .rejects.toThrow(/lyteboat agent def desk: tools: \[0\]: unknown key "visiblity"/u)
+    await expect(mountAgentStandingScope(ctx, desk, lyteboatAgentDef({ ...DESK_DEF, eventListeners: () => ({ 'agent/requst': () => undefined }) } as never)))
+      .rejects.toThrow(/lyteboat agent def desk: eventListeners: unknown event "agent\/requst" \(an agent listens to .*agent\/request,/u)
+    await expect(mountAgentStandingScope(ctx, desk, lyteboatAgentDef({ ...DESK_DEF, tools: [] } as never)))
+      .rejects.toThrow(/lyteboat agent def: tools: must be a function \(host\) => tools/u)
+  })
+
+  it('hands a hook only the host methods its type names', async () => {
+    const ctx = await harness(new MockAdapter([]))
+    let seen: LyteboatAgentHost | undefined
+    await mountAgentStandingScope(ctx, join(AGENTS, 'desk'), lyteboatAgentDef({ ...DESK_DEF, tools: (host) => { seen = host; return [] } }))
+    expect([Object.keys(seen?.a2ui ?? {}), Object.keys(seen?.auxLlm ?? {}), Object.keys(seen?.requestContext ?? {})]).toEqual([['renderCard'], ['generate'], ['contextOf']])
+  })
+
   it('names the field whose service refuses it', async () => {
     const ctx = await harness(new MockAdapter([]))
     await expect(mountAgentStandingScope(ctx, join(AGENTS, 'desk'), lyteboatAgentDef({ ...DESK_DEF, persona: {} as never }))).rejects.toThrow(/lyteboat agent def desk: persona: /u)

@@ -111,7 +111,10 @@ export interface LyteboatAgentPlugin {
   readonly lyteboatAgentDefIdentity: LyteboatAgentDefIdentity
 }
 
-/** The services each field reaches through, so a row whose service is missing waits for it where the preset audit sees it. */
+/**
+ * The services each field reaches through, so a row whose service is missing waits for it where the preset audit sees it.
+ * A hook may call any of the host's three, so a definition with a hook waits for all three.
+ */
 function injectedServicesOf(agentDef: LyteboatAgentDef): string[] {
   const hasHostHook = agentDef.tools !== undefined || agentDef.admission !== undefined || agentDef.eventListeners !== undefined
   const services = new Set<string>()
