@@ -176,6 +176,18 @@ describe('lyteboatAgentDef', () => {
     expect([Object.keys(seen?.a2ui ?? {}), Object.keys(seen?.auxLlm ?? {}), Object.keys(seen?.requestContext ?? {})]).toEqual([['renderCard'], ['generate'], ['contextOf']])
   })
 
+  it('hands every hook of one mounted agent the same host', async () => {
+    const ctx = await harness(new MockAdapter([]))
+    const hosts = new Set<LyteboatAgentHost>()
+    await mountAgentStandingScope(ctx, join(AGENTS, 'desk'), lyteboatAgentDef({
+      ...DESK_DEF,
+      tools: (host) => { hosts.add(host); return [] },
+      admission: (host) => { hosts.add(host); return { name: 'desk-admission', admit: async () => ({ decision: 'pass', verdict: 'in-scope' }) } },
+      eventListeners: (host) => { hosts.add(host); return {} },
+    }))
+    expect(hosts.size).toBe(1)
+  })
+
   it('names the field whose service refuses it', async () => {
     const ctx = await harness(new MockAdapter([]))
     await expect(mountAgentStandingScope(ctx, join(AGENTS, 'desk'), lyteboatAgentDef({ ...DESK_DEF, persona: {} as never }))).rejects.toThrow(/lyteboat agent def desk: persona: /u)

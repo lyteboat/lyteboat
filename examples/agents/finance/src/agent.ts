@@ -18,8 +18,20 @@ import { FINANCE_PERSONA } from './finance-persona.ts'
 import { customerOfContext, financeAdmission } from './intake/finance-admission.ts'
 import { financeTools } from './tools/finance-tools.ts'
 
-/** The customers this deployment serves: fixture files, which a real deployment replaces with its own source. */
-const financeCustomersOf = (host: LyteboatAgentHost): FinanceCustomerSource => new FixtureCustomerSource(host.agentPath('assets/sample-data/customers'))
+const financeCustomerSources = new WeakMap<LyteboatAgentHost, FinanceCustomerSource>()
+
+/**
+ * The customers this deployment serves: fixture files, which a real deployment
+ * replaces with its own source. One source per mounted agent, which its
+ * admission and its tools share as their one data layer.
+ */
+function financeCustomersOf(host: LyteboatAgentHost): FinanceCustomerSource {
+  const known = financeCustomerSources.get(host)
+  if (known !== undefined) return known
+  const customers = new FixtureCustomerSource(host.agentPath('assets/sample-data/customers'))
+  financeCustomerSources.set(host, customers)
+  return customers
+}
 
 /** The agent's card templates. */
 const financeTemplatesDirOf = (host: LyteboatAgentHost): string => host.agentPath('assets/a2ui')

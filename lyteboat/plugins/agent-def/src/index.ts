@@ -63,7 +63,9 @@ export type LyteboatAgentEventListeners = { [EventName in LyteboatAgentEventName
 /**
  * What the framework hands to `tools`, `admission`, and `eventListeners`:
  * paths under the agent directory, to find the agent's assets, and what
- * business code calls on three host services.
+ * business code calls on three host services. Every hook of one mounted
+ * agent receives the same host, so a data layer the hooks share can be kept
+ * per agent in a `WeakMap` keyed on it.
  */
 export interface LyteboatAgentHost {
   /**
