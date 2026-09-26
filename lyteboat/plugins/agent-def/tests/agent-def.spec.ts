@@ -105,6 +105,24 @@ describe('lyteboatAgentDef', () => {
     expect(adapter.requests[1]?.temperature).toBeUndefined()
   })
 
+  it('withdraws what it declared when its row unloads', async () => {
+    const ctx = await harness(new MockAdapter([]))
+    const standingKey = {}
+    const standing = createScope(ctx, standingKey)
+    const deskRow = standing.ctx.extend({ baseUrl: pathToFileURL(join(AGENTS, 'desk', sep)).href }).plugin(lyteboatAgentDef(DESK_DEF))
+    await deskRow
+    const declared = async (): Promise<unknown> => ({
+      tool: ctx.toolPolicy.metaOf('lookup_quote', standingKey)?.visibility,
+      routing: ctx.skillRouter.settingsFor(standingKey).mode,
+      skills: (await ctx.skills.snapshot({ scope: standingKey })).skills.map(skill => skill.name),
+    })
+    expect(await declared()).toEqual({ tool: 'auto', routing: 'full', skills: ['quote-lookup'] })
+
+    await deskRow.dispose()
+
+    expect(await declared()).toEqual({ tool: undefined, routing: 'off', skills: [] })
+  })
+
   it('computes the services it injects from the fields it has', () => {
     expect(lyteboatAgentDef({ agentId: 'minimal', agentName: 'Minimal', skillDirs: [] }).inject).toEqual([])
     expect(lyteboatAgentDef({ agentId: 'minimal', agentName: 'Minimal', persona: { prefix: 'hi' } }).inject).toEqual(['systemPrompt', 'skills'])
