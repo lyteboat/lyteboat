@@ -1009,10 +1009,10 @@ lyteboat-next 与 lyteboat-stable 的规则见 [dsh-compat/COMPAT.md §7](../dsh
 
 ```console
 $ node lyteboat/apps/cli/lib/bin.js release --agents ./examples/agents --agent finance
-lyteboat release: refused at stamps: the baseline ran finance 1.0.0 (sha256:184e1e45…), but the agent is now finance 1.0.0 (sha256:97d6bed7…); record the baseline again
+lyteboat release: finance 1.0.0 (sha256:97d6bed7…) released; lock: <仓库>/examples/agents/finance/agent.release.json; replay: <LYTEBOAT_HOME>/evals/<运行>/report.md
 ```
 
-这一行写在 stderr，退出码 1，不写锁（`lyteboat/bundles/eval/src/index.ts`）。基线录于 finance 成为一个 `lyteboatAgentDef` 之前，记下的是那时的目录摘要；现在目录里没有 `agent.cordis.yml`，`src/` 多了 `finance-persona.ts`，`agent.yml` 也不再写 `name`，摘要变了，闸门停在 stamps 这一步。要再发布，先用真实 key 重录基线（[03-agent-development.md](03-agent-development.md) §4.16）。闸门放行时退出 0，在 stdout 打印 `lyteboat release: <id> <版本> (<摘要>) released; lock: <锁>; replay: <运行目录>/report.md`。锁的 `files` 是摘要覆盖的每一个文件（`agent.yml`、`package.json`、`tsconfig.json`、`assets/`、`src/`，以及构建出的 `lib/`；有 `agent.cordis.yml` 的 agent 还有它），finance 现在是 98 个，其中 `lib/` 下 60 个；`baseline` 记下基线的开始时间，用例、轮次、检查的个数和 `results.jsonl` 的哈希。摘要随本机构建出的 `lib/` 而定。示例 agent 不提交锁。
+退出码 0，这一行写在 stdout。拒绝时退出 1，stderr 是 `lyteboat release: refused at <步骤>: <原因>`，不写锁（`lyteboat/bundles/eval/src/index.ts`）：finance 写成一个 `lyteboatAgentDef` 之后目录变了（`agent.cordis.yml` 没了，`src/` 多了 `finance-persona.ts`，`agent.yml` 不再写 `name`），摘要从 `sha256:184e1e45…` 变成 `sha256:97d6bed7…`，旧基线在 stamps 这一步被拒：`refused at stamps: the baseline ran finance 1.0.0 (sha256:184e1e45…), but the agent is now finance 1.0.0 (sha256:97d6bed7…); record the baseline again`；用真实 key 重录基线之后才又放行（[03-agent-development.md](03-agent-development.md) §4.14）。锁的 `files` 是摘要覆盖的每一个文件（`agent.yml`、`package.json`、`tsconfig.json`、`assets/`、`src/`，以及构建出的 `lib/`；有 `agent.cordis.yml` 的 agent 还有它），finance 现在是 98 个，其中 `lib/` 下 60 个；`baseline` 记下基线的开始时间，用例、轮次、检查的个数（6、7、30）和 `results.jsonl` 的哈希。摘要随本机构建出的 `lib/` 而定。示例 agent 不提交锁。
 
 **serve 查什么**（`lyteboat/bundles/serve/src/startup.ts` `readReleaseLock`、`LyteboatServeStartup`，`lyteboat/plugins/agent-catalog/src/index.ts` `AgentCatalogService.declareAll`、`AgentCatalogService.pinProblem`、`AgentCatalogService.modelProblem`），按先后：
 

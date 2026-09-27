@@ -2,7 +2,7 @@
 
 > 适用范围：lyteboat 当前代码，跟踪 dsh `0.1.7-rc.2`，内核 14 个包（`dsh/kernel.json`）。仓库里现成的示例 agent 只有一个：刻意做到最小的金融智能体 `examples/agents/finance`（三个路由技能、三个工具、四张卡、进入循环之前的准入），文中提到的「金融智能体」都指它。
 > 读者：熟悉参考实现（Python 前身）、刚接触 dsh 的工程师。dsh / Cordis 的术语先看 §0.6，完整的架构与启动过程见 [01-architecture.md](01-architecture.md)。
-> 贯穿全文的例子是「保单查询助手」（agent id `policy-desk`），整个 agent 写成一份 `lyteboatAgentDef({…})` 声明。它不在仓库里：照本文逐字建出来之后，`pnpm run lint`、`pnpm run typecheck` 通过，`pnpm run test` 里它的测试全部通过（§2.17），文中的命令输出和日志片段都来自在构建好的二进制上用脚本模型的运行，过长处注明了裁剪，本机路径和随机的 id、摘要换成了占位符。
+> 贯穿全文的例子是「保单查询助手」（agent id `policy-desk`），整个 agent 写成一份 `lyteboatAgentDef({…})` 声明。它不在仓库里：照本文逐字建出来之后，`pnpm run lint`、`pnpm run typecheck`、`pnpm run test` 全部通过（§2.17），文中的命令输出和日志片段都来自在构建好的二进制上用脚本模型的运行，过长处注明了裁剪，本机路径和随机的 id、摘要换成了占位符。
 > 仓库里的代码按文件加符号名引用，不写行号。路径若不加说明，都相对仓库根（仓库里还有一个同名子目录 `lyteboat/`，放 lyteboat 自己的各层包；业务 agent 不在其中，而在与它并列的 `examples/agents/` 下）。「上游」指 dsh 在 tag `dsh-v0.1.7-rc.2` 上的源码（`packages/<group>/<pkg>/src`），lyteboat 从 npm 安装的 dsh 包以它为准。引用 `CLAUDE.md` 时写它的章节名。
 
 ---
@@ -1564,7 +1564,7 @@ pnpm run typecheck   # tsc -b + tsc -p tsconfig.tests.json（测试也做类型�
 pnpm run test        # build + G1 + source/dsh/composite 三个项目
 ```
 
-本例的 5 个测试文件都在 `pnpm run test` 里。仓库现在还有一处与本例无关的失败：金融智能体的评测基线录于它写成 `lyteboatAgentDef` 之前，目录的摘要已经变了，`examples/agents/finance/tests/finance-eval.composite.ts` 核对基线身份的用例（`replays the agent the baseline recorded, so the release gate's stamps hold`）在基线重录之前失败，报 `the agent directory changed since its baseline was recorded: record it again`（§4.16）。
+本例的 5 个测试文件都在 `pnpm run test` 里。
 
 `pnpm run lint` 最后一步是 `scripts/check-sensitive.ts`：它扫描 git 跟踪的（和将要跟踪的）每个文件的路径和内容，找部署方标为敏感的词。词表不进仓库，由环境变量 `LYTEBOAT_SENSITIVE_WORDS`（逗号分隔）或 `LYTEBOAT_SENSITIVE_WORDS_FILE` 提供；两个都没设时它说明跳过并通过（`scripts/check-sensitive.ts`）。新 agent 的文案、夹具和测试名都在扫描范围里。
 
@@ -2231,7 +2231,7 @@ lyteboat release: refused at stamps: the baseline ran echo 0.1.0 (sha256:06d85e2
   "startedAt": "2026-09-26T05:03:42.891Z", "durationMs": 119 }
 ```
 
-接着重录基线再发布，版本还是 0.1.0，第 6 步拒绝：`refused at version: <根>/echo/agent.release.json already releases echo 0.1.0 as sha256:06d85e20…; raise the version in agent.yml`。只把版本升到 0.1.1、不重录，第 3 步拒绝：版本也在身份里，基线记的还是 0.1.0。所以改了 agent，就从第 1 步重来。金融智能体正是这样：它的基线录于它写成 `lyteboatAgentDef` 之前，之后目录变了（`agent.cordis.yml` 没了，`agent.yml` 不再写 `name`，`src/`、`lib/` 也跟着变了），`lyteboat release --agents ./examples/agents --agent finance` 现在停在第 3 步，要先用真实 key 照 §4.14 重录基线才能通过（[02-distribution.md](02-distribution.md) §9.3 有这次的输出）。
+接着重录基线再发布，版本还是 0.1.0，第 6 步拒绝：`refused at version: <根>/echo/agent.release.json already releases echo 0.1.0 as sha256:06d85e20…; raise the version in agent.yml`。只把版本升到 0.1.1、不重录，第 3 步拒绝：版本也在身份里，基线记的还是 0.1.0。所以改了 agent，就从第 1 步重来。金融智能体正是这样：它写成 `lyteboatAgentDef` 之后目录变了（`agent.cordis.yml` 没了，`agent.yml` 不再写 `name`，`src/`、`lib/` 也跟着变了），旧基线让 `lyteboat release --agents ./examples/agents --agent finance` 停在第 3 步；照 §4.14 用真实 key 重录基线之后，闸门又放行了（[02-distribution.md](02-distribution.md) §9.3 有输出）。
 
 **锁里有什么。** `LyteboatAgentRelease`（`lyteboat/core/contracts/src/index.ts` `lyteboatAgentReleaseSchema`）：`agent`（id、版本、摘要）、`model`、`dshBase`（这个构建的内核来自哪个 dsh 版本）、`files`（摘要背后的逐文件哈希）、`baseline`（`startedAt`，用例、轮次、检查的个数，`results.jsonl` 按 LF 读的 sha256）。键的顺序固定、两空格缩进、结尾一个换行，所以同样的发布写出同样的字节，锁的 diff 可以像代码一样审。逐字段的表见 [02-distribution.md](02-distribution.md) §9.3。
 
