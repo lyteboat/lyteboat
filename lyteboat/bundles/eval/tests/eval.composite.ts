@@ -13,22 +13,13 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { LYTEBOAT_EVAL_BUNDLES, bootComposition, type CompositionRun } from '@lyteboat/testing/composition'
+import { readJsonLines } from '@lyteboat/testing/json-lines'
 import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testing/scripted-model'
-import { findSessionLogs } from '@lyteboat/testing/session-log'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 const AGENTS = join(FIXTURES, 'agents')
-
-/**
- * What the caller wrote last. Consecutive human messages share one request
- * message, and dsh appends its runtime context to it.
- */
-function latestMessage(request: RecordedRequest): string {
-  const users = request.body.messages.filter(message => message.role === 'user' && message.content.some(block => block.type === 'text'))
-  const texts = users.at(-1)?.content.filter(block => block.type === 'text').map(block => block.text ?? '') ?? []
-  return texts.filter(text => !text.startsWith('Current runtime context.')).at(-1) ?? ''
-}
 
 /** The run directory a run's summary line names. */
 function runDirOf(run: CompositionRun): string {
@@ -48,7 +39,7 @@ describe('lyteboat eval (in process, scripted model)', () => {
     bootComposition({ bundles: LYTEBOAT_EVAL_BUNDLES, args, cwd: workspace, home, env })
 
   beforeAll(async () => {
-    model = await startScriptedModel(withTitle(request => ({ text: `OK:${latestMessage(request)}` })), { apiKey: 'mock-key' })
+    model = await startScriptedModel(withTitle(request => ({ text: `OK:${request.latestMessage}` })), { apiKey: 'mock-key' })
     ;({ home, workspace } = scratch.run('eval'))
   })
 
@@ -66,9 +57,9 @@ describe('lyteboat eval (in process, scripted model)', () => {
     const greeter = { id: 'greeter', digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/u) as string }
     expect(JSON.parse(readFileSync(join(realRun, 'run.json'), 'utf8'))).toMatchObject({ agent: greeter, model: { provider: 'deepseek-official', model: 'deepseek-flash' }, mode: 'real', cases: [{ id: 'hello', pass: true }, { id: 'short', pass: true }] })
     // Every recorded human message names the agent it went to.
-    const recorded = readFileSync(join(realRun, 'sessions', 'hello', 'session.v4.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line) as { type?: string; data?: { source?: { lyteboatRequest?: { agent?: unknown } } } })
+    const recorded = readSessionLog(join(realRun, 'sessions', 'hello', 'session.v4.jsonl')) as { type?: string; data?: { source?: { lyteboatRequest?: { agent?: unknown } } } }[]
     expect(recorded.filter(line => line.type === 'user/message').map(line => line.data?.source?.lyteboatRequest?.agent)).toEqual([greeter, greeter])
-    const results = readFileSync(join(realRun, 'results.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line) as { case: string; turn: number; observed: unknown })
+    const results = readJsonLines<{ case: string; turn: number; observed: unknown }>(join(realRun, 'results.jsonl'))
     expect(results.map(result => [result.case, result.turn, result.observed])).toEqual([
       ['hello', 1, { skill: null, tools: [], cards: [], outcome: 'completed', text: 'OK:hello', modelRequests: 1 }],
       ['hello', 2, { skill: null, tools: [], cards: [], outcome: 'completed', text: 'OK:again', modelRequests: 1 }],

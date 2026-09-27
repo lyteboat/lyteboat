@@ -10,11 +10,11 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { AgentCatalogEntry, AgentCatalogFailure } from '@lyteboat/agent-catalog'
-import { lyteboatAgentReleaseSchema } from '@lyteboat/contracts'
+import { LYTEBOAT_AGENT_RELEASE_FILE, lyteboatAgentReleaseSchema } from '@lyteboat/contracts'
 import type { StudioAgent, StudioAgentsAnswer } from '@lyteboat/contracts/studio'
+import { studioSchemaProblems } from './studio-api-router.ts'
 
 // The file `lyteboat release` writes beside the agent.
-const AGENT_RELEASE_FILE = 'agent.release.json'
 
 type StudioReleaseLock =
   | { kind: 'none' }
@@ -22,16 +22,16 @@ type StudioReleaseLock =
   | { kind: 'unreadable'; problem: string }
 
 function releaseLockOf(entry: AgentCatalogEntry): StudioReleaseLock {
-  const file = join(entry.dir, AGENT_RELEASE_FILE)
+  const file = join(entry.dir, LYTEBOAT_AGENT_RELEASE_FILE)
   if (!existsSync(file)) return { kind: 'none' }
   let raw: unknown
   try {
     raw = JSON.parse(readFileSync(file, 'utf8'))
   } catch (error: unknown) {
-    return { kind: 'unreadable', problem: `${AGENT_RELEASE_FILE} is not JSON: ${error instanceof Error ? error.message : String(error)}` }
+    return { kind: 'unreadable', problem: `${LYTEBOAT_AGENT_RELEASE_FILE} is not JSON: ${error instanceof Error ? error.message : String(error)}` }
   }
   const parsed = lyteboatAgentReleaseSchema.safeParse(raw)
-  if (!parsed.success) return { kind: 'unreadable', problem: `${AGENT_RELEASE_FILE} is not a release lock: ${parsed.error.issues.map(issue => `${issue.path.join('.') || '(the file)'}: ${issue.message}`).join('; ')}` }
+  if (!parsed.success) return { kind: 'unreadable', problem: `${LYTEBOAT_AGENT_RELEASE_FILE} is not a release lock: ${studioSchemaProblems(parsed.error, '(the file)')}` }
   return { kind: 'locked', version: parsed.data.agent.version, digest: parsed.data.agent.digest }
 }
 

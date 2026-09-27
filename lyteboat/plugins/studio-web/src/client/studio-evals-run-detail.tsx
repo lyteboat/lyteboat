@@ -18,6 +18,8 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import type { StudioEvalRun, StudioEvalRunDetail, StudioEvalRunRequest } from '@lyteboat/contracts/studio'
 import { studioApi, studioErrorMessage } from './studio-api-client.ts'
 import { canRunStudioEvals, useStudioAuth } from './studio-auth-context.tsx'
+import { useStudioReading } from './studio-call-state.ts'
+import { downloadStudioFile } from './studio-code-body.tsx'
 import { useStudioConfirm } from './studio-confirm-dialog.tsx'
 import { useStudioEvalsAgent } from './studio-evals-agent-scope.tsx'
 import { formatStudioEvalDuration, formatStudioEvalFraction, formatStudioEvalPercent, studioEvalCaseResults, studioEvalModelLabel, studioEvalPassRate, studioEvalShortDigest, studioEvalTone } from './studio-evals-format.ts'
@@ -28,19 +30,6 @@ import { formatStudioRelativeTime } from './studio-relative-time.ts'
 import { formatStudioSessionTime } from './studio-session-format.ts'
 
 const STUDIO_EVAL_RUN_POLL_MS = 2000
-/** How long a download's object URL outlives the click that starts it. */
-const STUDIO_DOWNLOAD_URL_TTL_MS = 1000
-
-function downloadStudioEvalJson(filename: string, value: StudioEvalRunDetail): void {
-  const url = URL.createObjectURL(new Blob([`${JSON.stringify(value, null, 2)}\n`], { type: 'application/json' }))
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = filename
-  document.body.appendChild(anchor)
-  anchor.click()
-  anchor.remove()
-  window.setTimeout(() => URL.revokeObjectURL(url), STUDIO_DOWNLOAD_URL_TTL_MS)
-}
 
 function studioEvalRerunRequest(run: StudioEvalRun): StudioEvalRunRequest {
   return {
@@ -54,28 +43,8 @@ function studioEvalRerunRequest(run: StudioEvalRun): StudioEvalRunRequest {
 /** The run's detail, read on mount and every two seconds while it runs; the agent's list is read again once it stops running. */
 function useStudioEvalRunDetail(runId: string): { detail: StudioEvalRunDetail | null; error: string | null; reload(): Promise<void> } {
   const { reloadRuns } = useStudioEvalsAgent()
-  const [detail, setDetail] = useState<StudioEvalRunDetail | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const mounted = useRef(true)
+  const { answer: detail, error, reload } = useStudioReading(useCallback(() => studioApi.evalRun(runId), [runId]))
   const sawRunning = useRef(false)
-
-  const reload = useCallback(async () => {
-    try {
-      const next = await studioApi.evalRun(runId)
-      if (mounted.current) {
-        setDetail(next)
-        setError(null)
-      }
-    } catch (nextError: unknown) {
-      if (mounted.current) setError(studioErrorMessage(nextError))
-    }
-  }, [runId])
-
-  useEffect(() => {
-    mounted.current = true
-    void reload()
-    return () => { mounted.current = false }
-  }, [reload])
 
   const status = detail?.run.status
   useEffect(() => {
@@ -185,7 +154,7 @@ function StudioEvalsRunHead({ detail, reload }: { detail: StudioEvalRunDetail; r
               {actions.busy === 'rerun' ? 'Starting…' : 'Rerun'}
             </button>
           )}
-          <button className="btn btn-sm" onClick={() => downloadStudioEvalJson(`${run.runId}.json`, detail)} title="Export this run's detail as JSON" type="button"><DownloadIcon /> Export JSON</button>
+          <button className="btn btn-sm" onClick={() => downloadStudioFile(`${run.runId}.json`, `${JSON.stringify(detail, null, 2)}\n`, 'application/json')} title="Export this run's detail as JSON" type="button"><DownloadIcon /> Export JSON</button>
           {canRun && (
             <button className="btn btn-sm evals-danger-text" disabled={actions.busy !== null || running} onClick={() => void actions.remove()} title={running ? '运行中的 run 不能删除' : 'Delete run'} type="button">Delete</button>
           )}

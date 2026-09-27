@@ -9,6 +9,7 @@
  */
 
 import type { IncomingHttpHeaders, IncomingMessage, ServerResponse } from 'node:http'
+import type { z } from 'zod'
 import type { StudioErrorAnswer, StudioErrorCode, StudioPrincipal, StudioRole } from '@lyteboat/contracts/studio'
 import type { StudioAuthResult } from '@lyteboat/studio-auth'
 import { studioHostAllowed } from './studio-host-allowlist.ts'
@@ -60,6 +61,29 @@ export class StudioApiError extends Error {
   body(): StudioErrorAnswer {
     return { error: { code: this.code, message: this.message } }
   }
+}
+
+/**
+ * Wait for the agent catalog to settle. Not strict: an agent that failed to
+ * mount is in the catalog's failures and is simply not served; the ones that
+ * mounted are.
+ * @param settling - the catalog's `whenReady()` or `reload()`.
+ */
+export async function studioCatalogSettled(settling: Promise<void>): Promise<void> {
+  try {
+    await settling
+  } catch {
+    // The failure is the failed agents', listed by failures(); nothing else rejects this promise.
+  }
+}
+
+/**
+ * A schema's refusal as one message: every issue, with its path.
+ * @param error - the refusal.
+ * @param whole - how a path-less issue names the value (`(the body)`).
+ */
+export function studioSchemaProblems(error: z.ZodError, whole: string): string {
+  return error.issues.map(issue => `${issue.path.join('.') || whole}: ${issue.message}`).join('; ')
 }
 
 /** Turn a refused result into its error, so a route can throw it. */

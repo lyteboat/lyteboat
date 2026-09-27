@@ -17,7 +17,7 @@ import { studioSkillUpdateRequestSchema, type StudioSkillDetail, type StudioSkil
 import { studioAgentsAnswer } from './studio-agents.ts'
 import type { StudioAudit } from './studio-audit.ts'
 import { studioCallerOf, studioRequestOf } from './studio-auth-routes.ts'
-import { StudioApiError, type StudioApiCall, type StudioApiRoute } from './studio-api-router.ts'
+import { StudioApiError, studioCatalogSettled, type StudioApiCall, type StudioApiRoute } from './studio-api-router.ts'
 import { editableStudioSkillFile, replaceStudioFile, studioFileHash, studioSkillFileProblem } from './studio-skill-hotfix.ts'
 
 /** What the workspace endpoints read and change. */
@@ -34,11 +34,7 @@ function found<T>(value: T | undefined, what: string): T {
 
 /** An agent the catalog serves once it has settled: a reload (the roots' watcher's too) empties it until then. */
 export async function settledAgentOf(catalog: AgentCatalogService, agentId: string): Promise<AgentCatalogEntry> {
-  try {
-    await catalog.whenReady()
-  } catch {
-    // Not strict: a failed agent is simply not served, and answers 404 below.
-  }
+  await studioCatalogSettled(catalog.whenReady())
   return found(catalog.get(agentId), `agent ${agentId}`)
 }
 

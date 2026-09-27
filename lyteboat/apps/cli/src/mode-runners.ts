@@ -10,10 +10,10 @@
 
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
+import { LYTEBOAT_MODE_RUNNER_IDS } from '@lyteboat/contracts/cli'
 import { FIBER_STATE } from './fiber-state.ts'
 
-/** The row ids of lyteboat's mode runners, as the mode bundles insert them. */
-const LYTEBOAT_MODE_RUNNER_IDS = new Set(['lyteboat-try', 'lyteboat-serve', 'lyteboat-eval', 'lyteboat-studio', 'lyteboat-inspect'])
+const MODE_RUNNER_IDS = new Set<string>(LYTEBOAT_MODE_RUNNER_IDS)
 
 /**
  * The mode runner a settled tree failed to activate.
@@ -22,7 +22,7 @@ const LYTEBOAT_MODE_RUNNER_IDS = new Set(['lyteboat-try', 'lyteboat-serve', 'lyt
  */
 export function inactiveModeRunner(ctx: Context): string | undefined {
   for (const entry of ctx.loader.entries()) {
-    if (!LYTEBOAT_MODE_RUNNER_IDS.has(entry.options.id) || entry.disabled) continue
+    if (!MODE_RUNNER_IDS.has(entry.options.id) || entry.disabled) continue
     if (entry.fiber?.state !== FIBER_STATE.ACTIVE) return entry.options.id
   }
   return undefined

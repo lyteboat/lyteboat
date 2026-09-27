@@ -2,11 +2,12 @@
  * The Evals surface's own frame at `/evals`, a sibling of the Studio shell as
  * in the original Studio: the top bar branded 轻舟 Eval (role, user, theme,
  * sign-out), an agent radar of the Studio's agents, read as the Studio shell
- * reads them (searchable; a card opens that agent's runs, never its Studio
- * workspace), a "← Studio" link back, and the page beside it. The Studio's
- * sidebar opens this surface in a new tab. `/evals` itself opens the first
- * agent's runs. The original's topbar had no theme switch; this one carries
- * the Studio's, since the surface lives in a tab of its own.
+ * reads them (searchable, or why they could not be read; a card opens that
+ * agent's runs, never its Studio workspace), a "← Studio" link back, and the
+ * page beside it. The Studio's sidebar opens this surface in a new tab.
+ * `/evals` itself opens the first agent's runs. The original's topbar had no
+ * theme switch; this one carries the Studio's, since the surface lives in a
+ * tab of its own.
  * @module @lyteboat/studio-web/client/studio-evals-shell
  */
 
@@ -16,7 +17,8 @@ import type { StudioAgent } from '@lyteboat/contracts/studio'
 import { useStudioAuth } from './studio-auth-context.tsx'
 import { StudioEvalsEmpty } from './studio-evals-primitives.tsx'
 import { BeakerIcon, LogoutIcon, RefreshIcon, SearchIcon } from './studio-icons.tsx'
-import { studioAgentName, useStudioAgents } from './studio-shell.tsx'
+import { studioAgentName, studioAgentSearchFields, useStudioAgents } from './studio-shell.tsx'
+import { studioTextMatches } from './studio-text-filter.ts'
 import { StudioThemeToggle } from './studio-theme-toggle.tsx'
 
 type StudioEvalsAgents = ReturnType<typeof useStudioAgents>
@@ -71,13 +73,9 @@ function StudioEvalsRadarCard({ agent, active }: { agent: StudioAgent; active: b
 }
 
 function StudioEvalsRadar({ radar, currentAgentId }: { radar: StudioEvalsAgents; currentAgentId: string | undefined }) {
-  const { agents, agentsLoading, refreshAgents } = radar
+  const { agents, agentsLoading, agentsError, refreshAgents } = radar
   const [query, setQuery] = useState('')
-  const visible = useMemo(() => {
-    const text = query.trim().toLowerCase()
-    if (text === '') return agents
-    return agents.filter(agent => [studioAgentName(agent), agent.id, agent.description ?? ''].some(field => field.toLowerCase().includes(text)))
-  }, [agents, query])
+  const visible = useMemo(() => agents.filter(agent => studioTextMatches(query, studioAgentSearchFields(agent))), [agents, query])
   return (
     <aside aria-label="Agents" className="evals-radar">
       <div className="evals-radar-head">
@@ -90,8 +88,9 @@ function StudioEvalsRadar({ radar, currentAgentId }: { radar: StudioEvalsAgents;
       </label>
       <div className="evals-radar-list">
         {agentsLoading && <StudioEvalsEmpty hint="Loading agents…" />}
-        {!agentsLoading && agents.length === 0 && <StudioEvalsEmpty hint="No agents registered." />}
-        {!agentsLoading && agents.length > 0 && visible.length === 0 && <StudioEvalsEmpty hint="No agents match." />}
+        {agentsError !== null && <StudioEvalsEmpty hint={agentsError} />}
+        {!agentsLoading && agentsError === null && agents.length === 0 && <StudioEvalsEmpty hint="No agents registered." />}
+        {!agentsLoading && agentsError === null && agents.length > 0 && visible.length === 0 && <StudioEvalsEmpty hint="No agents match." />}
         {visible.map(agent => <StudioEvalsRadarCard active={agent.id === currentAgentId} agent={agent} key={agent.id} />)}
       </div>
       <nav aria-label="Other surfaces" className="evals-radar-footer">

@@ -19,10 +19,11 @@ import { useStudioCall } from './studio-call-state.ts'
 import { StudioCodeBody } from './studio-code-body.tsx'
 import { StudioCollapsedRail, StudioRailToggle, useStudioRailCollapse } from './studio-collapsible-rail.tsx'
 import { useStudioConfirm } from './studio-confirm-dialog.tsx'
-import { SearchIcon } from './studio-icons.tsx'
 import { formatStudioRelativeTime } from './studio-relative-time.ts'
+import { StudioSearchBox } from './studio-search-box.tsx'
 import { useStudioShell } from './studio-shell.tsx'
 import { StudioSkillDiagnosticsPanel } from './studio-skill-diagnostics.tsx'
+import { studioTextMatches } from './studio-text-filter.ts'
 
 type StudioSkillDetailTab = 'skill' | 'diagnostics'
 
@@ -65,11 +66,7 @@ function StudioSkillRail({ skills, query, setQuery, selectedName, onSelect, onCo
   onSelect(name: string): void
   onCollapse(): void
 }) {
-  const shown = useMemo(() => {
-    const text = query.trim().toLowerCase()
-    if (text === '') return skills
-    return skills.filter(skill => [skill.name, skill.description, skill.path ?? '', ...skill.requiredTools].some(field => field.toLowerCase().includes(text)))
-  }, [query, skills])
+  const shown = useMemo(() => skills.filter(skill => studioTextMatches(query, [skill.name, skill.description, skill.path ?? '', ...skill.requiredTools])), [query, skills])
   return (
     <div className="workspace-surface split-list">
       <div className="surface-heading">
@@ -79,12 +76,7 @@ function StudioSkillRail({ skills, query, setQuery, selectedName, onSelect, onCo
           <StudioRailToggle label="Collapse skills" onToggle={onCollapse} />
         </span>
       </div>
-      <div className="filter-bar">
-        <label className="search">
-          <SearchIcon />
-          <input aria-label="Search skills" onChange={event => setQuery(event.target.value)} placeholder="Search skills" value={query} />
-        </label>
-      </div>
+      <StudioSearchBox label="Search skills" onChange={setQuery} placeholder="Search skills" value={query} />
       <div className="document-list">
         {shown.map(skill => (
           <button className={`document-card document-button skill-list-card ${selectedName === skill.name ? 'active' : ''}`} key={skill.name} onClick={() => onSelect(skill.name)} type="button">

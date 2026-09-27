@@ -14,7 +14,6 @@ interface StudioConfirmOptions {
   message?: string
   tone?: 'default' | 'danger'
   confirmLabel?: string
-  cancelLabel?: string
 }
 
 type StudioConfirmRequest = (options: StudioConfirmOptions) => Promise<boolean>
@@ -46,7 +45,7 @@ function StudioConfirmView({ options, settle }: { options: StudioConfirmOptions;
           </div>
         </div>
         <div className="cf-foot">
-          <button className="btn" onClick={() => settle(false)} type="button"><CloseIcon /> {options.cancelLabel ?? 'Cancel'}</button>
+          <button className="btn" onClick={() => settle(false)} type="button"><CloseIcon /> Cancel</button>
           <button className={`btn ${danger ? 'btn-danger' : 'btn-accent'}`} onClick={() => settle(true)} ref={confirmRef} type="button">
             {danger ? <AlertIcon /> : <CheckIcon />} {options.confirmLabel ?? 'Confirm'}
           </button>

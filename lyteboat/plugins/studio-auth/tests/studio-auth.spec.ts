@@ -3,24 +3,15 @@
  * grants and their two rules, login throttling, anonymous viewers, and
  * gateway mode.
  */
-import { mkdtempSync, rmSync, statSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { statSync } from 'node:fs'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import StudioAuthService, { type Config, type StudioAuthResult } from '@lyteboat/studio-auth'
 import { hashStudioPassword, readStudioAccounts, setStudioAccount, setStudioGrant, verifyStudioPassword } from '@lyteboat/studio-auth/accounts'
 import { issueStudioToken, studioTokenSecret, verifyStudioToken } from '../src/studio-token.ts'
-
-const dirs: string[] = []
-afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }) })
-
-function studioDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'studio-auth-'))
-  dirs.push(dir)
-  return dir
-}
 
 async function authHost(config: Config, env: Record<string, string> = {}): Promise<Context> {
   const ctx = await createLyteboatUnitHost(new MockAdapter([]))
@@ -37,7 +28,7 @@ function valueOf<T>(result: StudioAuthResult<T>): T {
 
 describe('Studio accounts', () => {
   it('stores a scrypt hash, never the password, in a file only its owner reads', () => {
-    const dir = studioDir()
+    const dir = lyteboatTempDir('studio-auth')
 
     const account = setStudioAccount(dir, 'alice', { password: 'correct horse', displayName: 'Alice' })
 
@@ -50,7 +41,7 @@ describe('Studio accounts', () => {
   })
 
   it('refuses a username with spaces or slashes, and an empty password', () => {
-    const dir = studioDir()
+    const dir = lyteboatTempDir('studio-auth')
 
     expect(() => setStudioAccount(dir, 'a b', { password: 'x' })).toThrow('is not a username')
     expect(() => setStudioAccount(dir, '../x', { password: 'x' })).toThrow('is not a username')
@@ -60,7 +51,7 @@ describe('Studio accounts', () => {
 
 describe('Studio tokens', () => {
   it('name their user until they expire, and a changed payload or signature is no token', () => {
-    const secret = studioTokenSecret(studioDir())
+    const secret = studioTokenSecret(lyteboatTempDir('studio-auth'))
     const { token } = issueStudioToken(secret, 'alice', 1000, 60_000)
     const [payload, signature] = token.split('.')
     const forged = `${Buffer.from(JSON.stringify({ sub: 'root', iat: 1000, exp: 61_000 })).toString('base64url')}.${signature ?? ''}`
@@ -74,7 +65,7 @@ describe('Studio tokens', () => {
 
 describe('the studioAuth service (internal mode)', () => {
   it('signs in an account with a role and answers who its token speaks for', async () => {
-    const dir = studioDir()
+    const dir = lyteboatTempDir('studio-auth')
     setStudioAccount(dir, 'alice', { password: 'pw-alice', displayName: 'Alice' })
     setStudioGrant(dir, 'alice', 'editor', 'cli')
     const ctx = await authHost({ dir })
@@ -88,7 +79,7 @@ describe('the studioAuth service (internal mode)', () => {
   })
 
   it('answers an unknown user and a wrong password the same way, and locks the pair after five failures', async () => {
-    const dir = studioDir()
+    const dir = lyteboatTempDir('studio-auth')
     setStudioAccount(dir, 'alice', { password: 'pw-alice' })
     setStudioGrant(dir, 'alice', 'viewer', 'cli')
     const ctx = await authHost({ dir })
@@ -107,7 +98,7 @@ describe('the studioAuth service (internal mode)', () => {
   })
 
   it('refuses a request without a token unless anonymous viewers are allowed, and an account without a role', async () => {
-    const dir = studioDir()
+    const dir = lyteboatTempDir('studio-auth')
     setStudioAccount(dir, 'bob', { password: 'pw-bob' })
     const strict = await authHost({ dir })
     const open = await authHost({ dir, anonymousViewer: true })
@@ -118,7 +109,7 @@ describe('the studioAuth service (internal mode)', () => {
   })
 
   it('keeps an admin from changing their own role, and the last admin an admin', async () => {
-    const dir = studioDir()
+    const dir = lyteboatTempDir('studio-auth')
     setStudioGrant(dir, 'root', 'admin', 'cli')
     const ctx = await authHost({ dir })
 
@@ -141,7 +132,7 @@ describe('the studioAuth service (gateway mode)', () => {
   const gateway = { secretRef: 'STUDIO_GATEWAY_SECRET' }
 
   it('trusts the gateway\'s headers only with its secret, grants a new identity viewer, and makes the configured admins', async () => {
-    const dir = studioDir()
+    const dir = lyteboatTempDir('studio-auth')
     const ctx = await authHost({ dir, gateway, admins: ['boss'] }, { STUDIO_GATEWAY_SECRET: 's3cret' })
 
     const missing = await ctx.studioAuth.principal({ 'x-gateway-user-id': 'eve' })
@@ -158,7 +149,7 @@ describe('the studioAuth service (gateway mode)', () => {
   })
 
   it('refuses anonymous viewers in gateway mode', async () => {
-    await expect(authHost({ dir: studioDir(), gateway, anonymousViewer: true })).rejects.toThrow('anonymousViewer is for internal mode')
+    await expect(authHost({ dir: lyteboatTempDir('studio-auth'), gateway, anonymousViewer: true })).rejects.toThrow('anonymousViewer is for internal mode')
   })
 })
 

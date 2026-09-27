@@ -4,10 +4,10 @@
  * the turns that are left out, a recorder that cannot write, retention, and
  * what the reader answers from the files.
  */
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { hostname, tmpdir } from 'node:os'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { hostname } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
@@ -17,16 +17,9 @@ import type { LyteboatRunHeartbeat, LyteboatRunMetric } from '@lyteboat/contract
 import * as runMetrics from '@lyteboat/run-metrics'
 import RunMetricsReaderService from '@lyteboat/run-metrics/reader'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testing'
+import { readJsonLines } from '@lyteboat/testing/json-lines'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import { runMetricDayOf } from '../src/run-metric-files.ts'
-
-const dirs: string[] = []
-afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }) })
-
-function scratch(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'run-metrics-'))
-  dirs.push(dir)
-  return dir
-}
 
 async function recorderHost(adapter: MockAdapter, dir: string): Promise<Context> {
   const ctx = await createLyteboatUnitHost(adapter)
@@ -46,7 +39,7 @@ function agentOf(ctx: Context, id: string, agentPreset?: string): Promise<Agent>
 
 function metricLines(dir: string): LyteboatRunMetric[] {
   const file = join(dir, `${runMetricDayOf(Date.now())}.jsonl`)
-  return existsSync(file) ? readFileSync(file, 'utf8').trim().split('\n').map(line => JSON.parse(line) as LyteboatRunMetric) : []
+  return existsSync(file) ? readJsonLines<LyteboatRunMetric>(file) : []
 }
 
 function heartbeatOf(dir: string): LyteboatRunHeartbeat | undefined {
@@ -56,7 +49,7 @@ function heartbeatOf(dir: string): LyteboatRunHeartbeat | undefined {
 
 describe('the run-metrics recorder', () => {
   it('appends one line per turn with its steps, model requests, tools without the skill load, and outcome', async () => {
-    const dir = scratch()
+    const dir = lyteboatTempDir('run-metrics')
     const adapter = new MockAdapter([toolCallResponse('c1', 'skill', {}), toolCallResponse('c2', 'lookup', {}), textResponse('done')])
     const ctx = await recorderHost(adapter, dir)
     const agent = await agentOf(ctx, 'one', 'alpha')
@@ -75,7 +68,7 @@ describe('the run-metrics recorder', () => {
   })
 
   it('lists a held turn in the heartbeat, and records it aborted when it is cancelled', async () => {
-    const dir = scratch()
+    const dir = lyteboatTempDir('run-metrics')
     const ctx = await recorderHost(new MockAdapter(['hang']), dir)
     const agent = await agentOf(ctx, 'held', 'alpha')
 
@@ -89,7 +82,7 @@ describe('the run-metrics recorder', () => {
   })
 
   it('leaves out a session no preset composed', async () => {
-    const dir = scratch()
+    const dir = lyteboatTempDir('run-metrics')
     const ctx = await recorderHost(new MockAdapter([textResponse('hi')]), dir)
     const agent = await agentOf(ctx, 'bare')
 
@@ -100,7 +93,7 @@ describe('the run-metrics recorder', () => {
   })
 
   it('lets the turn finish when the metrics cannot be written, and says why', async () => {
-    const blocked = join(scratch(), 'not-a-directory')
+    const blocked = join(lyteboatTempDir('run-metrics'), 'not-a-directory')
     writeFileSync(blocked, 'a file where the directory should be')
     const adapter = new MockAdapter([textResponse('still answered')])
     const ctx = await recorderHost(adapter, blocked)
@@ -115,7 +108,7 @@ describe('the run-metrics recorder', () => {
   })
 
   it('removes day files older than the retention when it starts', async () => {
-    const dir = scratch()
+    const dir = lyteboatTempDir('run-metrics')
     mkdirSync(dir, { recursive: true })
     const old = runMetricDayOf(Date.now() - 91 * 86_400_000)
     const kept = runMetricDayOf(Date.now() - 89 * 86_400_000)
@@ -146,7 +139,7 @@ describe('the run-metrics reader', () => {
   }
 
   it('answers the turns of a range across day files, of one agent or all, skipping lines that are not metrics', async () => {
-    const dir = scratch()
+    const dir = lyteboatTempDir('run-metrics')
     writeFileSync(join(dir, `${runMetricDayOf(T)}.jsonl`), `${JSON.stringify(metric('alpha', T))}\nnot json\n${JSON.stringify({ agentId: 'x' })}\n`)
     writeFileSync(join(dir, `${runMetricDayOf(T + DAY)}.jsonl`), `${JSON.stringify(metric('beta', T + 2 * 3_600_000))}\n${JSON.stringify(metric('alpha', T + DAY + 1))}\n`)
     const ctx = await readerOf(dir)
@@ -160,8 +153,14 @@ describe('the run-metrics reader', () => {
     expect(later.map(row => row.agentId)).toEqual(['beta'])
   })
 
+  it('refuses a Config its schema refuses', async () => {
+    const ctx = await createLyteboatUnitHost(new MockAdapter([]))
+
+    await expect(ctx.plugin(RunMetricsReaderService, { dir: 42 } as unknown as { dir: string })).rejects.toThrow('expected string but got 42')
+  })
+
   it('reads a day file again once it changes', async () => {
-    const dir = scratch()
+    const dir = lyteboatTempDir('run-metrics')
     const file = join(dir, `${runMetricDayOf(T)}.jsonl`)
     writeFileSync(file, `${JSON.stringify(metric('alpha', T))}\n`)
     const ctx = await readerOf(dir)
@@ -173,7 +172,7 @@ describe('the run-metrics reader', () => {
   })
 
   it('answers the running turns of heartbeats from the last 30 seconds only, and none before any serve ran', async () => {
-    const dir = scratch()
+    const dir = lyteboatTempDir('run-metrics')
     const ctx = await readerOf(dir)
     expect(await ctx.runMetricsReader.running()).toEqual([])
     mkdirSync(join(dir, 'running'))

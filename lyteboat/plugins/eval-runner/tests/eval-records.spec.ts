@@ -3,24 +3,15 @@
  * `run.json`, one run with its results, the checks that changed between two
  * runs, an agent's case files one by one, and removing a run.
  */
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { LyteboatEvalRunRecord } from '@lyteboat/contracts'
 import EvalRecordsService from '@lyteboat/eval-runner/records'
 import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import type { EvalTurnResult } from '../src/eval-report.ts'
-
-const dirs: string[] = []
-afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }) })
-
-function scratch(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'eval-records-'))
-  dirs.push(dir)
-  return dir
-}
 
 const RECORD: LyteboatEvalRunRecord = {
   agent: { id: 'teller', version: '1.0.0', digest: `sha256:${'a'.repeat(64)}` }, mode: 'real',
@@ -51,7 +42,7 @@ async function recordsOf(dir: string): Promise<Context> {
 
 describe('the eval records', () => {
   it('lists the run directories with the run.json each has, and none before any run', async () => {
-    const evalsDir = join(scratch(), 'evals')
+    const evalsDir = join(lyteboatTempDir('eval-records'), 'evals')
     const ctx = await recordsOf(evalsDir)
     expect(ctx.evalRecords.runs()).toEqual([])
     writeRun(evalsDir, 'done-1', { record: RECORD, results: [result(true)] })
@@ -66,7 +57,7 @@ describe('the eval records', () => {
   })
 
   it('reads one run with its results, compares two, and removes one; an id that is not a run names none', async () => {
-    const evalsDir = join(scratch(), 'evals')
+    const evalsDir = join(lyteboatTempDir('eval-records'), 'evals')
     writeRun(evalsDir, 'before', { record: RECORD, results: [result(true)] })
     writeRun(evalsDir, 'after', { record: RECORD, results: [result(false)] })
     writeRun(evalsDir, 'written-later', { record: RECORD })
@@ -82,12 +73,12 @@ describe('the eval records', () => {
   })
 
   it('reads an agent\'s case files one by one, each that does not load with why', async () => {
-    const agentDir = scratch()
+    const agentDir = lyteboatTempDir('eval-records')
     mkdirSync(join(agentDir, 'evals'))
     writeFileSync(join(agentDir, 'evals', 'a.yml'), 'cases:\n  - id: hello\n    turns:\n      - message: hi\n        expect: { outcome: completed }\n')
     writeFileSync(join(agentDir, 'evals', 'b.yml'), 'cases:\n  - id: Bad_Id\n    turns:\n      - message: hi\n')
     writeFileSync(join(agentDir, 'evals', 'c.yml'), 'cases:\n  - id: hello\n    turns:\n      - message: again\n')
-    const ctx = await recordsOf(join(scratch(), 'evals'))
+    const ctx = await recordsOf(join(lyteboatTempDir('eval-records'), 'evals'))
 
     const files = ctx.evalRecords.cases(agentDir)
 
@@ -96,6 +87,6 @@ describe('the eval records', () => {
     expect(files[0]?.cases[0]?.turns[0]?.expect).toEqual({ outcome: 'completed' })
     expect(files[1]?.error).toContain('must be kebab-case')
     expect(files[2]?.error).toContain('case "hello" is in an earlier file too')
-    expect(ctx.evalRecords.cases(scratch())).toEqual([])
+    expect(ctx.evalRecords.cases(lyteboatTempDir('eval-records'))).toEqual([])
   })
 })

@@ -15,12 +15,11 @@ import { createHash } from 'node:crypto'
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { AgentCatalogEntry } from '@lyteboat/agent-catalog'
-import { lyteboatAgentReleaseSchema, lyteboatEvalRunRecordSchema, type LyteboatAgentIdentity, type LyteboatAgentModel, type LyteboatAgentRelease, type LyteboatEvalRunRecord } from '@lyteboat/contracts'
+import { LYTEBOAT_AGENT_RELEASE_FILE, lyteboatAgentReleaseSchema, lyteboatEvalRunRecordSchema, type LyteboatAgentIdentity, type LyteboatAgentModel, type LyteboatAgentRelease, type LyteboatEvalRunRecord } from '@lyteboat/contracts'
 import { recordedAgentsOf, recordedModelsOf } from './eval-recording.ts'
-import { recordedSessionFile, type EvalTurnResult } from './eval-report.ts'
+import { evalRunRecordFile, evalRunResultsFile, recordedSessionFile, type EvalTurnResult } from './eval-report.ts'
 
 /** The release lock's file name in the agent directory. */
-const AGENT_RELEASE_FILE = 'agent.release.json'
 
 /** The gate step that refused a release. */
 export type EvalReleaseStep = 'manifest' | 'baseline' | 'stamps' | 'model' | 'replay' | 'version'
@@ -64,7 +63,7 @@ function readJsonFile(file: string, step: EvalReleaseStep): unknown {
 }
 
 function readBaseline(baselineDir: string): LyteboatEvalRunRecord {
-  const file = join(baselineDir, 'run.json')
+  const file = evalRunRecordFile(baselineDir)
   if (!existsSync(file)) throw new EvalReleaseRefusal('baseline', `no baseline at ${baselineDir}: run lyteboat eval with the real model and copy its run directory there`)
   const parsed = lyteboatEvalRunRecordSchema.safeParse(readJsonFile(file, 'baseline'))
   if (!parsed.success) throw new EvalReleaseRefusal('baseline', `${file} is not a run this build reads (${parsed.error.issues.map(issue => `${issue.path.join('.') || '(the file)'}: ${issue.message}`).join('; ')}); record the baseline again`)
@@ -107,9 +106,10 @@ function checkRecordings(baselineDir: string, baseline: LyteboatEvalRunRecord, i
  * as recorded, and passes.
  */
 async function checkReplay(baselineDir: string, baseline: LyteboatEvalRunRecord, replay: EvalBaselineReplay): Promise<string> {
-  const resultsFile = join(baselineDir, 'results.jsonl')
+  const resultsFile = evalRunResultsFile(baselineDir)
   if (!existsSync(resultsFile)) throw new EvalReleaseRefusal('baseline', `the baseline has no results.jsonl (${resultsFile}); copy the whole run directory`)
-  const recorded = readFileSync(resultsFile, 'utf8')
+  // A checkout on Windows may hold the baseline with CRLF; the replay writes LF, and the lock's digest must not depend on the host.
+  const recorded = readFileSync(resultsFile, 'utf8').replaceAll('\r\n', '\n')
   let replayed: Awaited<ReturnType<EvalBaselineReplay>>
   try {
     replayed = await replay(baselineDir)
@@ -151,7 +151,7 @@ export async function releaseAgent(agent: AgentCatalogEntry, dshBase: string, re
   const { model } = agent
   if (version === undefined || model === undefined) return { released: false, step: 'manifest', reason: `${join(agent.dir, 'agent.yml')} must declare a version and a model to be released` }
   const baselineDir = join(agent.dir, 'evals', 'baseline')
-  const file = join(agent.dir, AGENT_RELEASE_FILE)
+  const file = join(agent.dir, LYTEBOAT_AGENT_RELEASE_FILE)
   try {
     const baseline = readBaseline(baselineDir)
     checkRecordings(baselineDir, baseline, agent.identity, model)

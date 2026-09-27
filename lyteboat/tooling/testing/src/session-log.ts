@@ -9,12 +9,16 @@
  * limit. The jsonl backend writes one Zstandard frame per flushed batch;
  * Node's `zstdDecompressSync` stops after the first frame, so frames must be
  * located structurally and decoded one by one.
+ *
+ * `waitForSessionLog` polls a running service's store, which writes in batches,
+ * until a session's log holds what a test asserts on.
  * @module @lyteboat/testing/session-log
  */
 
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { zstdDecompressSync } from 'node:zlib'
+import { vi } from 'vitest'
 
 const ZSTD_MAGIC = 0xFD2FB528
 
@@ -132,6 +136,29 @@ export function findSessionLogs(home: string): string[] {
     .filter(entry => /session\.v4\.jsonl(?:\.zstd)?$/u.test(entry))
     .map(entry => join(root, entry))
     .sort()
+}
+
+/**
+ * Wait until one session's stored log satisfies `until`, polling with vitest's `waitFor`.
+ * @param home - the harness home the session is stored under.
+ * @param sessionId - the session; its log is the artifact whose path names it.
+ * @param until - holds once the log has what the test needs.
+ * @param options - how long to wait and how often to read (default 10 s, every 50 ms).
+ * @returns the log's records, header first, typed as the caller reads them.
+ */
+export function waitForSessionLog<T extends SessionLogRecord = SessionLogRecord>(
+  home: string,
+  sessionId: string,
+  until: (records: T[]) => boolean,
+  options: { timeout?: number; interval?: number } = {},
+): Promise<T[]> {
+  return vi.waitFor(() => {
+    const path = findSessionLogs(home).find(candidate => candidate.includes(sessionId))
+    if (path === undefined) throw new Error(`no log for ${sessionId} yet`)
+    const records = readSessionLog(path) as T[]
+    if (!until(records)) throw new Error(`the log of ${sessionId} is not there yet`)
+    return records
+  }, { timeout: options.timeout ?? 10_000, interval: options.interval ?? 50 })
 }
 
 /** The `type` of every record after the header, in order. */

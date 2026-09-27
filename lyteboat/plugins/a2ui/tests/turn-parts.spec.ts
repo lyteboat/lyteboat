@@ -5,10 +5,19 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { LyteboatCard, LyteboatCardEmission } from '@lyteboat/contracts'
-import { LyteboatTurnComposer, cardMarker, composeTurnParts, type LyteboatTurnPart } from '../src/turn-parts.ts'
+import { LyteboatTurnComposer, cardMarker, type LyteboatTurnPart } from '../src/turn-parts.ts'
 
 function card(area: string, emission: LyteboatCardEmission, n = 1): LyteboatCard {
   return { callId: `call-${area}`, surfaceId: `${area}-${String(n)}`, area, emission, payload: {} }
+}
+
+/** One whole turn through the composer: its answer written at once, then ended. */
+function composeTurnParts(text: string, cards: readonly LyteboatCard[], completed: boolean): LyteboatTurnPart[] {
+  const composer = new LyteboatTurnComposer()
+  composer.prepare(cards)
+  composer.write(text, 1)
+  composer.end(completed)
+  return composer.parts()
 }
 
 /** Parts as `text` strings and `<surfaceId>` markers, for compact expectations. */

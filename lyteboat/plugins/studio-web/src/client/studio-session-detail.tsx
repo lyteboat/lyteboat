@@ -19,6 +19,7 @@ import { studioTraceLink } from './studio-session-item-detail.tsx'
 import { StudioSessionBadges } from './studio-session-list.tsx'
 import { StudioSessionRawView } from './studio-session-raw.tsx'
 import { StudioSessionTimeline, studioTimelineItemOpens } from './studio-session-timeline.tsx'
+import { toggledStudioSet } from './studio-toggled-set.ts'
 
 /** dsh names a session `session-<uuid>`: the short form is the uuid's first 8 characters, as the original Studio showed its ids. */
 function studioShortSessionId(sessionId: string): string {
@@ -114,13 +115,7 @@ export function StudioSessionPane({ agentId, sessionId, traceTemplate }: { agent
 
   if (detail.error !== null) return <div className="empty-surface">{detail.error}</div>
   if (detail.answer === null) return <div className="empty-surface">Loading session detail...</div>
-  const toggle = (seq: number): void => {
-    setExpanded(current => {
-      const next = new Set(current)
-      if (!next.delete(seq)) next.add(seq)
-      return next
-    })
-  }
+  const toggle = (seq: number): void => { setExpanded(current => toggledStudioSet(current, seq)) }
   const expandAll = (): void => {
     const allOpen = openable.length > 0 && openable.every(seq => expanded.has(seq))
     setExpanded(allOpen ? new Set() : new Set(openable))

@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { LYTEBOAT_WEB_BUNDLES, startComposition, type RunningComposition } from '@lyteboat/testing/composition'
 import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { findSessionLogs, readSessionLog, type SessionLogRecord } from '@lyteboat/testing/session-log'
+import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testing/session-log'
 import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
@@ -117,12 +117,7 @@ describe('lyteboat web (in process, scripted model)', () => {
 
     const { requestId } = await value('lyteboat/session/send', { sessionId, text: 'hello', context: { customer: 'c-1' } }) as { requestId: string }
 
-    const records = await vi.waitFor(() => {
-      const path = findSessionLogs(home).find(candidate => candidate.includes(sessionId))
-      const log = path === undefined ? [] : readSessionLog(path) as LogRecord[]
-      if (!log.some(record => record.type === 'turn/end')) throw new Error(`the turn of ${sessionId} has not ended yet`)
-      return log
-    }, { timeout: 15_000, interval: 100 })
+    const records = await waitForSessionLog<LogRecord>(home, sessionId, log => log.some(record => record.type === 'turn/end'), { timeout: 15_000, interval: 100 })
     const human = records.find(record => record.type === 'user/message')
     expect(human?.data?.['source']).toEqual({ kind: 'user', rpcId: requestId, lyteboatRequest: { requestId, owner: { kind: 'operator', id: 'web' }, context: { customer: 'c-1' } } })
     // dsh appends its runtime context to the human message's text.

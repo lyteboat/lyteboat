@@ -2,8 +2,9 @@
  * How the Evals pages say a run's facts, the way the original Studio's Evals
  * surface says them: a pass rate as the share of cases passed, toned ok from
  * 90 %, warn from 70 %, err below; a duration in seconds, or minutes and
- * seconds past one minute; `passed/total` figures; an agent digest cut to its
- * first eight hex digits; a model as `provider/model`.
+ * seconds past one minute; `passed/total` figures; the turns a multi-turn
+ * case passed; an agent digest cut to its first eight hex digits; a model as
+ * `provider/model`.
  * @module @lyteboat/studio-web/client/studio-evals-format
  */
 
@@ -19,6 +20,11 @@ export type StudioEvalsTone = 'ok' | 'warn' | 'err'
  */
 export function studioEvalCaseResults(run: StudioEvalRun): StudioEvalRun['cases'] | undefined {
   return run.turns === undefined ? undefined : run.cases
+}
+
+/** A run with results to compare or replay: one that finished passed or failed. */
+export function studioEvalRunWritten(run: StudioEvalRun): boolean {
+  return run.status === 'passed' || run.status === 'failed'
 }
 
 /** The share of a written run's cases that passed; null for a run without results or cases. */
@@ -51,6 +57,11 @@ export function formatStudioEvalDuration(ms: number | undefined): string {
 /** `5/6`; `—` while the total is unknown. */
 export function formatStudioEvalFraction(figures: { total?: number; passed: number } | undefined): string {
   return figures?.total === undefined ? '—' : `${String(figures.passed)}/${String(figures.total)}`
+}
+
+/** How many of a multi-turn case's turns passed, as its verdict says it: ` · 2/3`; nothing for a single turn. */
+export function formatStudioEvalTurnsPassed(passedTurns: number, turnCount: number): string {
+  return turnCount > 1 ? ` · ${String(passedTurns)}/${String(turnCount)}` : ''
 }
 
 /** `sha256:0123…` → `01234567`. */

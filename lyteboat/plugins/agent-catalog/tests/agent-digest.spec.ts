@@ -2,20 +2,16 @@
  * An agent directory's digest: stable for the same files, sensitive to any
  * counted file, blind to the excluded ones, and never ambiguous.
  */
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import { agentDigest } from '../src/agent-digest.ts'
 
 describe('agentDigest', () => {
-  const dirs: string[] = []
-  afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }) })
-
   /** A fresh directory holding the given files (path → content), written in the given order. */
   function tree(files: Record<string, string>): string {
-    const dir = mkdtempSync(join(tmpdir(), 'agent-digest-'))
-    dirs.push(dir)
+    const dir = lyteboatTempDir('agent-digest')
     for (const [path, text] of Object.entries(files)) {
       mkdirSync(dirname(join(dir, path)), { recursive: true })
       writeFileSync(join(dir, path), text)
@@ -37,6 +33,14 @@ describe('agentDigest', () => {
 
     expect(agentDigest(tree({ 'agent.cordis.yml': '[]\n', 'lib/agent.js': 'y' })).digest).not.toBe(base)
     expect(agentDigest(tree({ 'x': 'yz' })).digest).not.toBe(agentDigest(tree({ 'xy': 'z' })).digest)
+  })
+
+  it('gives a text file checked out with CRLF line endings the hash of its LF form, and hashes a binary file as it is', () => {
+    const lf = agentDigest(tree({ 'agent.cordis.yml': '- id: a\n- id: b\n', 'assets/skills/a/SKILL.md': '# A\n\nbody\n' }))
+    const crlf = agentDigest(tree({ 'agent.cordis.yml': '- id: a\r\n- id: b\r\n', 'assets/skills/a/SKILL.md': '# A\r\n\r\nbody\r\n' }))
+
+    expect(crlf).toEqual(lf)
+    expect(agentDigest(tree({ 'assets/icon.bin': '\0\r\n' })).digest).not.toBe(agentDigest(tree({ 'assets/icon.bin': '\0\n' })).digest)
   })
 
   it('leaves out top-level tests, evals, and the release lock, and node_modules, dot entries, and build info at any depth', () => {

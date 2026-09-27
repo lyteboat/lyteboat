@@ -10,19 +10,16 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import { lyteboatCardSchema, lyteboatRequestSchema, lyteboatResultMetaSchema } from '@lyteboat/contracts'
 import type { JsonValue, LyteboatCard, LyteboatResultCard, LyteboatResultMeta } from '@lyteboat/contracts'
+import { isA2uiRecord } from './a2ui-record.ts'
 
 const lyteboatCardsSchema = lyteboatCardSchema.array()
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
 
 /**
  * The cards a tool result's presentation meta carries (`lyteboat.cards`).
  * @throws when the meta's `lyteboat` envelope fails its schema.
  */
 function cardsOfMeta(meta: JsonValue | undefined): LyteboatResultCard[] {
-  if (!isRecord(meta) || meta['lyteboat'] === undefined) return []
+  if (!isA2uiRecord(meta) || meta['lyteboat'] === undefined) return []
   return lyteboatResultMetaSchema.parse(meta['lyteboat']).cards ?? []
 }
 
@@ -65,7 +62,7 @@ export function preparedCardsOf(event: SessionEvent): LyteboatCard[] {
 }
 
 function appendCard(state: LyteboatCard[], card: LyteboatCard): LyteboatCard[] {
-  const event = isRecord(card.payload) ? card.payload['event'] : undefined
+  const event = isA2uiRecord(card.payload) ? card.payload['event'] : undefined
   if (event === 'surfaceUpdate') {
     const index = state.findIndex(existing => existing.surfaceId === card.surfaceId)
     if (index >= 0) return state.map((existing, position) => position === index ? card : existing)

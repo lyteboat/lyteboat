@@ -7,12 +7,15 @@
  * @module @lyteboat/studio-web/client/studio-users-page
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import type { StudioGrant, StudioRole } from '@lyteboat/contracts/studio'
 import { studioApi, studioErrorMessage } from './studio-api-client.ts'
 import { canManageStudioUsers, useStudioAuth } from './studio-auth-context.tsx'
+import { useStudioReading } from './studio-call-state.ts'
 import { useStudioConfirm } from './studio-confirm-dialog.tsx'
-import { PlusIcon, RefreshIcon, SearchIcon } from './studio-icons.tsx'
+import { PlusIcon, RefreshIcon } from './studio-icons.tsx'
+import { StudioSearchBox } from './studio-search-box.tsx'
+import { formatStudioSessionTime } from './studio-session-format.ts'
 
 type StudioRoleFilter = StudioRole | 'all'
 
@@ -30,41 +33,31 @@ function roleBadgeClass(role: StudioRole): string {
   return 'badge'
 }
 
-/** One page of grants and the query that selects it. */
-function useStudioUsers(enabled: boolean) {
-  const [users, setUsers] = useState<StudioGrant[]>([])
-  const [total, setTotal] = useState(0)
-  const [adminCount, setAdminCount] = useState(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+/** One page of grants, the query that selects it, and the error the page shows: the reading's, or an action's since the reading started. */
+function useStudioUsers() {
   const [query, setQuery] = useState('')
   const [roleFilter, setRoleFilter] = useState<StudioRoleFilter>('all')
   const [offset, setOffset] = useState(0)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const page = await studioApi.users({ text: query.trim(), role: roleFilter === 'all' ? undefined : roleFilter, limit: USERS_PAGE_SIZE, offset })
-      setUsers(page.users)
-      setTotal(page.total)
-      setAdminCount(page.adminCount)
-    } catch (nextError: unknown) {
-      setError(studioErrorMessage(nextError))
-    } finally {
-      setLoading(false)
-    }
-  }, [offset, query, roleFilter])
-
-  useEffect(() => {
-    if (enabled) void load()
-    else setLoading(false)
-  }, [enabled, load])
+  // undefined shows the reading's error; an action's message, or null to clear the banner, stands until the next reading starts.
+  const [actionError, setActionError] = useState<string | null | undefined>(undefined)
+  const reading = useStudioReading(useCallback(
+    () => studioApi.users({ text: query.trim(), role: roleFilter === 'all' ? undefined : roleFilter, limit: USERS_PAGE_SIZE, offset }),
+    [offset, query, roleFilter],
+  ))
+  const readingError = reading.loading ? null : reading.error
 
   return {
-    users, total, adminCount, loading, error, setError, query, roleFilter, offset, setOffset, load,
-    search: (text: string) => { setQuery(text); setOffset(0) },
-    filter: (role: StudioRoleFilter) => { setRoleFilter(role); setOffset(0) },
+    users: reading.answer?.users ?? [],
+    total: reading.answer?.total ?? 0,
+    adminCount: reading.answer?.adminCount ?? 0,
+    loading: reading.loading,
+    error: actionError === undefined ? readingError : actionError,
+    setError: setActionError,
+    query, roleFilter, offset,
+    setOffset: (next: number) => { setOffset(next); setActionError(undefined) },
+    load: () => { setActionError(undefined); return reading.reload() },
+    search: (text: string) => { setQuery(text); setOffset(0); setActionError(undefined) },
+    filter: (role: StudioRoleFilter) => { setRoleFilter(role); setOffset(0); setActionError(undefined) },
   }
 }
 
@@ -80,16 +73,12 @@ function StudioUsersTable({ state, currentUserId, editing, busy, edit, remove }:
   const pageEnd = Math.min(state.offset + state.users.length, state.total)
   return (
     <div className="workspace-surface users-table-panel">
-      <div className="filter-bar">
-        <label className="search">
-          <SearchIcon />
-          <input aria-label="Search users" onChange={event => state.search(event.target.value)} placeholder="Search user ID" value={state.query} />
-        </label>
+      <StudioSearchBox label="Search users" onChange={state.search} placeholder="Search user ID" value={state.query}>
         <select aria-label="Filter by role" className="field-input users-role-filter" onChange={event => state.filter(studioRoleOf(event.target.value) ?? 'all')} value={state.roleFilter}>
           <option value="all">All roles</option>
           {STUDIO_ROLE_OPTIONS.map(role => <option key={role} value={role}>{role}</option>)}
         </select>
-      </div>
+      </StudioSearchBox>
       {state.loading && <div className="empty-surface">Loading users...</div>}
       {state.error !== null && <div className="feedback-banner feedback-banner-error">{state.error}</div>}
       {!state.loading && state.error === null && state.users.length === 0 && <div className="empty-surface">No user role grants found.</div>}
@@ -107,7 +96,7 @@ function StudioUsersTable({ state, currentUserId, editing, busy, edit, remove }:
                     <td><code>{grant.userId}</code></td>
                     <td><span className={roleBadgeClass(grant.role)}>{grant.role}</span></td>
                     <td>{grant.updatedBy}</td>
-                    <td>{new Date(grant.updatedAt).toLocaleString()}</td>
+                    <td>{formatStudioSessionTime(grant.updatedAt)}</td>
                     <td>
                       <div className="button-row">
                         {grant.userId === currentUserId ? <span className="badge">Current user</span> : (
@@ -164,12 +153,10 @@ function StudioGrantForm({ open, draft, lastAdmin, busy, feedback, change, save,
 
 const EMPTY_DRAFT: StudioGrantDraft = { mode: 'create', userId: '', role: 'viewer' }
 
-/** The page at `/users`. */
-export function StudioUsersPage() {
-  const { user } = useStudioAuth()
+/** The page of an admin, who may manage the grants. */
+function StudioUsersManager({ currentUserId }: { currentUserId: string | undefined }) {
   const confirm = useStudioConfirm()
-  const canManage = canManageStudioUsers(user?.role)
-  const state = useStudioUsers(canManage)
+  const state = useStudioUsers()
   const [formOpen, setFormOpen] = useState(true)
   const [draft, setDraft] = useState<StudioGrantDraft>(EMPTY_DRAFT)
   const [busy, setBusy] = useState(false)
@@ -217,7 +204,6 @@ export function StudioUsersPage() {
     }
   }
 
-  if (!canManage) return <section className="users-page"><div className="empty-surface">Access denied.</div></section>
   const creating = formOpen && draft.mode === 'create'
   return (
     <section className="users-page">
@@ -234,9 +220,16 @@ export function StudioUsersPage() {
         </div>
       </div>
       <section className={`users-layout ${formOpen ? 'users-layout-form-open' : 'users-layout-form-collapsed'}`}>
-        <StudioUsersTable busy={busy} currentUserId={user?.userId} editing={formOpen && draft.mode === 'edit' ? draft.userId : undefined} edit={grant => openForm({ mode: 'edit', userId: grant.userId, role: grant.role })} remove={grant => void remove(grant)} state={state} />
+        <StudioUsersTable busy={busy} currentUserId={currentUserId} editing={formOpen && draft.mode === 'edit' ? draft.userId : undefined} edit={grant => openForm({ mode: 'edit', userId: grant.userId, role: grant.role })} remove={grant => void remove(grant)} state={state} />
         <StudioGrantForm busy={busy} cancel={() => { setFormOpen(false); setDraft(EMPTY_DRAFT) }} change={setDraft} draft={draft} feedback={feedback} lastAdmin={lastAdmin} open={formOpen} save={() => void save()} />
       </section>
     </section>
   )
+}
+
+/** The page at `/users`. */
+export function StudioUsersPage() {
+  const { user } = useStudioAuth()
+  if (!canManageStudioUsers(user?.role)) return <section className="users-page"><div className="empty-surface">Access denied.</div></section>
+  return <StudioUsersManager currentUserId={user?.userId} />
 }

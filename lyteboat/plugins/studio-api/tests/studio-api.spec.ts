@@ -9,9 +9,8 @@
  * only the credentials service is a table.
  */
 import { createHash } from 'node:crypto'
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { cpSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { request as httpRequest } from 'node:http'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -38,20 +37,12 @@ import * as studioApi from '@lyteboat/studio-api'
 import StudioAuthService from '@lyteboat/studio-auth'
 import { setStudioAccount, setStudioGrant } from '@lyteboat/studio-auth/accounts'
 import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
+import { readJsonLines } from '@lyteboat/testing/json-lines'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import ToolPolicyService from '@lyteboat/tool-policy'
 import { studioHostAllowed } from '../src/studio-host-allowlist.ts'
 
-const dirs: string[] = []
-afterEach(() => {
-  vi.unstubAllEnvs()
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
-})
-
-function scratch(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'studio-api-'))
-  dirs.push(dir)
-  return dir
-}
+afterEach(() => { vi.unstubAllEnvs() })
 
 interface StudioFixture {
   ctx: Context
@@ -74,7 +65,7 @@ const repositoryModules = fileURLToPath(new URL('../../../../node_modules', impo
 const evalProcess = fileURLToPath(new URL('./fixtures/eval-process.mjs', import.meta.url))
 
 async function studioFixture(config: studioApi.Config = {}, setup: { workspace?: boolean; home?: boolean } = {}): Promise<StudioFixture> {
-  const root = scratch()
+  const root = lyteboatTempDir('studio-api')
   // An eval process runs in the Studio's lyteboat home, where the records read its runs.
   if (setup.home === true) vi.stubEnv('DSH_HOME', root)
   const studioDir = join(root, 'studio')
@@ -141,7 +132,7 @@ async function studioFixture(config: studioApi.Config = {}, setup: { workspace?:
 }
 
 function auditLines(studioDir: string): Record<string, unknown>[] {
-  return readFileSync(join(studioDir, 'audit.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line) as Record<string, unknown>)
+  return readJsonLines<Record<string, unknown>>(join(studioDir, 'audit.jsonl'))
 }
 
 describe('studioHostAllowed', () => {

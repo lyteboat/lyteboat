@@ -18,7 +18,7 @@ import type { EvalRecordsService } from '@lyteboat/eval-runner/records'
 import type { RunMetricsReaderService } from '@lyteboat/run-metrics/reader'
 import type { SessionIndexService } from '@lyteboat/session-index'
 import { studioWholeNumberOf } from './studio-auth-routes.ts'
-import { StudioApiError, type StudioApiCall, type StudioApiRoute } from './studio-api-router.ts'
+import { StudioApiError, studioCatalogSettled, type StudioApiCall, type StudioApiRoute } from './studio-api-router.ts'
 import { studioBucketMinutes, studioHealthWindow } from './studio-dashboard-health.ts'
 import { studioDashboardSummary, type StudioSummaryAgent } from './studio-dashboard-summary.ts'
 
@@ -73,11 +73,7 @@ async function dashboardHealth(services: StudioDashboardServices, call: StudioAp
   const requested = query.has('bucket') ? Math.max(1, studioWholeNumberOf(query, 'bucket', 0, MAX_BUCKET_MINUTES)) : undefined
   if (query.has('compareFrom') !== query.has('compareTo')) throw new StudioApiError('invalid_request', 'compareFrom and compareTo go together')
   const agent = query.get('agent') ?? undefined
-  try {
-    await services.catalog.whenReady()
-  } catch {
-    // Not strict: the agents that mounted are the ones the Dashboard counts.
-  }
+  await studioCatalogSettled(services.catalog.whenReady())
   if (agent !== undefined && services.catalog.get(agent) === undefined) throw new StudioApiError('not_found', `no agent ${agent}`)
   const agentIds = agent === undefined ? services.catalog.list().map(entry => entry.id).sort() : [agent]
   const bucket = bucketOf(from, to, requested, 'current')
@@ -113,11 +109,7 @@ function modifiedAt(file: string | undefined): number | undefined {
 }
 
 async function summaryAgents(services: StudioDashboardServices): Promise<StudioSummaryAgent[]> {
-  try {
-    await services.catalog.whenReady()
-  } catch {
-    // Not strict: the agents that mounted are the ones the Dashboard counts.
-  }
+  await studioCatalogSettled(services.catalog.whenReady())
   const agents: StudioSummaryAgent[] = []
   const evalRuns = services.evals.runs().flatMap(({ runId, record }) => record === undefined ? [] : [{
     agentId: record.agent.id, runId, startedAt: Date.parse(record.startedAt), passed: record.cases.filter(evalCase => evalCase.pass).length, total: record.cases.length,

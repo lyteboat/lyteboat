@@ -7,6 +7,7 @@
   "include": ["src"],
   "references": [
     { "path": "../../../dsh/core/agent" },
+    { "path": "../../../dsh/core/session" },
     { "path": "../../../dsh/core/system-prompt" },
     { "path": "../../../dsh/core/tools" },
     { "path": "../../../dsh/llm/llm" },

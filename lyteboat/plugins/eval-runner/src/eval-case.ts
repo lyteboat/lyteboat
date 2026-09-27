@@ -11,7 +11,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { load } from 'js-yaml'
 import { z } from 'zod'
-import type { JsonValue, LyteboatTurnOutcome } from '@lyteboat/contracts'
+import { LYTEBOAT_EVAL_CASE_ID_PATTERN, LYTEBOAT_TURN_OUTCOMES, type JsonValue, type LyteboatTurnOutcome } from '@lyteboat/contracts'
 
 /** What one turn must show; a check that is absent is not made. */
 export interface EvalExpect {
@@ -44,8 +44,6 @@ export interface EvalCase {
   turns: EvalTurn[]
 }
 
-const TURN_OUTCOMES = ['completed', 'rejected', 'tool_stopped', 'stopped_by_limit', 'aborted', 'errored'] as const satisfies readonly LyteboatTurnOutcome[]
-
 const names = z.array(z.string().min(1))
 const jsonObject = z.record(z.string(), z.json())
 
@@ -53,7 +51,7 @@ const expectSchema = z.strictObject({
   skill: z.string().min(1).nullable().optional(),
   tools: z.strictObject({ called: names.optional(), not_called: names.optional() }).optional(),
   cards: z.strictObject({ areas: names.optional(), count: z.number().int().nonnegative().optional() }).optional(),
-  outcome: z.enum(TURN_OUTCOMES).optional(),
+  outcome: z.enum(LYTEBOAT_TURN_OUTCOMES).optional(),
   text: z.strictObject({
     includes: names.optional(),
     excludes: names.optional(),
@@ -64,7 +62,7 @@ const expectSchema = z.strictObject({
 
 const caseFileSchema = z.strictObject({
   cases: z.array(z.strictObject({
-    id: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u, 'must be kebab-case'),
+    id: z.string().regex(LYTEBOAT_EVAL_CASE_ID_PATTERN, 'must be kebab-case'),
     context: jsonObject.optional(),
     turns: z.array(z.strictObject({
       message: z.string().refine((text: string) => text.trim() !== '', 'must not be blank'),

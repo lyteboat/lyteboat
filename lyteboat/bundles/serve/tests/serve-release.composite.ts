@@ -9,22 +9,15 @@
 import { cpSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { postChat } from '@lyteboat/testing/chat-client'
 import { LYTEBOAT_EVAL_BUNDLES, LYTEBOAT_SERVE_BUNDLES, bootComposition, startComposition } from '@lyteboat/testing/composition'
 import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
-import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testing/session-log'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
 const WORKSPACE_MODULES = fileURLToPath(new URL('../../../../node_modules', import.meta.url))
-
-/** What the caller wrote last; dsh appends its runtime context to the request message. */
-function latestMessage(request: RecordedRequest): string {
-  const users = request.body.messages.filter(message => message.role === 'user' && message.content.some(block => block.type === 'text'))
-  const texts = users.at(-1)?.content.filter(block => block.type === 'text').map(block => block.text ?? '') ?? []
-  return texts.filter(text => !text.startsWith('Current runtime context.')).at(-1) ?? ''
-}
 
 describe('lyteboat release, then lyteboat serve --release (in process, scripted model)', () => {
   const scratch = createLyteboatScratch('serve-release')
@@ -36,7 +29,7 @@ describe('lyteboat release, then lyteboat serve --release (in process, scripted 
   let serving: { cwd: string; home: string }
 
   beforeAll(async () => {
-    model = await startScriptedModel(withTitle(request => ({ text: `OK:${latestMessage(request)}` })), { apiKey: 'mock-key' })
+    model = await startScriptedModel(withTitle(request => ({ text: `OK:${request.latestMessage}` })), { apiKey: 'mock-key' })
     const evalRun = scratch.run('release')
     const serveRun = scratch.run('serve')
     releasing = { cwd: evalRun.workspace, home: evalRun.home }
@@ -87,13 +80,9 @@ describe('lyteboat release, then lyteboat serve --release (in process, scripted 
 
       expect(reply).toMatchObject({ status: 200, body: { response: 'OK:hello' } })
       const sessionId = (reply.body as { session_id: string }).session_id
-      const human = await vi.waitFor(() => {
-        const log = findSessionLogs(serving.home).find(path => path.includes(sessionId))
-        const record = log === undefined ? undefined : (readSessionLog(log) as { type: string; data?: { source?: { lyteboatRequest?: { agent?: unknown } } } }[]).find(line => line.type === 'user/message')
-        if (record === undefined) throw new Error('the human message is not stored yet')
-        return record
-      }, { timeout: 10_000, interval: 50 })
-      expect(human.data?.source?.lyteboatRequest?.agent).toEqual(identity)
+      const records = await waitForSessionLog<SessionLogRecord & { type: string; data?: { source?: { lyteboatRequest?: { agent?: unknown } } } }>(serving.home, sessionId, log => log.some(line => line.type === 'user/message'))
+      const human = records.find(line => line.type === 'user/message')
+      expect(human?.data?.source?.lyteboatRequest?.agent).toEqual(identity)
       expect(agents.agents).toEqual([expect.objectContaining({ id: 'beta', version: '1.0.0' })])
     } finally {
       const stopped = await serve.stop()

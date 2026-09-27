@@ -8,6 +8,7 @@
 
 import type { A2uiLog } from './transforms.ts'
 import { SILENT_LOG } from './transforms.ts'
+import { isA2uiRecord } from './a2ui-record.ts'
 
 const SUPPORTED_EVENTS = new Set(['beginRendering', 'surfaceUpdate', 'dataModelUpdate', 'deleteSurface'])
 
@@ -45,10 +46,6 @@ export const DEFAULT_A2UI_COMPONENT_CATALOG: A2uiComponentCatalog = {
 const COMMON_BINDING_FIELDS = ['hide']
 const STRICT_BINDING_FIELDS = new Set(['text', 'url', 'name', ...COMMON_BINDING_FIELDS])
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 function nonEmpty(value: unknown): boolean {
   return value !== null && value !== undefined && value !== ''
 }
@@ -58,7 +55,7 @@ function nonEmpty(value: unknown): boolean {
  * @param payload - the event payload.
  */
 export function validateEventPayload(payload: unknown): void {
-  if (!isRecord(payload)) throw new Error('payload must be a dict')
+  if (!isA2uiRecord(payload)) throw new Error('payload must be a dict')
   const event = payload['event'] ?? 'beginRendering'
   if (typeof event !== 'string' || !SUPPORTED_EVENTS.has(event)) throw new Error(`Unsupported event: ${String(event)}`)
   const allowed = ALLOWED_BY_EVENT[event] as Set<string>
@@ -80,7 +77,7 @@ export function validateEventPayload(payload: unknown): void {
     case 'dataModelUpdate': {
       if (!nonEmpty(payload['surfaceId'])) throw new Error('dataModelUpdate requires surfaceId')
       if (!('data' in payload) || payload['data'] === null || payload['data'] === undefined) throw new Error('dataModelUpdate requires data')
-      if (!isRecord(payload['data'])) throw new Error('dataModelUpdate requires data to be a dict')
+      if (!isA2uiRecord(payload['data'])) throw new Error('dataModelUpdate requires data to be a dict')
       return
     }
     default:
@@ -100,7 +97,7 @@ interface ValidationResult {
 function componentReferences(props: Record<string, unknown>): string[] {
   const refs: string[] = []
   const children = props['children']
-  if (isRecord(children)) {
+  if (isA2uiRecord(children)) {
     if (Array.isArray(children['explicitList'])) refs.push(...(children['explicitList'] as unknown[]).filter((ref): ref is string => typeof ref === 'string' && ref !== ''))
   } else if (Array.isArray(children)) {
     refs.push(...(children as unknown[]).filter((ref): ref is string => typeof ref === 'string' && ref !== ''))
@@ -129,7 +126,7 @@ export function validatePayload(payload: unknown, log: A2uiLog = SILENT_LOG, cat
     errorCodes: [...new Set(entries.map(entry => entry.code))],
     entries,
   })
-  if (!isRecord(payload)) {
+  if (!isA2uiRecord(payload)) {
     add('A2UI_PAYLOAD_INVALID', 'payload must be a dict')
     return done()
   }
@@ -141,26 +138,26 @@ export function validatePayload(payload: unknown, log: A2uiLog = SILENT_LOG, cat
   const supportedTypes = new Set(catalog.types)
   const ids = new Set<string>()
   for (const entry of components) {
-    if (!isRecord(entry)) continue
+    if (!isA2uiRecord(entry)) continue
     const id = entry['id']
     if (typeof id !== 'string' || id === '') continue
     if (ids.has(id)) add('A2UI_COMPONENT_ID_DUPLICATE', `Duplicate component id: ${id}`)
     ids.add(id)
   }
   components.forEach((entry, index) => {
-    if (!isRecord(entry)) {
+    if (!isA2uiRecord(entry)) {
       add('A2UI_COMPONENT_ENTRY_INVALID', `components[${String(index)}] must be a dict`)
       return
     }
     const id = typeof entry['id'] === 'string' ? entry['id'] : `<component@${String(index)}>`
     const component = entry['component']
-    if (!isRecord(component) || Object.keys(component).length !== 1) {
+    if (!isA2uiRecord(component) || Object.keys(component).length !== 1) {
       add('A2UI_COMPONENT_OBJECT_INVALID', `Component '${id}' must have a component object that is a dict with exactly one key`)
       return
     }
     const [type, props] = Object.entries(component)[0] as [string, unknown]
     if (!supportedTypes.has(type)) log.warn(`Unsupported A2UI component type: ${type} (component id=${id} index=${String(index)})`)
-    if (!isRecord(props)) {
+    if (!isA2uiRecord(props)) {
       add('A2UI_COMPONENT_PROPS_INVALID', `Component '${id}' props for type '${type}' must be a dict`)
       return
     }
@@ -171,9 +168,9 @@ export function validatePayload(payload: unknown, log: A2uiLog = SILENT_LOG, cat
     for (const field of fields) {
       if (!(field in props)) continue
       const binding = props[field]
-      const bindingShaped = isRecord(binding) && ('path' in binding || 'literalString' in binding)
+      const bindingShaped = isA2uiRecord(binding) && ('path' in binding || 'literalString' in binding)
       if (!STRICT_BINDING_FIELDS.has(field) && !bindingShaped) continue
-      if (!isRecord(binding)) {
+      if (!isA2uiRecord(binding)) {
         add('A2UI_BINDING_INVALID', `Component '${id}' field '${field}' binding must be a dict`)
         continue
       }
@@ -194,9 +191,9 @@ export function rowTemplateIds(payload: Record<string, unknown>): Set<string> {
   if (!Array.isArray(components)) return result
   const propsById = new Map<string, Record<string, unknown>>()
   for (const entry of components) {
-    if (!isRecord(entry) || typeof entry['id'] !== 'string' || !isRecord(entry['component']) || Object.keys(entry['component']).length !== 1) continue
+    if (!isA2uiRecord(entry) || typeof entry['id'] !== 'string' || !isA2uiRecord(entry['component']) || Object.keys(entry['component']).length !== 1) continue
     const props = Object.values(entry['component'])[0]
-    if (isRecord(props)) propsById.set(entry['id'], props)
+    if (isA2uiRecord(props)) propsById.set(entry['id'], props)
   }
   const stack: string[] = []
   for (const props of propsById.values()) {
@@ -210,7 +207,7 @@ export function rowTemplateIds(payload: Record<string, unknown>): Set<string> {
     if (result.has(id) || props === undefined) continue
     result.add(id)
     const children = props['children']
-    if (isRecord(children) && Array.isArray(children['explicitList'])) stack.push(...(children['explicitList'] as unknown[]).filter((ref): ref is string => typeof ref === 'string'))
+    if (isA2uiRecord(children) && Array.isArray(children['explicitList'])) stack.push(...(children['explicitList'] as unknown[]).filter((ref): ref is string => typeof ref === 'string'))
     for (const key of ['child', 'emptyChild']) {
       const ref = props[key]
       if (typeof ref === 'string') stack.push(ref)
@@ -222,22 +219,22 @@ export function rowTemplateIds(payload: Record<string, unknown>): Set<string> {
 /** Warnings for `path` bindings that name keys absent from `payload.data`. */
 function validateDataCoverage(payload: Record<string, unknown>): string[] {
   const data = payload['data']
-  if (!isRecord(data)) return []
+  if (!isA2uiRecord(data)) return []
   const keys = new Set(Object.keys(data))
   const warnings: string[] = []
   const rows = rowTemplateIds(payload)
   const components = payload['components']
   if (!Array.isArray(components)) return []
   for (const entry of components) {
-    if (!isRecord(entry)) continue
+    if (!isA2uiRecord(entry)) continue
     const id = typeof entry['id'] === 'string' ? entry['id'] : '?'
     if (rows.has(id)) continue
     const component = entry['component']
-    if (!isRecord(component)) continue
+    if (!isA2uiRecord(component)) continue
     for (const props of Object.values(component)) {
-      if (!isRecord(props)) continue
+      if (!isA2uiRecord(props)) continue
       for (const [field, value] of Object.entries(props)) {
-        if (!isRecord(value)) continue
+        if (!isA2uiRecord(value)) continue
         const path = value['path']
         if (path === null || path === undefined) continue
         if (value['literalString'] !== null && value['literalString'] !== undefined) continue

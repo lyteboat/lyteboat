@@ -2,8 +2,9 @@
  * The JSON the lyteboat launcher prints for scripts and for the Studio, which
  * reads another process's output: `lyteboat inspect --result json` (what an
  * agent is made of, once mounted) and `lyteboat try --result json` (one turn).
- * Types, the rule ids of a skill's deterministic checks, and the zod schemas a
- * reader validates that output with; no other runtime behavior.
+ * Types, the rule ids of a skill's deterministic checks, the row ids of the
+ * mode runners the launcher checks, and the zod schemas a reader validates that
+ * output with; no other runtime behavior.
  * @module @lyteboat/contracts/cli
  */
 
@@ -11,6 +12,13 @@ import { z } from 'zod'
 import { LYTEBOAT_TURN_OUTCOMES, lyteboatAgentIdentitySchema, lyteboatAgentModelSchema } from './index.ts'
 import type { LyteboatAgentIdentity, LyteboatAgentModel, LyteboatTurnOutcome } from './index.ts'
 import type { StudioSkillRouting, StudioTool } from './studio.ts'
+
+/**
+ * The row ids of lyteboat's mode runners, as the mode bundles insert them. The
+ * launcher (and the composition harness, which mirrors it) fails a startup that
+ * leaves an enabled one inactive.
+ */
+export const LYTEBOAT_MODE_RUNNER_IDS = ['lyteboat-try', 'lyteboat-serve', 'lyteboat-eval', 'lyteboat-studio', 'lyteboat-inspect'] as const
 
 /**
  * A skill's deterministic checks: its lyteboat metadata parses; every tool it

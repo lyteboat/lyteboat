@@ -17,6 +17,7 @@ import { studioApi, studioErrorMessage } from './studio-api-client.ts'
 import { StudioHealthLane, StudioHealthTimeAxis, type StudioHealthChartMetric, type StudioHealthLaneFigure } from './studio-dashboard-charts.tsx'
 import { formatStudioDashboardCount, formatStudioDashboardDateTime, formatStudioDashboardDuration, formatStudioDashboardRatio } from './studio-dashboard-format.ts'
 import { StudioHealthFilterBar, studioHealthFilterInitial, studioHealthFilterInvalid, studioHealthQuery } from './studio-dashboard-health-filter.tsx'
+import { StudioDashboardNotice } from './studio-dashboard-notice.tsx'
 import { useStudioShell } from './studio-shell.tsx'
 
 /** The health as the view shows it: the last answer, whether a load is on its way, and why the last one failed. */
@@ -199,16 +200,6 @@ function StudioHealthContent({ health }: { health: StudioDashboardHealth }) {
   )
 }
 
-function StudioHealthNotice({ title, text }: { title: string; text: string }) {
-  return (
-    <section className="workspace-surface dashboard-loading-state">
-      <div className="surface-heading"><span>Agent Health</span></div>
-      <h1>{title}</h1>
-      <p>{text}</p>
-    </section>
-  )
-}
-
 /** The performance view. */
 export function StudioDashboardHealthView() {
   const { agents, agentsLoading, agentsError, refreshAgents } = useStudioShell()
@@ -222,8 +213,8 @@ export function StudioDashboardHealthView() {
   )
   const { health, loading, error } = useStudioHealthState(load)
 
-  if ((agentsLoading || loading) && health === null) return <StudioHealthNotice text="读取请求耗时、执行轮次和工具调用摘要。" title="正在聚合智能体运行指标…" />
-  if (agentsError !== null || (health === null && error !== null)) return <StudioHealthNotice text={agentsError ?? error ?? ''} title="无法加载健康数据" />
+  if ((agentsLoading || loading) && health === null) return <StudioDashboardNotice heading="Agent Health" text="读取请求耗时、执行轮次和工具调用摘要。" title="正在聚合智能体运行指标…" />
+  if (agentsError !== null || (health === null && error !== null)) return <StudioDashboardNotice heading="Agent Health" text={agentsError ?? error ?? ''} title="无法加载健康数据" />
   if (health === null) return null
 
   const refresh = (): void => {

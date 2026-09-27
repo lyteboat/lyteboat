@@ -2,8 +2,8 @@
  * How the Dashboard says its figures, the way the original Studio's Dashboard
  * says them: counts in zh-CN's compact notation; durations in ms under a
  * second, in seconds above; ratios to two decimals under ten; moments as
- * `MM/DD HH:mm` or `HH:mm` in local time; ages as `5m`, `3h`, `2d`. The date
- * inputs' `YYYY-MM-DD` values become the bounds of that local day.
+ * `MM/DD HH:mm` or `HH:mm` in local time. The date inputs' `YYYY-MM-DD`
+ * values become the bounds of that local day.
  * @module @lyteboat/studio-web/client/studio-dashboard-format
  */
 
@@ -42,19 +42,6 @@ export function formatStudioDashboardDateTime(epochMs: number): string {
 /** A moment's time of day: `14:30`. */
 export function formatStudioDashboardClock(epochMs: number): string {
   return STUDIO_DASHBOARD_CLOCK.format(new Date(epochMs))
-}
-
-/**
- * @param epochMs - the moment.
- * @returns how long ago it was, as the activity feed's time column says it: `just now`, `5m`, `3h`, `2d`.
- */
-export function formatStudioDashboardAge(epochMs: number): string {
-  const minutes = Math.floor((Date.now() - epochMs) / 60_000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${String(minutes)}m`
-  const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${String(hours)}h`
-  return `${String(Math.floor(hours / 24))}d`
 }
 
 /** The local day `daysBack` days before now, as a date input holds it: `2026-09-26`. */

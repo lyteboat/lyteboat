@@ -15,6 +15,7 @@ import { parse as parseYaml } from 'yaml'
 import type { ComputeModule, ManifestPaths } from './resolver.ts'
 import type { TemplateDocument } from './walker.ts'
 import type { LyteboatCardEmission } from '@lyteboat/contracts'
+import { isA2uiRecord } from './a2ui-record.ts'
 
 export type ComputeHook = (raw: Record<string, unknown>, flat: Record<string, unknown>) => unknown
 
@@ -53,16 +54,12 @@ function fileMtimes(cardDir: string): string {
   return FILES.map(name => String(mtimeOf(join(cardDir, name)))).join(',')
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 /** A present YAML file must be a mapping: a mis-indented manifest must not render a blank card. */
 function readYaml(path: string): Record<string, unknown> {
   if (mtimeOf(path) === 0) return {}
   const doc: unknown = parseYaml(readFileSync(path, 'utf8'))
   if (doc === null || doc === undefined) return {}
-  if (!isRecord(doc)) throw new Error(`${path} 必须是 YAML 映射，实际是 ${Array.isArray(doc) ? 'list' : typeof doc}`)
+  if (!isA2uiRecord(doc)) throw new Error(`${path} 必须是 YAML 映射，实际是 ${Array.isArray(doc) ? 'list' : typeof doc}`)
   return doc
 }
 
@@ -70,7 +67,7 @@ function readYaml(path: string): Record<string, unknown> {
 function mappingAt(doc: Record<string, unknown>, key: string, path: string): Record<string, unknown> {
   const value = doc[key]
   if (value === undefined || value === null) return {}
-  if (!isRecord(value)) throw new Error(`${path} 的 ${key} 必须是映射，实际是 ${Array.isArray(value) ? 'list' : typeof value}`)
+  if (!isA2uiRecord(value)) throw new Error(`${path} 的 ${key} 必须是映射，实际是 ${Array.isArray(value) ? 'list' : typeof value}`)
   return value
 }
 
@@ -140,7 +137,7 @@ export async function loadBundle(root: string, card: string, cache: Map<string, 
   } catch (error: unknown) {
     throw new Error(`${templatePath} 不是合法 JSON: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
   }
-  if (!isRecord(templateDoc) || !Array.isArray(templateDoc['components'])) throw new Error(`${templatePath} 必须是带 components 列表的对象`)
+  if (!isA2uiRecord(templateDoc) || !Array.isArray(templateDoc['components'])) throw new Error(`${templatePath} 必须是带 components 列表的对象`)
   const template = templateDoc as TemplateDocument
   const manifestPath = join(cardDir, 'manifest.yaml')
   const manifestDoc = readYaml(manifestPath)

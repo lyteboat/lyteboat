@@ -3,12 +3,15 @@
  * directory, created on first use, and a fresh harness home and workspace per
  * run label. Composition and e2e tests point `DSH_HOME` / `LYTEBOAT_HOME` at the
  * home and run in the workspace, so no run sees another's sessions or files.
+ * A test that needs only a directory of its own takes `lyteboatTempDir`, which
+ * is removed when that test finishes.
  * @module @lyteboat/testing/scratch
  */
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
+import { onTestFinished } from 'vitest'
 
 /** One run's directories. */
 export interface LyteboatScratchRun {
@@ -65,4 +68,19 @@ export function createLyteboatScratch(name: string): LyteboatScratch {
       root = undefined
     },
   }
+}
+
+/**
+ * Create an empty directory for the running test under the OS temporary directory,
+ * removed with everything under it when the test finishes, passed or failed. It
+ * registers through vitest's `onTestFinished`, which needs a running test: call it
+ * from a test body or a function one calls, never from `beforeEach`, `beforeAll`,
+ * or a `describe` body.
+ * @param name - names the directory (`lyteboat-<name>-*`).
+ * @returns the directory's absolute path.
+ */
+export function lyteboatTempDir(name: string): string {
+  const dir = mkdtempSync(join(tmpdir(), `lyteboat-${name}-`))
+  onTestFinished(() => { rmSync(dir, { recursive: true, force: true }) })
+  return dir
 }

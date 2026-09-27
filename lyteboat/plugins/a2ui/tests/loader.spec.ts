@@ -1,22 +1,16 @@
 /**
  * The bundle loader fails loud on authoring mistakes a blank card would hide.
  */
-import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, utimesSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import { loadBundle, type TemplateBundle } from '../src/loader.ts'
 
 const TEMPLATE = '{"rootComponentId":"root","components":[{"id":"root","component":{"Column":{}}}]}'
-const roots: string[] = []
-afterEach(() => {
-  for (const root of roots) rmSync(root, { recursive: true, force: true })
-  roots.length = 0
-})
 
 function card(files: Record<string, string>): { root: string; card: string } {
-  const root = mkdtempSync(join(tmpdir(), 'a2ui-loader-'))
-  roots.push(root)
+  const root = lyteboatTempDir('a2ui-loader')
   mkdirSync(join(root, 'card'))
   for (const [name, text] of Object.entries(files)) writeFileSync(join(root, 'card', name), text)
   return { root, card: 'card' }

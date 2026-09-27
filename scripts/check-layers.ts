@@ -15,6 +15,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { kernelPackages } from './dist/kernel.ts'
 
 const LAYERS = ['examples', 'apps', 'bundles', 'plugins', 'core', 'tooling'] as const
 type Layer = typeof LAYERS[number]
@@ -124,9 +125,8 @@ function checkPluginImports(pkg: WorkspacePackage, layerOf: ReadonlyMap<string, 
  * package, in its manifest or in any source or test file.
  */
 function checkKernel(): string[] {
-  const kernel = (JSON.parse(readFileSync(join(root, 'dsh/kernel.json'), 'utf8')) as { packages: Record<string, string> }).packages
   const problems: string[] = []
-  for (const [name, dir] of Object.entries(kernel)) {
+  for (const { name, dir } of kernelPackages()) {
     const packageDir = join(root, 'dsh', dir)
     const manifest = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')) as Manifest
     const deps = { ...manifest.dependencies, ...manifest.peerDependencies, ...manifest.devDependencies }

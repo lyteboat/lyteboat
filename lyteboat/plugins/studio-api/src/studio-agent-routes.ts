@@ -9,14 +9,10 @@ import type { StudioAgentsAnswer } from '@lyteboat/contracts/studio'
 import { studioAgentsAnswer } from './studio-agents.ts'
 import type { StudioAudit } from './studio-audit.ts'
 import { studioCallerOf } from './studio-auth-routes.ts'
-import type { StudioApiRoute } from './studio-api-router.ts'
+import { studioCatalogSettled, type StudioApiRoute } from './studio-api-router.ts'
 
 async function settledAgents(catalog: AgentCatalogService, settling: Promise<void>): Promise<StudioAgentsAnswer> {
-  try {
-    await settling
-  } catch {
-    // Not strict: a failed agent is in failures(), which the answer lists; the others are served.
-  }
+  await studioCatalogSettled(settling)
   return studioAgentsAnswer(catalog.list(), catalog.failures())
 }
 

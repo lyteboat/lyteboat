@@ -9,11 +9,9 @@
     { "path": "../../../dsh/core/agent" },
     { "path": "../../../dsh/core/agent-loop" },
     { "path": "../../../dsh/core/session" },
-    { "path": "../../../dsh/core/system-prompt" },
-    { "path": "../../../dsh/core/tools" },
     { "path": "../../../dsh/llm/llm" },
     { "path": "../../../dsh/session/session-persistence" },
-    { "path": "../../../dsh/session/session-projection" },
-    { "path": "../../../dsh/test-support/agent-loop-testkit" }
+    { "path": "../../../dsh/test-support/agent-loop-testkit" },
+    { "path": "../../core/contracts" }
   ]
 }

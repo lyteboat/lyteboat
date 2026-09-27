@@ -6,10 +6,13 @@
  * @module @lyteboat/studio-web/client/studio-system-page
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import type { StudioSystemAnswer } from '@lyteboat/contracts/studio'
-import { studioApi, studioErrorMessage } from './studio-api-client.ts'
-import { RefreshIcon, SearchIcon } from './studio-icons.tsx'
+import { studioApi } from './studio-api-client.ts'
+import { useStudioReading } from './studio-call-state.ts'
+import { RefreshIcon } from './studio-icons.tsx'
+import { StudioSearchBox } from './studio-search-box.tsx'
+import { studioTextMatches } from './studio-text-filter.ts'
 
 type StudioKeyValueRow = readonly [label: string, value: string | number | readonly string[] | undefined]
 
@@ -47,22 +50,14 @@ function mebibytes(value: string | number | readonly string[] | undefined): stri
 
 function StudioEnvironmentSurface({ env }: { env: StudioSystemAnswer['env'] }) {
   const [filter, setFilter] = useState('')
-  const shown = useMemo(() => {
-    const text = filter.trim().toLowerCase()
-    return text === '' ? env : env.filter(entry => entry.name.toLowerCase().includes(text))
-  }, [env, filter])
+  const shown = useMemo(() => env.filter(entry => studioTextMatches(filter, [entry.name])), [env, filter])
   return (
     <div className="workspace-surface">
       <div className="surface-heading">
         <h3>Environment Variables</h3>
         <span>{shown.length} / {env.length}</span>
       </div>
-      <div className="filter-bar">
-        <div className="search">
-          <SearchIcon />
-          <input aria-label="Filter environment variables" onChange={event => setFilter(event.target.value)} placeholder="按变量名过滤…" value={filter} />
-        </div>
-      </div>
+      <StudioSearchBox label="Filter environment variables" onChange={setFilter} placeholder="按变量名过滤…" value={filter} />
       <div className="sys-env-table-wrap">
         <table className="sys-env-table">
           <tbody>
@@ -78,22 +73,7 @@ function StudioEnvironmentSurface({ env }: { env: StudioSystemAnswer['env'] }) {
 
 /** The page at `/system`. */
 export function StudioSystemPage() {
-  const [data, setData] = useState<StudioSystemAnswer | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  const load = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      setData(await studioApi.system())
-    } catch (nextError: unknown) {
-      setError(studioErrorMessage(nextError))
-    } finally {
-      setLoading(false)
-    }
-  }, [])
-  useEffect(() => { void load() }, [load])
+  const { answer: data, error, loading, reload } = useStudioReading(studioApi.system)
 
   if (loading) return <div className="workspace-page system-props-page"><div className="empty-surface">正在加载系统属性…</div></div>
   if (error !== null || data === null) return <div className="workspace-page system-props-page"><div className="empty-surface">{error ?? '暂无数据。'}</div></div>
@@ -106,7 +86,7 @@ export function StudioSystemPage() {
           <p>OS 信息、Node.js 运行时、轻舟构建、系统配置与环境变量</p>
         </div>
         <div className="dashboard-page-head-actions">
-          <button className="action-button" onClick={() => void load()} type="button"><RefreshIcon />刷新</button>
+          <button className="action-button" onClick={() => void reload()} type="button"><RefreshIcon />刷新</button>
         </div>
       </div>
       <div className="workspace-grid-two">

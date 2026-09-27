@@ -40,6 +40,8 @@ export const Config: z<Config> = z.object({
 
 /** Host service: the recorded run metrics and the running turns. */
 export class RunMetricsReaderService extends Service {
+  // The loader applies a class plugin's static Config, not the module's.
+  static Config = Config
   private readonly dir: string
   private readonly days = new Map<string, { size: number; mtimeMs: number; rows: LyteboatRunMetric[] }>()
 

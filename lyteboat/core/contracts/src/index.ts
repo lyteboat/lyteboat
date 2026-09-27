@@ -337,6 +337,9 @@ const lyteboatEvalTotalsSchema = z.object({ total: z.number(), passed: z.number(
 /** An eval run's id, its directory's name under `$LYTEBOAT_HOME/evals`: one path segment of letters, digits, dots, dashes, and underscores. */
 export const LYTEBOAT_EVAL_RUN_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u
 
+/** An eval case's id in an agent's `evals/cases.yml`: kebab-case. */
+export const LYTEBOAT_EVAL_CASE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/u
+
 /** The schema of {@link LyteboatEvalRunRecord}: a `run.json` is a file, read at a boundary. */
 export const lyteboatEvalRunRecordSchema: z.ZodType<LyteboatEvalRunRecord> = z.object({
   agent: lyteboatAgentIdentitySchema,
@@ -349,6 +352,9 @@ export const lyteboatEvalRunRecordSchema: z.ZodType<LyteboatEvalRunRecord> = z.o
   startedAt: z.string(),
   durationMs: z.number(),
 })
+
+/** The file name of an agent's release lock, beside its manifest (see {@link LyteboatAgentRelease}). */
+export const LYTEBOAT_AGENT_RELEASE_FILE = 'agent.release.json'
 
 /**
  * An agent's release lock, `<agent>/agent.release.json`, written by `lyteboat

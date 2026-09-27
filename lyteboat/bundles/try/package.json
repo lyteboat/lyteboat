@@ -44,7 +44,6 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "catalog:cordis",
-    "@deepseek-ai/cordis-plugin-include": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis",
     "@deepseek-ai/dsh-agent": "workspace:*",
     "@deepseek-ai/dsh-agent-default-model": "0.1.7-rc.2",
@@ -55,7 +54,6 @@
     "@lyteboat/business-base": "workspace:*",
     "@lyteboat/testing": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
-    "@deepseek-ai/cordis-plugin-include": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis",
     "@deepseek-ai/dsh-agent": "workspace:*",
     "@deepseek-ai/dsh-agent-default-model": "catalog:dsh",

@@ -37,6 +37,16 @@ export interface EvalChange {
   after: 'pass' | 'fail' | 'absent'
 }
 
+/** A run directory's summary, `run.json`. */
+export function evalRunRecordFile(runDir: string): string {
+  return join(runDir, 'run.json')
+}
+
+/** A run directory's per-turn results, `results.jsonl`: one JSON line per turn. */
+export function evalRunResultsFile(runDir: string): string {
+  return join(runDir, 'results.jsonl')
+}
+
 /** Where a case's recorded session lives in a run directory. */
 export function recordedSessionFile(runDir: string, caseId: string): string {
   return join(runDir, 'sessions', caseId, `session.v${String(SESSION_FORMAT_VERSION)}.jsonl`)
@@ -86,8 +96,8 @@ export function renderEvalReport(run: EvalRunRecord, results: readonly EvalTurnR
 /** Write `run.json`, `results.jsonl`, and `report.md` into the run directory. */
 export function writeEvalRun(runDir: string, run: EvalRunRecord, results: readonly EvalTurnResult[]): void {
   mkdirSync(runDir, { recursive: true })
-  writeFileSync(join(runDir, 'run.json'), JSON.stringify(run, null, 2) + '\n')
-  writeFileSync(join(runDir, 'results.jsonl'), results.map(result => JSON.stringify(result)).join('\n') + '\n')
+  writeFileSync(evalRunRecordFile(runDir), JSON.stringify(run, null, 2) + '\n')
+  writeFileSync(evalRunResultsFile(runDir), results.map(result => JSON.stringify(result)).join('\n') + '\n')
   writeFileSync(join(runDir, 'report.md'), renderEvalReport(run, results))
 }
 
@@ -96,7 +106,7 @@ export function writeEvalRun(runDir: string, run: EvalRunRecord, results: readon
  * @throws when the directory holds no `results.jsonl`.
  */
 export function readEvalResults(runDir: string): EvalTurnResult[] {
-  const file = join(runDir, 'results.jsonl')
+  const file = evalRunResultsFile(runDir)
   if (!existsSync(file)) throw new Error(`eval-runner: no results.jsonl in ${runDir}`)
   // The file is this module's own output.
   return readFileSync(file, 'utf8').split('\n').filter(line => line.trim() !== '').map(line => JSON.parse(line) as EvalTurnResult)

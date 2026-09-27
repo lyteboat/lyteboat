@@ -16,7 +16,8 @@ import type { StudioActivityItem, StudioDashboardSummary, StudioDistributionItem
 import { studioApi } from './studio-api-client.ts'
 import { useStudioCall } from './studio-call-state.ts'
 import { StudioMiniTrendChart, type StudioDashboardTone } from './studio-dashboard-charts.tsx'
-import { formatStudioDashboardAge, formatStudioDashboardCount } from './studio-dashboard-format.ts'
+import { formatStudioDashboardCount } from './studio-dashboard-format.ts'
+import { StudioDashboardNotice } from './studio-dashboard-notice.tsx'
 import { StudioDashboardRunningPanel } from './studio-dashboard-running-panel.tsx'
 import { RefreshIcon } from './studio-icons.tsx'
 import { formatStudioRelativeTime } from './studio-relative-time.ts'
@@ -112,7 +113,7 @@ function StudioActivityFeed({ items }: { items: readonly StudioActivityItem[] })
         <div className="activity">
           {visible.map((item, index) => (
             <div className="act-row" key={`${String(item.time)}-${item.agentId}-${item.kind}-${String(index)}`}>
-              <div className="act-time">{formatStudioDashboardAge(item.time)}</div>
+              <div className="act-time">{formatStudioRelativeTime(item.time, { ago: false })}</div>
               <div className={`act-icon ${item.status}`}>{STUDIO_ACTIVITY_LETTER[item.kind]}</div>
               <div className="act-text"><span className="agent">[{item.agentLabel}]</span>{item.text}</div>
               <div className="act-kind">{item.kind}</div>
@@ -157,22 +158,12 @@ function StudioCoverage({ summary }: { summary: StudioDashboardSummary }) {
   )
 }
 
-function StudioStaticNotice({ title, text }: { title: string; text: string }) {
-  return (
-    <section className="workspace-surface dashboard-loading-state">
-      <div className="surface-heading"><span>Dashboard</span></div>
-      <h1>{title}</h1>
-      <p>{text}</p>
-    </section>
-  )
-}
-
 function StudioStaticContent() {
   const { agentsError, refreshAgents } = useStudioShell()
   const { answer: summary, error } = useStudioCall(useCallback(() => studioApi.dashboardSummary(), []))
 
-  if (agentsError !== null || error !== null) return <StudioStaticNotice text={agentsError ?? error ?? ''} title="Unable to load dashboard" />
-  if (summary === null) return <StudioStaticNotice text={STUDIO_STATIC_LOADING_TEXT} title="Loading studio telemetry..." />
+  if (agentsError !== null || error !== null) return <StudioDashboardNotice heading="Dashboard" text={agentsError ?? error ?? ''} title="Unable to load dashboard" />
+  if (summary === null) return <StudioDashboardNotice heading="Dashboard" text={STUDIO_STATIC_LOADING_TEXT} title="Loading studio telemetry..." />
   const lastActivity = summary.activity[0]
   return (
     <div className="dashboard-view-content">
@@ -199,6 +190,6 @@ function StudioStaticContent() {
 /** The static view; a refresh of the radar mounts its content anew, which reads the summary again. */
 export function StudioDashboardStaticView() {
   const { agentsLoading } = useStudioShell()
-  if (agentsLoading) return <StudioStaticNotice text={STUDIO_STATIC_LOADING_TEXT} title="Loading studio telemetry..." />
+  if (agentsLoading) return <StudioDashboardNotice heading="Dashboard" text={STUDIO_STATIC_LOADING_TEXT} title="Loading studio telemetry..." />
   return <StudioStaticContent />
 }

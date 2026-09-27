@@ -13,8 +13,9 @@ import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { postChat, streamChat, type ChatWireFrame } from '@lyteboat/testing/chat-client'
 import { LYTEBOAT_SERVE_BUNDLES, bootComposition, startComposition, type RunningComposition } from '@lyteboat/testing/composition'
+import { readJsonLines } from '@lyteboat/testing/json-lines'
 import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { findSessionLogs, readSessionLog, type SessionLogRecord } from '@lyteboat/testing/session-log'
+import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testing/session-log'
 import { reopenRefusal } from '@lyteboat/testing/session-reopen'
 import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel, type ScriptedReply } from '@lyteboat/testing/scripted-model'
 
@@ -23,36 +24,15 @@ const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
 /** Replies the test holds back, by the message they answer. */
 const held = new Map<string, Promise<void>>()
 
-/**
- * What the caller wrote last. Consecutive human messages (one after a cancelled
- * turn) share one request message, and dsh appends its runtime context to it.
- */
-function latestMessage(request: RecordedRequest): string {
-  const users = request.body.messages.filter(message => message.role === 'user' && message.content.some(block => block.type === 'text'))
-  const texts = users.at(-1)?.content.filter(block => block.type === 'text').map(block => block.text ?? '') ?? []
-  return texts.filter(text => !text.startsWith('Current runtime context.')).at(-1) ?? ''
-}
-
 /** The loop answers `OK:<the message>`; a held message waits for its release. */
 function script(request: RecordedRequest): ScriptedReply | Promise<ScriptedReply> {
-  const message = latestMessage(request)
+  const message = request.latestMessage
   const reply = { text: `OK:${message}` }
   const hold = held.get(message)
   return hold === undefined ? reply : hold.then(() => reply)
 }
 
 type LogRecord = SessionLogRecord & { type: string; data?: { [key: string]: unknown } }
-
-/** The stored log of one session, once `until` holds for it (the store batches its writes). */
-async function storedLog(home: string, sessionId: string, until: (records: LogRecord[]) => boolean): Promise<LogRecord[]> {
-  return vi.waitFor(() => {
-    const path = findSessionLogs(home).find(candidate => candidate.includes(sessionId))
-    if (path === undefined) throw new Error(`no log for ${sessionId} yet`)
-    const records = readSessionLog(path) as LogRecord[]
-    if (!until(records)) throw new Error(`the log of ${sessionId} is not there yet`)
-    return records
-  }, { timeout: 10_000, interval: 50 })
-}
 
 const turnEnds = (records: LogRecord[]): LogRecord[] => records.filter(record => record.type === 'turn/end')
 
@@ -96,7 +76,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
     expect(reply.status).toBe(200)
     const body = reply.body as { session_id: string; message_id: string }
     expect(body).toEqual({ session_id: expect.any(String) as string, message_id: expect.any(String) as string, outcome: 'completed', response: 'OK:hello', cards: [], tool_calls: [] })
-    const records = await storedLog(home, body.session_id, log => turnEnds(log).length === 1)
+    const records = await waitForSessionLog<LogRecord>(home, body.session_id, log => turnEnds(log).length === 1)
     const human = records.find(record => record.type === 'user/message')
     expect(human?.data?.['source']).toEqual({
       kind: 'user',
@@ -116,8 +96,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
 
     const metric = await vi.waitFor(() => {
       const rows = readdirSync(metricsDir).filter(name => name.endsWith('.jsonl'))
-        .flatMap(name => readFileSync(join(metricsDir, name), 'utf8').trim().split('\n'))
-        .map(line => JSON.parse(line) as { sessionId: string })
+        .flatMap(name => readJsonLines<{ sessionId: string }>(join(metricsDir, name)))
       const row = rows.find(candidate => candidate.sessionId === sessionId)
       if (row === undefined) throw new Error(`no run metric for ${sessionId} yet`)
       return row
@@ -188,7 +167,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
     await firstStarted
     const second = streamChat(chat, { agent_id: 'alpha', user_id: 'u-3', message: 'second', session_id: sessionId })
     // The stream opens once the session controller queued the message.
-    await vi.waitFor(() => { expect(model.requests.some(request => latestMessage(request) === 'first')).toBe(true) })
+    await vi.waitFor(() => { expect(model.requests.some(request => request.latestMessage === 'first')).toBe(true) })
     release()
     const [firstResult, secondResult] = await Promise.all([first, second])
 
@@ -211,7 +190,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
 
     expect(leftResult.frames.map(frame => frame.event)).toEqual(['run_started'])
     expect(behindResult.frames.at(-1)?.data).toMatchObject({ turn: 3, ui_data: 'OK:behind', extra: { run_outcome: 'completed' } })
-    const records = await storedLog(home, sessionId, log => turnEnds(log).length === 3)
+    const records = await waitForSessionLog<LogRecord>(home, sessionId, log => turnEnds(log).length === 3)
     expect(turnEnds(records).map(record => record.data?.['reason'])).toMatchObject([{ kind: 'completed' }, { kind: 'aborted' }, { kind: 'completed' }])
   })
 

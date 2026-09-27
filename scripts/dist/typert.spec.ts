@@ -13,7 +13,7 @@ vi.mock('node:fs', async (importOriginal) => {
   const fs = await importOriginal<typeof import('node:fs')>()
   const readFileSync = ((...args: Parameters<typeof fs.readFileSync>) => {
     const content = fs.readFileSync(...args)
-    return checkout.crlf && Buffer.isBuffer(content) ? Buffer.from(content.toString('latin1').replaceAll('\n', '\r\n'), 'latin1') : content
+    return checkout.crlf && Buffer.isBuffer(content) ? Buffer.from(content.toString('latin1').replace(/\r?\n/gu, '\r\n'), 'latin1') : content
   }) as typeof fs.readFileSync
   return { ...fs, readFileSync, default: { ...fs, readFileSync } }
 })

@@ -6,11 +6,11 @@
  * four scenarios are goldens: an overview with its card, a diagnosis with two,
  * education without a card, and a request the admission answers in the loop.
  */
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { postChat, streamChat, type ChatWireFrame } from '@lyteboat/testing/chat-client'
 import { LYTEBOAT_SERVE_BUNDLES, startComposition, type RunningComposition } from '@lyteboat/testing/composition'
 import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { findSessionLogs, readSessionLog, type SessionLogRecord } from '@lyteboat/testing/session-log'
+import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testing/session-log'
 import { reopenRefusal } from '@lyteboat/testing/session-reopen'
 import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
 import { AGENTS, isLoop, lastToolResult, financeScript } from './support/finance-model.ts'
@@ -55,16 +55,6 @@ describe('finance agent behind /chat (in process, scripted model)', () => {
     expect(run.code, run.stderr).toBe(0)
   })
 
-  /** The stored log of one session once its turns ended (the store batches its writes). */
-  function storedLog(sessionId: string, turns: number): Promise<LogRecord[]> {
-    return vi.waitFor(() => {
-      const path = findSessionLogs(home).find(candidate => candidate.includes(sessionId))
-      const records = path === undefined ? [] : readSessionLog(path) as LogRecord[]
-      if (records.filter(record => record.type === 'turn/end').length < turns) throw new Error(`the log of ${sessionId} is not there yet`)
-      return records
-    }, { timeout: 10_000, interval: 50 })
-  }
-
   it('records the request on the human message, the tool reads the customer from it, and a continued session keeps it', async () => {
     const before = model.requests.length
     const first = await postChat(chat, { agent_id: 'finance', user_id: 'u-1', message: '看看我的资产', message_id: 'm-1', trace_id: 't-1', context: { customer: 'young-idle-cash' } })
@@ -76,7 +66,7 @@ describe('finance agent behind /chat (in process, scripted model)', () => {
     const loop = model.requests.slice(before).filter(isLoop)
     expect(lastToolResult(loop[1]!)).toContain('已授权资产合计 80,000.00 元（约 8.00 万元）')
     expect(lastToolResult(loop[3]!)).toContain('风险资产占 32.0%；按「100 减年龄」，28 岁的建议区间是 62%–82%')
-    const records = await storedLog(sessionId, 2)
+    const records = await waitForSessionLog<LogRecord>(home, sessionId, log => log.filter(record => record.type === 'turn/end').length >= 2)
     const humans = records.filter(record => record.type === 'user/message').map(record => record.data?.['source'] as { kind: string }).filter(source => source.kind === 'user')
     expect(humans).toEqual([
       { kind: 'user', rpcId: 'm-1', lyteboatRequest: { requestId: 'm-1', owner: { kind: 'user', id: 'u-1' }, agent: FINANCE, traceId: 't-1', context: { customer: 'young-idle-cash' } } },

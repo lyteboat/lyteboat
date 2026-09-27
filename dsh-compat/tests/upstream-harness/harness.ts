@@ -29,6 +29,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import ts from 'typescript'
 import type { Plugin } from 'vitest/config'
+import { kernelPackages } from '../../../scripts/dist/kernel.ts'
 
 const repoRoot = fileURLToPath(new URL('../../..', import.meta.url))
 const require = createRequire(join(repoRoot, 'package.json'))
@@ -39,8 +40,7 @@ const require = createRequire(join(repoRoot, 'package.json'))
  * against the browser build, which lyteboat neither builds nor changes.
  */
 function browserFaceSpecs(): { file: string; reason: string }[] {
-  const kernel = (JSON.parse(readFileSync(join(repoRoot, 'dsh/kernel.json'), 'utf8')) as { packages: Record<string, string> }).packages
-  return Object.values(kernel)
+  return kernelPackages().map(({ dir }) => dir)
     .filter(dir => (JSON.parse(readFileSync(join(repoRoot, 'dsh', dir, 'package.json'), 'utf8')) as { dsh?: { client?: unknown } }).dsh?.client !== undefined)
     .map(dir => ({
       file: `dsh/${dir}/tests/**/*.client.spec.ts`,
@@ -76,8 +76,7 @@ interface KernelEntry {
 }
 
 function kernelEntries(): KernelEntry[] {
-  const kernel = (JSON.parse(readFileSync(join(repoRoot, 'dsh/kernel.json'), 'utf8')) as { packages: Record<string, string> }).packages
-  return Object.entries(kernel).map(([name, dir]) => {
+  return kernelPackages().map(({ name, dir }) => {
     const packageDir = join(repoRoot, 'dsh', dir)
     const manifest = JSON.parse(readFileSync(join(packageDir, 'package.json'), 'utf8')) as { exports: Record<string, unknown> }
     const subpaths = new Map<string, string>()

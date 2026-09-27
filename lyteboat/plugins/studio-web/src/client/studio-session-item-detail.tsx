@@ -72,11 +72,11 @@ function StudioCopyableRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function StudioTextBlock({ label, text, error = false }: { label: string; text: string; error?: boolean }) {
+function StudioTextBlock({ label, text }: { label: string; text: string }) {
   return (
     <div className="dt-block">
       <div className="dt-label">{label}</div>
-      <pre className={`code-block compact ${error ? 'is-error' : ''}`}>{text}</pre>
+      <pre className="code-block compact">{text}</pre>
     </div>
   )
 }
