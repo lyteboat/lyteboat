@@ -9,12 +9,14 @@
  * @module @lyteboat/studio-web/client/studio-shell
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { NavLink, Outlet, useHref, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import type { StudioAgent, StudioAgentFailure } from '@lyteboat/contracts/studio'
-import { studioApi, studioErrorMessage } from './studio-api-client.ts'
+import { studioApi } from './studio-api-client.ts'
 import { canManageStudioUsers, useStudioAuth } from './studio-auth-context.tsx'
+import { useStudioReading } from './studio-call-state.ts'
 import { BeakerIcon, LogoutIcon, OverviewIcon, PlusIcon, RefreshIcon, SearchIcon, ServerIcon, SparkIcon, UsersIcon } from './studio-icons.tsx'
+import { studioTextMatches } from './studio-text-filter.ts'
 import { StudioThemeToggle } from './studio-theme-toggle.tsx'
 
 /** What the shell gives its pages. */
@@ -22,6 +24,7 @@ interface StudioShellContext {
   agents: StudioAgent[]
   failures: StudioAgentFailure[]
   agentsLoading: boolean
+  /** Why the last reading of the agents failed; null while one runs. */
   agentsError: string | null
   refreshAgents(): Promise<void>
   selectedAgent: StudioAgent | null
@@ -39,33 +42,32 @@ const DEFAULT_SECTION = 'overview'
 const RADAR_MIN_WIDTH = 200
 const RADAR_MAX_WIDTH = 420
 const RADAR_DEFAULT_WIDTH = 260
+const STUDIO_AGENTS_NONE: Pick<StudioShellContext, 'agents' | 'failures'> = { agents: [], failures: [] }
 
 /** The name the radar shows for an agent. */
 export function studioAgentName(agent: StudioAgent): string {
   return agent.name ?? agent.id
 }
 
+/** The texts a radar's search looks in: the agent's name, id, and description. */
+export function studioAgentSearchFields(agent: StudioAgent): string[] {
+  return [studioAgentName(agent), agent.id, agent.description ?? '']
+}
+
+/** The catalog's agents in the radar's order (`order`, then id), and the ones that failed. */
+async function readStudioAgents(): Promise<Pick<StudioShellContext, 'agents' | 'failures'>> {
+  const answer = await studioApi.agents()
+  return {
+    agents: [...answer.agents].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id)),
+    failures: answer.failures,
+  }
+}
+
 /** The catalog's agents in the radar's order (`order`, then id), the ones that failed, and a refresh; read on mount. */
 export function useStudioAgents(): Pick<StudioShellContext, 'agents' | 'failures' | 'agentsLoading' | 'agentsError' | 'refreshAgents'> {
-  const [agents, setAgents] = useState<StudioAgent[]>([])
-  const [failures, setFailures] = useState<StudioAgentFailure[]>([])
-  const [agentsLoading, setAgentsLoading] = useState(true)
-  const [agentsError, setAgentsError] = useState<string | null>(null)
-  const refreshAgents = useCallback(async () => {
-    setAgentsLoading(true)
-    setAgentsError(null)
-    try {
-      const answer = await studioApi.agents()
-      setAgents([...answer.agents].sort((a, b) => (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER) || a.id.localeCompare(b.id)))
-      setFailures(answer.failures)
-    } catch (error: unknown) {
-      setAgentsError(studioErrorMessage(error))
-    } finally {
-      setAgentsLoading(false)
-    }
-  }, [])
-  useEffect(() => { void refreshAgents() }, [refreshAgents])
-  return { agents, failures, agentsLoading, agentsError, refreshAgents }
+  const reading = useStudioReading(readStudioAgents)
+  const { agents, failures } = reading.answer ?? STUDIO_AGENTS_NONE
+  return { agents, failures, agentsLoading: reading.loading, agentsError: reading.loading ? null : reading.error, refreshAgents: reading.reload }
 }
 
 /** The radar's width and the drag that changes it. */
@@ -157,11 +159,7 @@ function StudioRadarCard({ agent, active, section }: { agent: StudioAgent; activ
 }
 
 function StudioRadarList({ shell, query }: { shell: StudioShellContext; query: string }) {
-  const visible = useMemo(() => {
-    const text = query.trim().toLowerCase()
-    if (text === '') return shell.agents
-    return shell.agents.filter(agent => [studioAgentName(agent), agent.id, agent.description ?? ''].some(field => field.toLowerCase().includes(text)))
-  }, [shell.agents, query])
+  const visible = useMemo(() => shell.agents.filter(agent => studioTextMatches(query, studioAgentSearchFields(agent))), [shell.agents, query])
   return (
     <>
       {shell.agentsLoading && <div className="empty-surface">正在加载 Agent...</div>}
@@ -228,7 +226,7 @@ export function StudioShell() {
   return (
     <div className="studio-shell">
       <StudioTopBar />
-      <div className="studio-main studio-main-dock-collapsed" style={mainStyle}>
+      <div className="studio-main" style={mainStyle}>
         <aside aria-label="Agent radar" className={`agent-radar ${radar.resizing ? 'agent-radar-resizing' : ''}`}>
           <button aria-label="Resize agent radar" className="agent-radar-resize-handle" onPointerDown={radar.startResize} type="button" />
           <div className="side-section">

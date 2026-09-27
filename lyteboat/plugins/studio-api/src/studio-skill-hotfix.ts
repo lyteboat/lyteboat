@@ -16,6 +16,7 @@ import { basename, dirname, join, sep } from 'node:path'
 import { load } from 'js-yaml'
 import { lyteboatSkillMetaSchema } from '@lyteboat/contracts'
 import type { StudioTool } from '@lyteboat/contracts/studio'
+import { studioSchemaProblems } from './studio-api-router.ts'
 
 /** A file's sha256, hex: what a hot-fix sends as `If-Match`. */
 export function studioFileHash(text: string): string {
@@ -79,7 +80,7 @@ export function studioSkillFileProblem(text: string, name: string, tools: readon
   if (typeof data['description'] !== 'string' || data['description'].trim() === '') return 'the description must be a non-empty string: the router picks skills by it'
   const metadata = isFrontmatterRecord(data['metadata']) ? data['metadata']['lyteboat'] : undefined
   const parsed = lyteboatSkillMetaSchema.safeParse(metadata ?? {})
-  if (!parsed.success) return `metadata.lyteboat is not valid: ${parsed.error.issues.map(issue => `${issue.path.join('.') || '(the object)'}: ${issue.message}`).join('; ')}`
+  if (!parsed.success) return `metadata.lyteboat is not valid: ${studioSchemaProblems(parsed.error, '(the object)')}`
   const declared = new Set(tools.filter(tool => tool.declared !== 'inherited').map(tool => tool.name))
   const missing = (parsed.data.requiredTools ?? []).filter(tool => !declared.has(tool))
   if (missing.length > 0) return `required tools must be registered and declared by this agent: ${missing.join(', ')}`

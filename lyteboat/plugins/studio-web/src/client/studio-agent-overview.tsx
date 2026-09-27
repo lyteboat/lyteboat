@@ -178,47 +178,49 @@ function StudioOverviewSignals({ agent, snapshot, sessions, runningText }: { age
   )
 }
 
-function StudioOverviewRecentSkills({ agentId, skills }: { agentId: string; skills: StudioSkillSummary[] }) {
-  const navigate = useNavigate()
-  const recent = [...skills].sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0)).slice(0, 3)
-  return (
-    <article className="workspace-surface">
-      <div className="surface-heading">
-        <span>最近技能</span>
-        <button className="btn btn-ghost btn-sm" onClick={() => void navigate(`/agents/${agentId}/skills`)} type="button">View all →</button>
-      </div>
-      <div className="document-list">
-        {recent.map(skill => (
-          <button aria-label={`Open skill ${skill.name}`} className="document-card document-button" key={skill.name} onClick={() => void navigate(`/agents/${agentId}/skills?skill=${encodeURIComponent(skill.name)}`)} type="button">
-            <strong>{skill.name}</strong>
-            <p>{skill.description || skill.path}</p>
-            {skill.updatedAt !== undefined && <span>{formatStudioRelativeTime(skill.updatedAt)}</span>}
-          </button>
-        ))}
-        {skills.length === 0 && <div className="empty-surface">No skills found.</div>}
-      </div>
-    </article>
-  )
+/** A card's entry: a skill or a tool, with a line under its description when it has one. */
+interface StudioOverviewLink {
+  name: string
+  description: string | undefined
+  note: string | undefined
 }
 
-function StudioOverviewTools({ agentId, tools }: { agentId: string; tools: StudioTool[] }) {
+/** The three skills changed last. */
+function studioOverviewRecentSkills(skills: StudioSkillSummary[]): StudioOverviewLink[] {
+  return [...skills].sort((left, right) => (right.updatedAt ?? 0) - (left.updatedAt ?? 0)).slice(0, 3).map(skill => ({
+    name: skill.name,
+    description: skill.description || skill.path,
+    note: skill.updatedAt === undefined ? undefined : formatStudioRelativeTime(skill.updatedAt),
+  }))
+}
+
+/** Three tools, the ones that always reach the model first. */
+function studioOverviewTools(tools: StudioTool[]): StudioOverviewLink[] {
+  return [...tools].sort((left, right) => Number(right.reach === 'always') - Number(left.reach === 'always')).slice(0, 3).map(tool => ({
+    name: tool.name,
+    description: tool.description,
+    note: studioToolReachLabel(tool.reach),
+  }))
+}
+
+/** A card of a few skills or tools, each opening in its section (`/skills?skill=`, `/tools?tool=`), and a link to the whole section. */
+function StudioOverviewLinkList({ agentId, kind, title, links }: { agentId: string; kind: 'skill' | 'tool'; title: string; links: StudioOverviewLink[] }) {
   const navigate = useNavigate()
-  const shown = [...tools].sort((left, right) => Number(right.reach === 'always') - Number(left.reach === 'always')).slice(0, 3)
   return (
     <article className="workspace-surface">
       <div className="surface-heading">
-        <span>工具</span>
-        <button className="btn btn-ghost btn-sm" onClick={() => void navigate(`/agents/${agentId}/tools`)} type="button">View all →</button>
+        <span>{title}</span>
+        <button className="btn btn-ghost btn-sm" onClick={() => void navigate(`/agents/${agentId}/${kind}s`)} type="button">View all →</button>
       </div>
       <div className="document-list">
-        {shown.map(tool => (
-          <button aria-label={`Open tool ${tool.name}`} className="document-card document-button" key={tool.name} onClick={() => void navigate(`/agents/${agentId}/tools?tool=${encodeURIComponent(tool.name)}`)} type="button">
-            <strong>{tool.name}</strong>
-            <p>{tool.description}</p>
-            <span>{studioToolReachLabel(tool.reach)}</span>
+        {links.map(link => (
+          <button aria-label={`Open ${kind} ${link.name}`} className="document-card document-button" key={link.name} onClick={() => void navigate(`/agents/${agentId}/${kind}s?${kind}=${encodeURIComponent(link.name)}`)} type="button">
+            <strong>{link.name}</strong>
+            <p>{link.description}</p>
+            {link.note !== undefined && <span>{link.note}</span>}
           </button>
         ))}
-        {tools.length === 0 && <div className="empty-surface">No tools found.</div>}
+        {links.length === 0 && <div className="empty-surface">{`No ${kind}s found.`}</div>}
       </div>
     </article>
   )
@@ -277,8 +279,8 @@ export function StudioAgentOverview({ agent }: { agent: StudioAgent }) {
       <StudioOverviewSignals agent={agent} runningText={studioRunningText(running, agent.id)} sessions={sessions} snapshot={answer} />
 
       <section className="workspace-grid-three">
-        <StudioOverviewRecentSkills agentId={agent.id} skills={answer.skills} />
-        <StudioOverviewTools agentId={agent.id} tools={answer.tools} />
+        <StudioOverviewLinkList agentId={agent.id} kind="skill" links={studioOverviewRecentSkills(answer.skills)} title="最近技能" />
+        <StudioOverviewLinkList agentId={agent.id} kind="tool" links={studioOverviewTools(answer.tools)} title="工具" />
         <StudioOverviewRelease agent={agent} />
       </section>
     </div>

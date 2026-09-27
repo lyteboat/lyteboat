@@ -9,6 +9,7 @@
 
 import { z } from 'zod'
 import type { LyteboatSkillFinding } from './cli.ts'
+import { LYTEBOAT_EVAL_CASE_ID_PATTERN } from './index.ts'
 import type { JsonValue, LyteboatAgentIdentity, LyteboatAgentModel, LyteboatRequest, LyteboatRequestOwner, LyteboatTurnOutcome } from './index.ts'
 
 /** The Studio roles, from the most to the least capable. */
@@ -601,7 +602,7 @@ export const studioEvalRunRequestSchema: z.ZodType<StudioEvalRunRequest> = z.str
   agentId: z.string().min(1),
   mode: z.enum(['real', 'replay']),
   from: z.string().min(1).exactOptional(),
-  caseIds: z.array(z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u)).min(1).exactOptional(),
+  caseIds: z.array(z.string().regex(LYTEBOAT_EVAL_CASE_ID_PATTERN)).min(1).exactOptional(),
 })
 
 /** Why a Studio request was refused. */

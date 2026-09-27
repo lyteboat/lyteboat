@@ -181,17 +181,3 @@ function paragraphBreak(text: string): string {
   if (text === '' || text.endsWith('\n\n')) return ''
   return text.endsWith('\n') ? '\n' : '\n\n'
 }
-
-/**
- * Compose one turn from its whole answer and the cards its results prepared.
- * @param text - the turn's answer.
- * @param cards - the cards the turn's tool results prepared, in log order.
- * @param completed - whether the turn ended `completed`.
- */
-export function composeTurnParts(text: string, cards: readonly LyteboatCard[], completed: boolean): LyteboatTurnPart[] {
-  const composer = new LyteboatTurnComposer()
-  composer.prepare(cards)
-  composer.write(text, 1)
-  composer.end(completed)
-  return composer.parts()
-}

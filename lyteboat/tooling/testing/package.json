@@ -45,11 +45,19 @@
       "@lyteboat/source": "./src/scratch.ts",
       "types": "./lib/scratch.d.ts",
       "default": "./lib/scratch.js"
+    },
+    "./json-lines": {
+      "@lyteboat/source": "./src/json-lines.ts",
+      "types": "./lib/json-lines.d.ts",
+      "default": "./lib/json-lines.js"
     }
   },
   "files": [
     "lib"
   ],
+  "dependencies": {
+    "@lyteboat/contracts": "workspace:*"
+  },
   "peerDependencies": {
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-include": "catalog:cordis",

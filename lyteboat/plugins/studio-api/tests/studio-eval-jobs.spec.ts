@@ -7,22 +7,13 @@
  * stopped from the restarted Studio.
  */
 import { spawn } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { EvalRunListing } from '@lyteboat/eval-runner/records'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import { StudioEvalJobs, type StudioEvalJob } from '../src/studio-eval-jobs.ts'
 import { studioEvalRunOf } from '../src/studio-eval-runs.ts'
-
-const dirs: string[] = []
-afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }) })
-
-function scratch(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'studio-eval-jobs-'))
-  dirs.push(dir)
-  return dir
-}
 
 const RUNNING: StudioEvalJob = {
   runId: '20260926T000000Z-abcd', agentId: 'alpha', mode: 'real', startedAt: 1_000, startedBy: 'root', pid: 999_999,
@@ -31,7 +22,7 @@ const RUNNING: StudioEvalJob = {
 
 describe('the Studio\'s eval jobs', () => {
   it('marks a job still running when the Studio starts as interrupted, with the cases its output shows finished, and skips a torn file', () => {
-    const studioDir = scratch()
+    const studioDir = lyteboatTempDir('studio-eval-jobs')
     mkdirSync(join(studioDir, 'eval-jobs'))
     writeFileSync(join(studioDir, 'eval-jobs', `${RUNNING.runId}.json`), JSON.stringify(RUNNING))
     writeFileSync(join(studioDir, 'eval-jobs', `${RUNNING.runId}.log`), '✓ first (1 turn)\n')
@@ -75,7 +66,7 @@ describe('the Studio\'s eval jobs', () => {
   })
 
   it.skipIf(!existsSync('/proc/self/cmdline'))('lets a restarted Studio stop a run whose process outlived the one that started it (reads /proc)', async () => {
-    const studioDir = scratch()
+    const studioDir = lyteboatTempDir('studio-eval-jobs')
     const runId = '20260926T000000Z-beef'
     // A stand-in for the eval process: its command line names the run, and SIGINT ends it with the launcher's 130.
     const orphan = spawn(process.execPath, ['-e', 'process.on("SIGINT", () => process.exit(130)); process.stdout.write("ready"); setInterval(() => {}, 1000)', '--', '--run-id', runId], { detached: true, stdio: ['ignore', 'pipe', 'ignore'] })
@@ -94,7 +85,7 @@ describe('the Studio\'s eval jobs', () => {
   })
 
   it('does not take a process the system gave the run\'s pid to since for the run', () => {
-    const studioDir = scratch()
+    const studioDir = lyteboatTempDir('studio-eval-jobs')
     mkdirSync(join(studioDir, 'eval-jobs'))
     // This test's own process: alive, but its command line names no run.
     writeFileSync(join(studioDir, 'eval-jobs', `${RUNNING.runId}.json`), JSON.stringify({ ...RUNNING, pid: process.pid }))

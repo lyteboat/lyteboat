@@ -13,7 +13,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionEvent, TurnEndReason } from '@deepseek-ai/dsh-session'
 import type { LyteboatLiveTurn, LyteboatTurnPart } from '@lyteboat/a2ui'
-import { LYTEBOAT_ASSISTANT_PROVIDER } from '@lyteboat/contracts'
+import { LYTEBOAT_ASSISTANT_PROVIDER, LYTEBOAT_TURN_OUTCOME_OF_REASON } from '@lyteboat/contracts'
 import type { JsonValue, LyteboatTurnOutcome } from '@lyteboat/contracts'
 
 /** What the turn reports as it happens. */
@@ -65,15 +65,8 @@ function rpcIdOf(event: SessionEvent): string | undefined {
  * @param answeredInLoop - whether the answer came from the admission in the loop (an assistant message from `LYTEBOAT_ASSISTANT_PROVIDER`).
  */
 function turnOutcome(reason: TurnEndReason['kind'], answeredInLoop: boolean): LyteboatTurnOutcome {
-  switch (reason) {
-    case 'completed': return answeredInLoop ? 'rejected' : 'completed'
-    case 'blocked': return 'tool_stopped'
-    case 'max-tokens': return 'stopped_by_limit'
-    case 'aborted': return 'aborted'
-    // `error`; `interrupted` and `forked`, which close a turn after the fact;
-    // and any reason a plugin merges into dsh's open TurnEndReasonMap.
-    default: return 'errored'
-  }
+  const outcome = LYTEBOAT_TURN_OUTCOME_OF_REASON[reason] ?? 'errored'
+  return outcome === 'completed' && answeredInLoop ? 'rejected' : outcome
 }
 
 /** A tool call's arguments as the model wrote them: JSON when they parse, else the raw text. */

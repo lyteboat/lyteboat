@@ -1,20 +1,16 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { parse } from 'yaml'
 import { expect, test } from 'vitest'
-
-interface Upstream {
-  dsh: string
-  cordis: Record<string, string>
-}
+import { kernelPackages, readUpstreamPin } from './dist/kernel.ts'
 
 interface Workspace {
   catalogs: { dsh: Record<string, string>; cordis: Record<string, string> }
   overrides: Record<string, string>
 }
 
-const upstream = JSON.parse(readFileSync(new URL('../dsh.upstream.json', import.meta.url), 'utf8')) as Upstream
+const upstream = readUpstreamPin()
 const workspace = parse(readFileSync(new URL('../pnpm-workspace.yaml', import.meta.url), 'utf8')) as Workspace
-const kernel = Object.keys((JSON.parse(readFileSync(new URL('../dsh/kernel.json', import.meta.url), 'utf8')) as { packages: Record<string, string> }).packages)
+const kernel = kernelPackages().map(({ name }) => name)
 
 test('the dsh catalog pins every entry to the dsh.upstream.json release', () => {
   for (const [name, version] of Object.entries(workspace.catalogs.dsh)) {

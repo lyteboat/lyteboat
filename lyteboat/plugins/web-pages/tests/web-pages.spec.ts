@@ -4,17 +4,17 @@
  * page's call reaches once dsh has let it through, the prompts it queues);
  * the agent catalog and the request context are the real services.
  */
-import { cpSync, mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { cpSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import AgentDefaultModelConfig from '@deepseek-ai/dsh-agent-default-model'
 import AgentPresetRegistry from '@deepseek-ai/dsh-agent-preset-registry'
 import type { SessionPromptRequest } from '@deepseek-ai/dsh-api-session-controller/types'
 import type { ConnectionFetchRoute, ConnectionRpcResult } from '@deepseek-ai/dsh-client-connection'
 import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import AgentCatalogService from '@lyteboat/agent-catalog'
 import RequestContextService from '@lyteboat/request-context'
 import WebPagesService from '@lyteboat/web-pages'
@@ -61,9 +61,6 @@ async function webPagesHost(roots: string[]): Promise<WebPagesHost> {
 }
 
 describe('the web pages\' endpoints', () => {
-  const roots: string[] = []
-  afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }) })
-
   it('answers the agents the catalog serves, with their display fields, and the ones it cannot', async () => {
     const host = await webPagesHost([fixture('agents')])
 
@@ -79,8 +76,7 @@ describe('the web pages\' endpoints', () => {
   })
 
   it('reloads the catalog and answers the agents the roots hold now', async () => {
-    const root = mkdtempSync(join(tmpdir(), 'web-pages-'))
-    roots.push(root)
+    const root = lyteboatTempDir('web-pages')
     const host = await webPagesHost([root])
     await host.ctx.agentCatalog.whenReady()
     cpSync(fixture('agents/support'), join(root, 'support'), { recursive: true })

@@ -9,11 +9,8 @@
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { lyteboatEvalRunRecordSchema } from '@lyteboat/contracts'
+import { LYTEBOAT_EVAL_RUN_ID_PATTERN, lyteboatEvalRunRecordSchema } from '@lyteboat/contracts'
 import type { WebPagesEvalRun } from './web-pages-endpoints.ts'
-
-/** The run ids a request may name: a directory name, never a path. */
-const RUN_ID = /^[A-Za-z0-9][A-Za-z0-9._-]*$/u
 
 /**
  * The runs in `evalsDir`, newest first.
@@ -25,7 +22,7 @@ export function listEvalRuns(evalsDir: string, warn: (message: string) => void):
   const runs: WebPagesEvalRun[] = []
   for (const id of readdirSync(evalsDir)) {
     const file = join(evalsDir, id, 'run.json')
-    if (!RUN_ID.test(id) || !existsSync(file)) continue
+    if (!LYTEBOAT_EVAL_RUN_ID_PATTERN.test(id) || !existsSync(file)) continue
     const parsed = lyteboatEvalRunRecordSchema.safeParse(readJson(file))
     if (!parsed.success) {
       warn(`web-pages: eval run ${id} left out: ${file} is not a run.json this lyteboat reads (${parsed.error.issues[0]?.message ?? 'invalid'})`)
@@ -52,6 +49,6 @@ function readJson(file: string): unknown {
  */
 export function readEvalReport(evalsDir: string, id: string): string {
   const file = join(evalsDir, id, 'report.md')
-  if (!RUN_ID.test(id) || !existsSync(file)) throw new Error(`no eval run ${JSON.stringify(id)}`)
+  if (!LYTEBOAT_EVAL_RUN_ID_PATTERN.test(id) || !existsSync(file)) throw new Error(`no eval run ${JSON.stringify(id)}`)
   return readFileSync(file, 'utf8')
 }

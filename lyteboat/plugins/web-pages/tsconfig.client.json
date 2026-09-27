@@ -12,7 +12,6 @@
   },
   "include": ["src/client", "src/web-pages-endpoints.ts"],
   "references": [
-    { "path": "../../core/contracts" },
-    { "path": "../eval-runner" }
+    { "path": "../../core/contracts" }
   ]
 }

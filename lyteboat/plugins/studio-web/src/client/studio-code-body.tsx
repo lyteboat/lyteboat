@@ -3,7 +3,8 @@
  * original Studio shows a SKILL.md or a tool's parameters. The button copies
  * `value`, which may differ from what the block shows (an empty file shows a
  * note, and copies nothing). The copy button and the copy itself serve other
- * places that copy an id.
+ * places that copy an id; the download of a text as a file serves the pages
+ * that export one (a session's raw log, a run's detail).
  * @module @lyteboat/studio-web/client/studio-code-body
  */
 
@@ -11,6 +12,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { CopyIcon } from './studio-icons.tsx'
 
 const STUDIO_COPIED_MS = 1200
+/** How long a download's object URL outlives the click that starts it. */
+const STUDIO_DOWNLOAD_URL_TTL_MS = 1000
 
 /** Put `value` on the clipboard; rejects when the browser refuses. */
 export async function copyStudioText(value: string): Promise<void> {
@@ -29,6 +32,23 @@ export async function copyStudioText(value: string): Promise<void> {
   textarea.select()
   document.execCommand('copy')
   document.body.removeChild(textarea)
+}
+
+/**
+ * Hand the browser `text` as a file to save.
+ * @param filename - the name the browser offers (`<sessionId>.jsonl`).
+ * @param text - the file's content.
+ * @param mime - its media type (`application/json`).
+ */
+export function downloadStudioFile(filename: string, text: string, mime: string): void {
+  const url = URL.createObjectURL(new Blob([text], { type: mime }))
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  document.body.appendChild(anchor)
+  anchor.click()
+  anchor.remove()
+  window.setTimeout(() => URL.revokeObjectURL(url), STUDIO_DOWNLOAD_URL_TTL_MS)
 }
 
 /** An icon button that copies `value`; `title` names it (`Copy session id`). */

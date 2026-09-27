@@ -4,10 +4,5 @@
     "rootDir": "src",
     "outDir": "lib"
   },
-  "include": ["src"],
-  "references": [
-    { "path": "../../bundles/try" },
-    { "path": "../../bundles/serve" },
-    { "path": "../../bundles/eval" }
-  ]
+  "include": ["src"]
 }

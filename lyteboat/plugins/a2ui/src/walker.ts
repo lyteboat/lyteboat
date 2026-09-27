@@ -11,6 +11,7 @@
 
 import type { A2uiLog } from './transforms.ts'
 import { SILENT_LOG } from './transforms.ts'
+import { isA2uiRecord } from './a2ui-record.ts'
 
 export type ComponentNode = { id: string; component: Record<string, Record<string, unknown>>; [key: string]: unknown }
 export interface TemplateDocument { rootComponentId?: string; components?: ComponentNode[]; [key: string]: unknown }
@@ -30,32 +31,24 @@ export class BoundPathTracker {
     this.boundPaths.add(path)
     return this.flat[path]
   }
-
-  value(path: string): unknown {
-    return this.flat[path]
-  }
 }
 
 const BINDING_CONTRACT_FIELDS = new Set(['text', 'url', 'name'])
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
 function typeProps(node: ComponentNode): [string, Record<string, unknown>] {
   const type = Object.keys(node.component)[0] ?? ''
   const props = node.component[type]
-  return [type, isRecord(props) ? props : {}]
+  return [type, isA2uiRecord(props) ? props : {}]
 }
 
 function isBindingLeaf(value: unknown): value is { path: string; literalString?: unknown } {
-  return isRecord(value) && 'path' in value && Object.keys(value).every(key => key === 'path' || key === 'literalString')
+  return isA2uiRecord(value) && 'path' in value && Object.keys(value).every(key => key === 'path' || key === 'literalString')
 }
 
 type Scope = Record<string, unknown> | undefined
 
 function resolveRef(binding: unknown, flat: BoundPathTracker, scope: Scope): unknown {
-  if (!isRecord(binding)) return binding
+  if (!isA2uiRecord(binding)) return binding
   const path = binding['path']
   if (path === undefined || path === null) return binding['literalString'] ?? ''
   const key = String(path)
@@ -70,7 +63,7 @@ function resolveRef(binding: unknown, flat: BoundPathTracker, scope: Scope): unk
 
 function resolveDeep(node: unknown, flat: BoundPathTracker, scope: Scope): unknown {
   if (isBindingLeaf(node)) return resolveRef(node, flat, scope)
-  if (isRecord(node)) return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, resolveDeep(value, flat, scope)]))
+  if (isA2uiRecord(node)) return Object.fromEntries(Object.entries(node).map(([key, value]) => [key, resolveDeep(value, flat, scope)]))
   if (Array.isArray(node)) return node.map(value => resolveDeep(value, flat, scope))
   return node
 }
@@ -81,7 +74,7 @@ function resolveProps(props: Record<string, unknown>, flat: BoundPathTracker, sc
     if (isBindingLeaf(value)) {
       const resolved = resolveRef(value, flat, scope)
       props[field] = BINDING_CONTRACT_FIELDS.has(field) ? { literalString: resolved } : resolved
-    } else if (isRecord(value) || Array.isArray(value)) {
+    } else if (isA2uiRecord(value) || Array.isArray(value)) {
       props[field] = resolveDeep(value, flat, scope)
     }
   }
@@ -89,7 +82,7 @@ function resolveProps(props: Record<string, unknown>, flat: BoundPathTracker, sc
 
 function takeChildren(props: Record<string, unknown>): string[] | undefined {
   const children = props['children']
-  if (isRecord(children) && Array.isArray(children['explicitList'])) return [...children['explicitList'] as string[]]
+  if (isA2uiRecord(children) && Array.isArray(children['explicitList'])) return [...children['explicitList'] as string[]]
   return undefined
 }
 
@@ -100,7 +93,7 @@ function applyHierarchyFilter(map: Map<string, ComponentNode>, rootId: string, u
   const copy = structuredClone(root)
   const [, props] = typeProps(copy)
   const children = props['children']
-  if (isRecord(children) && Array.isArray(children['explicitList'])) {
+  if (isA2uiRecord(children) && Array.isArray(children['explicitList'])) {
     const original = new Set(children['explicitList'] as string[])
     children['explicitList'] = uiIds.filter(id => original.has(id))
   }
@@ -167,7 +160,7 @@ function emitRawSubtree(state: WalkState, cid: string): void {
     state.out.push(node)
     const [, props] = typeProps(node)
     const children = props['children']
-    if (isRecord(children) && Array.isArray(children['explicitList'])) {
+    if (isA2uiRecord(children) && Array.isArray(children['explicitList'])) {
       stack.push(...(children['explicitList'] as unknown[]).filter((ref): ref is string => typeof ref === 'string'))
     }
     for (const key of ['child', 'emptyChild']) {
@@ -185,7 +178,7 @@ function fanOut(state: WalkState, cid: string, dataSource: unknown, childTemplat
     return ids
   }
   array.forEach((item, index) => {
-    const itemScope: Record<string, unknown> = isRecord(item) ? item : { item }
+    const itemScope: Record<string, unknown> = isA2uiRecord(item) ? item : { item }
     const rendered = renderSubtree(state, childTemplate, itemScope, `${suffix}__${String(index)}`)
     if (rendered !== undefined) ids.push(rendered)
   })

@@ -1,26 +1,17 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { initProfile, resolveProfileDir } from '@deepseek-ai/dsh-app-boot'
 import { LYTEBOAT_EVAL_BUNDLES, LYTEBOAT_TRY_BUNDLES, LYTEBOAT_SERVE_BUNDLES, LYTEBOAT_STUDIO_BUNDLES, LYTEBOAT_WEB_BUNDLES } from '@lyteboat/testing/composition'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { checkSkippedProfileBundles, ensureProfileInitialized } from '../src/profile-boot.ts'
 import { LYTEBOAT_PROFILE_TEMPLATES } from '../src/templates.ts'
 
 describe('lyteboat profile templates', () => {
-  const homes: string[] = []
-  const home = (): string => {
-    const dir = mkdtempSync(join(tmpdir(), 'lyteboat-home-'))
-    homes.push(dir)
-    return dir
-  }
-  afterEach(() => {
-    for (const dir of homes.splice(0)) rmSync(dir, { recursive: true, force: true })
-    vi.restoreAllMocks()
-  })
+  afterEach(() => { vi.restoreAllMocks() })
 
   test('a new try profile lists dsh-base, the host bundle, and the try bundle', () => {
-    const dir = home()
+    const dir = lyteboatTempDir('home')
     ensureProfileInitialized('try', dir)
     const manifest = JSON.parse(readFileSync(join(resolveProfileDir('try', dir), 'package.json'), 'utf8')) as { dsh: { profile: { bundles: string[] } } }
     // The layers the composition tests boot as the try profile.
@@ -44,13 +35,13 @@ describe('lyteboat profile templates', () => {
   })
 
   test('an existing profile whose bundle list predates the template fails loud with the fix', () => {
-    const dir = home()
+    const dir = lyteboatTempDir('home')
     initProfile(resolveProfileDir('try', dir), ['@deepseek-ai/dsh-base', '@lyteboat/try'])
     expect(() => { ensureProfileInitialized('try', dir) }).toThrow(/profile "try" .* lists bundles \[@deepseek-ai\/dsh-base, @lyteboat\/try\].*\[@deepseek-ai\/dsh-base, @lyteboat\/host, @lyteboat\/business-base, @lyteboat\/try\]/su)
   })
 
   test('an existing profile that matches the template boots unchanged', () => {
-    const dir = home()
+    const dir = lyteboatTempDir('home')
     ensureProfileInitialized('try', dir)
     const file = join(resolveProfileDir('try', dir), 'cordis.patch.yml')
     writeFileSync(file, '- id: session-title-llm\n  disabled: true\n')

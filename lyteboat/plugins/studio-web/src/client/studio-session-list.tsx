@@ -11,15 +11,17 @@
  * @module @lyteboat/studio-web/client/studio-session-list
  */
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import type { StudioSessionMatch, StudioSessionMatchKind, StudioSessionSummary } from '@lyteboat/contracts/studio'
 import { StudioRailToggle } from './studio-collapsible-rail.tsx'
-import { ChevronRightIcon, SearchIcon } from './studio-icons.tsx'
+import { ChevronRightIcon } from './studio-icons.tsx'
 import { formatStudioRelativeTime } from './studio-relative-time.ts'
-import { studioSessionOwnerLabel, summarizeStudioSessionText } from './studio-session-format.ts'
+import { StudioSearchBox } from './studio-search-box.tsx'
+import { formatStudioSessionTime, studioSessionOwnerLabel, summarizeStudioSessionText } from './studio-session-format.ts'
 import type { StudioSessionPager } from './studio-session-pager.ts'
 import { StudioSessionWindowPanel, type StudioSessionWindowState } from './studio-session-window.tsx'
 import { StudioSwitch } from './studio-switch.tsx'
+import { toggledStudioSet } from './studio-toggled-set.ts'
 
 /** The longest search text the server takes. */
 const STUDIO_SESSION_SEARCH_MAX = 200
@@ -68,36 +70,36 @@ function StudioSessionRowMeta({ session }: { session: StudioSessionSummary }) {
     <span className="session-row-meta">
       <StudioSessionBadges session={session} />
       <span className="session-row-count" title="消息数">{session.messageCount}</span>
-      <span className="session-row-time" title={`updated ${new Date(session.updatedAt).toLocaleString()}`}>{formatStudioRelativeTime(session.updatedAt)}</span>
+      <span className="session-row-time" title={`updated ${formatStudioSessionTime(session.updatedAt)}`}>{formatStudioRelativeTime(session.updatedAt)}</span>
     </span>
   )
 }
 
-function StudioSessionRow({ session, active, onSelect }: { session: StudioSessionSummary; active: boolean; onSelect(sessionId: string): void }) {
-  const title = session.lastUserMessage ?? session.firstMessage ?? session.sessionId.slice(0, 14)
+/** A session's row: its title and meta, and under the title a search match's `sub` line. */
+function StudioSessionRow({ session, title, sub, active, onSelect }: { session: StudioSessionSummary; title: string; sub?: ReactNode; active: boolean; onSelect(sessionId: string): void }) {
   return (
-    <button aria-label={`Session ${title}`} className={`session-row ${active ? 'active' : ''}`} onClick={() => onSelect(session.sessionId)} onFocus={() => onSelect(session.sessionId)} type="button">
+    <button aria-label={`Session ${title}`} className={`session-row${sub === undefined ? '' : ' session-row-search'} ${active ? 'active' : ''}`} onClick={() => onSelect(session.sessionId)} onFocus={() => onSelect(session.sessionId)} type="button">
       <span className="session-row-main">
         <span className="session-row-title" title={title}>{title}</span>
+        {sub}
       </span>
       <StudioSessionRowMeta session={session} />
     </button>
   )
 }
 
-function StudioSessionMatchRow({ match, active, onSelect }: { match: StudioSessionMatch; active: boolean; onSelect(sessionId: string): void }) {
-  const title = match.firstMessage ?? match.sessionId.slice(0, 14)
+/** A listed session's title: its latest question, else its first, else its id's head. */
+function studioSessionRowTitle(session: StudioSessionSummary): string {
+  return session.lastUserMessage ?? session.firstMessage ?? session.sessionId.slice(0, 14)
+}
+
+/** Where a search matched: its kind, and the matched text cut to one line. */
+function StudioSessionMatchSub({ match }: { match: StudioSessionMatch }) {
   return (
-    <button aria-label={`Session ${match.firstMessage ?? match.sessionId}`} className={`session-row session-row-search ${active ? 'active' : ''}`} onClick={() => onSelect(match.sessionId)} onFocus={() => onSelect(match.sessionId)} type="button">
-      <span className="session-row-main">
-        <span className="session-row-title">{title}</span>
-        <span className="session-row-sub">
-          <span className={`session-badge match-${match.matchKind}`}>{STUDIO_SESSION_MATCH_LABEL[match.matchKind]}</span>
-          {match.matchedSnippet !== '' && <span className="session-row-snippet" title={match.matchedSnippet}>{summarizeStudioSessionText(match.matchedSnippet, 60)}</span>}
-        </span>
-      </span>
-      <StudioSessionRowMeta session={match} />
-    </button>
+    <span className="session-row-sub">
+      <span className={`session-badge match-${match.matchKind}`}>{STUDIO_SESSION_MATCH_LABEL[match.matchKind]}</span>
+      {match.matchedSnippet !== '' && <span className="session-row-snippet" title={match.matchedSnippet}>{summarizeStudioSessionText(match.matchedSnippet, 60)}</span>}
+    </span>
   )
 }
 
@@ -123,7 +125,7 @@ function StudioSessionOwnerGroup({ owner, index, sessions, collapsed, onToggle, 
         </button>
       </div>
       <div className={`session-cluster-items ${collapsed ? 'collapsed' : ''}`} id={groupId}>
-        {sessions.map(session => <StudioSessionRow active={session.sessionId === selectedId} key={session.sessionId} onSelect={onSelect} session={session} />)}
+        {sessions.map(session => <StudioSessionRow active={session.sessionId === selectedId} key={session.sessionId} onSelect={onSelect} session={session} title={studioSessionRowTitle(session)} />)}
       </div>
     </div>
   )
@@ -141,13 +143,7 @@ function StudioSessionOwnerGroups({ sessions, selectedId, onSelect }: { sessions
     }
     return [...byOwner.entries()]
   }, [sessions])
-  const toggle = (owner: string): void => {
-    setCollapsedOwners(current => {
-      const next = new Set(current)
-      if (!next.delete(owner)) next.add(owner)
-      return next
-    })
-  }
+  const toggle = (owner: string): void => { setCollapsedOwners(current => toggledStudioSet(current, owner)) }
   return (
     <>
       {groups.map(([owner, items], index) => (
@@ -182,7 +178,7 @@ function StudioSessionSearchRows({ model, selectedId, onSelect }: { model: Studi
   const { search } = model
   return (
     <>
-      {search.sessions.map(match => <StudioSessionMatchRow active={match.sessionId === selectedId} key={match.sessionId} match={match} onSelect={onSelect} />)}
+      {search.sessions.map(match => <StudioSessionRow active={match.sessionId === selectedId} key={match.sessionId} onSelect={onSelect} session={match} sub={<StudioSessionMatchSub match={match} />} title={match.firstMessage ?? match.sessionId.slice(0, 14)} />)}
       {search.loading && <div className="empty-surface">Searching…</div>}
       {!search.loading && search.error === null && search.sessions.length === 0 && <div className="empty-surface">No sessions match “{model.searchText}”.</div>}
       <StudioSessionPagerTail pager={search} />
@@ -197,7 +193,7 @@ function StudioSessionListRows({ model, selectedId, onSelect }: { model: StudioS
     <>
       {model.groupByOwner.on
         ? <StudioSessionOwnerGroups onSelect={onSelect} selectedId={selectedId} sessions={visible} />
-        : visible.map(session => <StudioSessionRow active={session.sessionId === selectedId} key={session.sessionId} onSelect={onSelect} session={session} />)}
+        : visible.map(session => <StudioSessionRow active={session.sessionId === selectedId} key={session.sessionId} onSelect={onSelect} session={session} title={studioSessionRowTitle(session)} />)}
       {list.loading && <div className="empty-surface">Loading sessions...</div>}
       {settled && list.sessions.length > 0 && <div className="empty-surface">没有符合筛选条件的会话。</div>}
       {settled && list.sessions.length === 0 && (
@@ -246,12 +242,7 @@ export function StudioSessionRail({ model, selectedId, onSelect, onCollapse }: {
           <StudioRailToggle label="Collapse sessions" onToggle={onCollapse} />
         </span>
       </div>
-      <div className="filter-bar">
-        <label className="search">
-          <SearchIcon />
-          <input aria-label="Search sessions" maxLength={STUDIO_SESSION_SEARCH_MAX} onChange={event => model.setQuery(event.target.value)} placeholder="Search questions, session IDs, trace IDs" value={model.query} />
-        </label>
-      </div>
+      <StudioSearchBox label="Search sessions" maxLength={STUDIO_SESSION_SEARCH_MAX} onChange={model.setQuery} placeholder="Search questions, session IDs, trace IDs" value={model.query} />
       <StudioSessionWindowPanel state={model.sessionWindow} />
       <div aria-label="Sessions" className="session-nav-list" role="list">
         {searching

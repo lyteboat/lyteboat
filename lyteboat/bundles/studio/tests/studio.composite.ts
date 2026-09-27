@@ -22,21 +22,15 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { setStudioAccount, setStudioGrant } from '@lyteboat/studio-auth/accounts'
 import { postChat } from '@lyteboat/testing/chat-client'
 import { LYTEBOAT_SERVE_BUNDLES, LYTEBOAT_STUDIO_BUNDLES, bootComposition, startComposition, type RunningComposition } from '@lyteboat/testing/composition'
+import { readJsonLines } from '@lyteboat/testing/json-lines'
 import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
 import { findSessionLogs } from '@lyteboat/testing/session-log'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
 const WORKSPACE_MODULES = fileURLToPath(new URL('../../../../node_modules', import.meta.url))
 /** The built launcher an eval run the Studio starts runs; `pnpm run test` builds it first. */
 const LYTEBOAT_BIN = fileURLToPath(new URL('../../../apps/cli/lib/bin.js', import.meta.url))
-
-/** What the caller wrote last; dsh appends its runtime context to the request message. */
-function latestMessage(request: RecordedRequest): string {
-  const users = request.body.messages.filter(message => message.role === 'user' && message.content.some(block => block.type === 'text'))
-  const texts = users.at(-1)?.content.filter(block => block.type === 'text').map(block => block.text ?? '') ?? []
-  return texts.filter(text => !text.startsWith('Current runtime context.')).at(-1) ?? ''
-}
 
 interface StudioCallOptions {
   token?: string
@@ -239,7 +233,7 @@ describe('a skill hot-fix in lyteboat studio (in process)', () => {
     expect(stale.status).toBe(412)
     expect(readFileSync(skillFile, 'utf8')).toBe(text)
     expect(radar.body).toMatchObject({ agents: [{ id: 'desk', deviates: true }] })
-    const audit = readFileSync(join(home, 'studio', 'audit.jsonl'), 'utf8').trim().split('\n').map(line => JSON.parse(line) as Record<string, unknown>)
+    const audit = readJsonLines<Record<string, unknown>>(join(home, 'studio', 'audit.jsonl'))
     expect(audit.filter(line => line['action'] === 'skill.update')).toEqual([{ time: expect.any(Number), actor: 'root', action: 'skill.update', agentId: 'desk', skill: 'quote-lookup', path: join('skills', 'quote-lookup', 'SKILL.md'), before: before.sha256, after }])
   })
 })
@@ -256,7 +250,7 @@ describe('sessions and run metrics serve records, read by lyteboat studio (in pr
   const sessionIds: string[] = []
 
   beforeAll(async () => {
-    model = await startScriptedModel(withTitle(request => ({ text: `OK:${latestMessage(request)}` })), { apiKey: 'mock-key' })
+    model = await startScriptedModel(withTitle(request => ({ text: `OK:${request.latestMessage}` })), { apiKey: 'mock-key' })
     const run = scratch.run('shared')
     home = run.home
     addStudioAccounts(run.home)
@@ -351,7 +345,7 @@ describe('eval runs started from lyteboat studio (in process, built launcher, sc
   }, { timeout: 90_000, interval: 250 })
 
   beforeAll(async () => {
-    model = await startScriptedModel(withTitle(request => ({ text: `OK:${latestMessage(request)}` })), { apiKey: 'mock-key' })
+    model = await startScriptedModel(withTitle(request => ({ text: `OK:${request.latestMessage}` })), { apiKey: 'mock-key' })
     const run = scratch.run('evals')
     addStudioAccounts(run.home)
     const agents = join(scratch.root, 'agents')

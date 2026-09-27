@@ -30,6 +30,7 @@ import type { PatchOptions } from '@deepseek-ai/cordis-plugin-include'
 import { boot, initProfile, loadLayeredEnv, loadProfile, reportSkippedBundles, resolveProfileDir } from '@deepseek-ai/dsh-app-boot'
 import { provideCmdline, type AppReady } from '@deepseek-ai/dsh-cmdline'
 import { DSH_LAUNCH_ENVIRONMENT_KEY } from '@deepseek-ai/dsh-launch-environment'
+import { LYTEBOAT_MODE_RUNNER_IDS } from '@lyteboat/contracts/cli'
 
 /** The diagnostic prefix dsh-app-boot puts on its errors; the launcher's own. */
 const BIN_NAME = 'lyteboat'
@@ -45,7 +46,7 @@ const PROFILE = 'composition'
 const WORKSPACE_ANCHOR = fileURLToPath(new URL('../../../../package.json', import.meta.url))
 
 /** lyteboat's mode runner rows; the launcher fails a startup that leaves one inactive (@lyteboat/cli mode-runners.ts). */
-const LYTEBOAT_MODE_RUNNER_IDS = new Set(['lyteboat-try', 'lyteboat-serve', 'lyteboat-eval', 'lyteboat-studio'])
+const MODE_RUNNER_IDS = new Set<string>(LYTEBOAT_MODE_RUNNER_IDS)
 
 /** Cordis's active fiber state, spelled out: the const enum does not survive vitest's transform (@lyteboat/cli fiber-state.ts). */
 const FIBER_ACTIVE = 2 as FiberState.ACTIVE
@@ -53,7 +54,7 @@ const FIBER_ACTIVE = 2 as FiberState.ACTIVE
 /** The launcher's mode runner check, mirrored: the harness cannot import the launcher. */
 function inactiveModeRunner(ctx: Context): string | undefined {
   for (const entry of ctx.loader.entries()) {
-    if (!LYTEBOAT_MODE_RUNNER_IDS.has(entry.options.id) || entry.disabled) continue
+    if (!MODE_RUNNER_IDS.has(entry.options.id) || entry.disabled) continue
     if (entry.fiber?.state !== FIBER_ACTIVE) return entry.options.id
   }
   return undefined

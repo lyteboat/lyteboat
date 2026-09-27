@@ -11,25 +11,11 @@ import { useCallback, useMemo } from 'react'
 import type { StudioSessionRaw } from '@lyteboat/contracts/studio'
 import { studioApi } from './studio-api-client.ts'
 import { useStudioCall } from './studio-call-state.ts'
-import { StudioCodeBody } from './studio-code-body.tsx'
+import { StudioCodeBody, downloadStudioFile } from './studio-code-body.tsx'
 import { DownloadIcon } from './studio-icons.tsx'
-
-/** How long a download's object URL outlives the click that starts it. */
-const STUDIO_DOWNLOAD_URL_TTL_MS = 1000
 
 function studioSessionJsonl(raw: StudioSessionRaw): string {
   return `${[raw.header, ...raw.events].map(line => JSON.stringify(line)).join('\n')}\n`
-}
-
-function downloadStudioJsonl(filename: string, text: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type: 'application/jsonl' }))
-  const anchor = document.createElement('a')
-  anchor.href = url
-  anchor.download = filename
-  document.body.appendChild(anchor)
-  anchor.click()
-  anchor.remove()
-  window.setTimeout(() => URL.revokeObjectURL(url), STUDIO_DOWNLOAD_URL_TTL_MS)
 }
 
 /** The Raw view of one session, mounted per session. */
@@ -47,7 +33,7 @@ export function StudioSessionRawView({ agentId, sessionId }: { agentId: string; 
           Raw JSONL · {events.length} events{inheritedEventCount > 0 ? ` · ${String(inheritedEventCount)} inherited` : ''}
         </span>
         <div className="button-row">
-          <button className="action-button" onClick={() => downloadStudioJsonl(`${sessionId}.jsonl`, text)} title="Download raw JSONL" type="button">
+          <button className="action-button" onClick={() => downloadStudioFile(`${sessionId}.jsonl`, text, 'application/jsonl')} title="Download raw JSONL" type="button">
             <DownloadIcon />
             Download
           </button>

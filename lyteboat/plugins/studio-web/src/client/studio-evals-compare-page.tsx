@@ -19,10 +19,9 @@ import type { StudioEvalCompareAnswer, StudioEvalCompareCase, StudioEvalCompareS
 import { studioApi } from './studio-api-client.ts'
 import { useStudioCall } from './studio-call-state.ts'
 import { useStudioEvalsAgent } from './studio-evals-agent-scope.tsx'
-import { formatStudioEvalFraction, formatStudioEvalPercent, studioEvalPassRate } from './studio-evals-format.ts'
+import { formatStudioEvalFraction, formatStudioEvalPercent, studioEvalPassRate, studioEvalRunWritten } from './studio-evals-format.ts'
 import { StudioEvalsCrumbs, StudioEvalsEmpty, StudioEvalsFilterChip } from './studio-evals-primitives.tsx'
-import { StudioEvalsFailPanel, StudioEvalsTurnBadge } from './studio-evals-turn-atoms.tsx'
-import { CheckIcon, CloseIcon } from './studio-icons.tsx'
+import { StudioEvalsFailPanel, StudioEvalsTurnBadge, StudioEvalsVerdictPill } from './studio-evals-turn-atoms.tsx'
 import { formatStudioRelativeTime } from './studio-relative-time.ts'
 
 type StudioEvalsCompareFilter = 'all' | StudioEvalCompareStatus
@@ -52,14 +51,6 @@ function studioEvalCompareChips(answer: StudioEvalCompareAnswer): readonly (read
   ]
 }
 
-function StudioEvalsPassFailCell({ value, passedTurns, turnCount }: { value: boolean | null; passedTurns: number; turnCount: number }) {
-  if (value === null) return <span className="evals-muted">—</span>
-  const suffix = turnCount > 1 ? ` · ${String(passedTurns)}/${String(turnCount)}` : ''
-  return value
-    ? <span className="evals-pill evals-pill-ok"><CheckIcon /> pass{suffix}</span>
-    : <span className="evals-pill evals-pill-err"><CloseIcon /> fail{suffix}</span>
-}
-
 function StudioEvalsCheckChangeRow({ change, showCase }: { change: StudioEvalsCheckChange; showCase: boolean }) {
   return (
     <div className="evals-check-change">
@@ -79,7 +70,7 @@ function StudioEvalsCompareSide({ label, pass, passedTurns, turnCount, failing }
     <div className={`evals-compare-side-mini evals-compare-side-mini-${state}`}>
       <div className="evals-compare-side-head">
         <span className="evals-kicker">{label}</span>
-        <StudioEvalsPassFailCell passedTurns={passedTurns} turnCount={turnCount} value={pass} />
+        <StudioEvalsVerdictPill pass={pass} passedTurns={passedTurns} turnCount={turnCount} />
       </div>
       {pass === null && <span className="evals-muted evals-side-absent">not in this run</span>}
       {pass !== null && failing.length === 0 && <span className="evals-muted evals-side-absent">every check passed</span>}
@@ -99,8 +90,8 @@ function StudioEvalsCompareCaseRow({ row, answer, open, onToggle }: { row: Studi
         <td className="evals-tbl-cell-trunc evals-col-case"><span className="evals-mono-sm" title={row.caseId}>{row.caseId}</span></td>
         <td>{row.turnCount > 1 ? <StudioEvalsTurnBadge count={row.turnCount} /> : <span className="evals-muted">—</span>}</td>
         <td><div className="evals-query-cell" title={row.message}>{row.message === '' ? '(no input)' : row.message}</div></td>
-        <td className="evals-nowrap"><StudioEvalsPassFailCell passedTurns={row.aPassedTurns} turnCount={row.turnCount} value={row.aPass} /></td>
-        <td className="evals-nowrap"><StudioEvalsPassFailCell passedTurns={row.bPassedTurns} turnCount={row.turnCount} value={row.bPass} /></td>
+        <td className="evals-nowrap"><StudioEvalsVerdictPill pass={row.aPass} passedTurns={row.aPassedTurns} turnCount={row.turnCount} /></td>
+        <td className="evals-nowrap"><StudioEvalsVerdictPill pass={row.bPass} passedTurns={row.bPassedTurns} turnCount={row.turnCount} /></td>
         <td>{row.divergedAtTurn > 0 ? <span className="evals-diverged-at">turn {row.divergedAtTurn}</span> : <span className="evals-muted">—</span>}</td>
         <td className="evals-nowrap"><span className={`evals-pill ${status.pill}`}>{status.label}</span></td>
       </tr>
@@ -261,7 +252,7 @@ function StudioEvalsCompareView({ a, b, onSwap, onPick }: { a: string; b: string
 
 /** Two selects over the agent's runs with results (passed or failed, newest first), B defaulting to the newest and A to the one before it. */
 function StudioEvalsComparePicker({ runs, onPick }: { runs: readonly StudioEvalRun[]; onPick(a: string, b: string): void }) {
-  const finished = useMemo(() => runs.filter(run => run.status === 'passed' || run.status === 'failed'), [runs])
+  const finished = useMemo(() => runs.filter(studioEvalRunWritten), [runs])
   const [a, setA] = useState(finished[1]?.runId ?? '')
   const [b, setB] = useState(finished[0]?.runId ?? '')
   const option = (run: StudioEvalRun) => <option key={run.runId} value={run.runId}>{run.runId} — {run.mode} · {run.status} · {formatStudioRelativeTime(run.startedAt)}</option>

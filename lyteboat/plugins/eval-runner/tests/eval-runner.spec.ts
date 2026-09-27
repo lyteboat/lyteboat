@@ -3,13 +3,13 @@
  * a turn, comparing two runs, rendering the report, and replaying a recorded
  * session's model calls.
  */
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { LYTEBOAT_AUX_LLM_SOURCE } from '@lyteboat/contracts'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import { loadEvalCases } from '../src/eval-case.ts'
 import { checkTurn, type EvalObservation } from '../src/eval-check.ts'
 import { EvalReplay } from '../src/eval-replay.ts'
@@ -102,9 +102,6 @@ describe('checkTurn', () => {
 })
 
 describe('eval runs on disk', () => {
-  const dirs: string[] = []
-  afterEach(() => { for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true }) })
-
   it('compares two runs check by check: a regression, a fix, a check only one run made', () => {
     const before = [result('a', 1, [['outcome', true], ['skill', false]]), result('b', 1, [['outcome', true]])]
     const after = [result('a', 1, [['outcome', false], ['skill', true], ['text.includes', true]]), result('b', 1, [['outcome', true]])]
@@ -117,8 +114,7 @@ describe('eval runs on disk', () => {
   })
 
   it('writes the run, one results line per turn, and a report that says why each failed check failed', () => {
-    const dir = mkdtempSync(join(tmpdir(), 'eval-run-'))
-    dirs.push(dir)
+    const dir = lyteboatTempDir('eval-run')
     const failing = { ...result('a', 1, [['outcome', true]]), checks: [{ check: 'cards.count', expected: 2, actual: 1, pass: false }], pass: false }
     const run: EvalRunRecord = { agent: { id: 'demo', version: '1.0.0', digest: `sha256:${'0'.repeat(64)}` }, mode: 'replay', from: '/runs/base', cases: [{ id: 'a', pass: false }], turns: { total: 1, passed: 0 }, checks: { total: 1, passed: 0 }, startedAt: '2026-09-25T00:00:00.000Z', durationMs: 1200 }
 

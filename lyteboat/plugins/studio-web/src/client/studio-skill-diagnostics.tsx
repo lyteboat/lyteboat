@@ -12,6 +12,7 @@ import type { StudioSkillDiagnosticsAnswer } from '@lyteboat/contracts/studio'
 import { ChevronRightIcon } from './studio-icons.tsx'
 import { formatStudioRelativeTime } from './studio-relative-time.ts'
 import { studioWordedSkillFindings, type StudioWordedSkillFinding } from './studio-skill-finding-copy.ts'
+import { toggledStudioSet } from './studio-toggled-set.ts'
 
 type StudioFindingLevel = StudioWordedSkillFinding['level']
 
@@ -73,14 +74,7 @@ function StudioConflictRow({ finding, expanded, onToggle }: { finding: StudioWor
 
 function StudioConflictsSection({ failed }: { failed: StudioWordedSkillFinding[] }) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set())
-  const toggle = (ruleId: string): void => {
-    setExpanded((previous) => {
-      const next = new Set(previous)
-      if (next.has(ruleId)) next.delete(ruleId)
-      else next.add(ruleId)
-      return next
-    })
-  }
+  const toggle = (ruleId: string): void => { setExpanded(previous => toggledStudioSet(previous, ruleId)) }
   if (failed.length === 0) {
     return (
       <div className="skill-diagnostics-section">

@@ -14,14 +14,14 @@ import { useMemo, useState } from 'react'
 import type { StudioEvalRun, StudioEvalRunRequest } from '@lyteboat/contracts/studio'
 import { studioApi, studioErrorMessage } from './studio-api-client.ts'
 import { StudioEvalsErrorCallout } from './studio-evals-primitives.tsx'
-import { formatStudioEvalFraction } from './studio-evals-format.ts'
+import { formatStudioEvalFraction, studioEvalRunWritten } from './studio-evals-format.ts'
 import { PlayIcon } from './studio-icons.tsx'
 import { formatStudioRelativeTime } from './studio-relative-time.ts'
 
 type StudioEvalsRunMode = StudioEvalRunRequest['mode']
 
 function studioEvalRunReplayable(run: StudioEvalRun): boolean {
-  return run.mode === 'real' && (run.status === 'passed' || run.status === 'failed')
+  return run.mode === 'real' && studioEvalRunWritten(run)
 }
 
 /** The dialog over an agent's Runs; `onStarted` gets the run the Studio started. */

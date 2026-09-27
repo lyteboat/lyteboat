@@ -9,14 +9,14 @@ import { STUDIO_ROLES, studioGrantRequestSchema, studioLoginRequestSchema, type 
 import type { StudioAuthService } from '@lyteboat/studio-auth'
 import type { z } from 'zod'
 import type { StudioAudit } from './studio-audit.ts'
-import { StudioApiError, studioValueOf, type StudioApiCall, type StudioApiRoute } from './studio-api-router.ts'
+import { StudioApiError, studioSchemaProblems, studioValueOf, type StudioApiCall, type StudioApiRoute } from './studio-api-router.ts'
 
 const USERS_PAGE_LIMIT = 200
 
 /** Parse a body against its request schema; a failure names every issue. */
 export async function studioRequestOf<T>(call: StudioApiCall, schema: z.ZodType<T>): Promise<T> {
   const parsed = schema.safeParse(await call.body())
-  if (!parsed.success) throw new StudioApiError('invalid_request', parsed.error.issues.map(issue => `${issue.path.join('.') || '(the body)'}: ${issue.message}`).join('; '))
+  if (!parsed.success) throw new StudioApiError('invalid_request', studioSchemaProblems(parsed.error, '(the body)'))
   return parsed.data
 }
 

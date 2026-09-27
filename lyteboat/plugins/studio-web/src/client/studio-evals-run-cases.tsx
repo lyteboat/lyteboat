@@ -14,8 +14,9 @@
 import { Fragment, useMemo, useState } from 'react'
 import type { LyteboatTurnOutcome } from '@lyteboat/contracts'
 import type { StudioEvalCaseResult, StudioEvalRun, StudioEvalTurnResult } from '@lyteboat/contracts/studio'
+import { formatStudioEvalTurnsPassed } from './studio-evals-format.ts'
 import { StudioEvalsEmpty, StudioEvalsFilterChip, StudioEvalsStatusPill } from './studio-evals-primitives.tsx'
-import { StudioEvalsChecksTable, StudioEvalsTurnBadge, StudioEvalsTurnConnector, StudioEvalsTurnGutter, StudioEvalsTurnUserEcho, StudioEvalsValue } from './studio-evals-turn-atoms.tsx'
+import { StudioEvalsChecksTable, StudioEvalsTurnBadge, StudioEvalsTurnConnector, StudioEvalsTurnGutter, StudioEvalsTurnUserEcho, StudioEvalsValue, StudioEvalsVerdictPill } from './studio-evals-turn-atoms.tsx'
 import { CheckIcon, CloseIcon } from './studio-icons.tsx'
 
 type StudioEvalsCaseFilter = 'all' | 'passed' | 'failed'
@@ -39,13 +40,6 @@ function studioEvalFailingChecks(result: StudioEvalCaseResult): string[] {
 
 function studioEvalPassedTurns(result: StudioEvalCaseResult): number {
   return result.turns.filter(turn => turn.pass).length
-}
-
-function StudioEvalsCaseVerdict({ result }: { result: StudioEvalCaseResult }) {
-  const suffix = result.turns.length > 1 ? ` · ${String(studioEvalPassedTurns(result))}/${String(result.turns.length)}` : ''
-  return result.pass
-    ? <span className="evals-pill evals-pill-ok"><CheckIcon /> pass{suffix}</span>
-    : <span className="evals-pill evals-pill-err"><CloseIcon /> fail{suffix}</span>
 }
 
 function StudioEvalsObserved({ turn }: { turn: StudioEvalTurnResult }) {
@@ -107,7 +101,7 @@ function StudioEvalsCaseResultRow({ result, open, onToggle }: { result: StudioEv
         <td className="evals-tbl-cell-trunc evals-col-case"><span className="evals-mono-sm" title={result.caseId}>{result.caseId}</span></td>
         <td>{result.turns.length > 1 ? <StudioEvalsTurnBadge count={result.turns.length} /> : <span className="evals-muted">—</span>}</td>
         <td><div className="evals-query-cell" title={first}>{first === '' ? '(no input captured)' : first}</div></td>
-        <td className="evals-nowrap"><StudioEvalsCaseVerdict result={result} /></td>
+        <td className="evals-nowrap"><StudioEvalsVerdictPill pass={result.pass} passedTurns={studioEvalPassedTurns(result)} turnCount={result.turns.length} /></td>
         <td>
           {failing.length === 0 ? <span className="evals-muted">—</span> : (
             <div className="evals-value-list">
@@ -179,7 +173,7 @@ export function StudioEvalsRunCases({ run, cases }: { run: StudioEvalRun; cases:
 function StudioEvalsProgressLine({ result, index }: { result: StudioEvalCaseResult; index: number }) {
   const tools = result.turns.flatMap(turn => turn.observed.tools)
   const fail = studioEvalFailingChecks(result)[0]
-  const suffix = result.turns.length > 1 ? ` · ${String(studioEvalPassedTurns(result))}/${String(result.turns.length)}` : ''
+  const suffix = formatStudioEvalTurnsPassed(studioEvalPassedTurns(result), result.turns.length)
   return (
     <div className={`evals-run-progress-term-line ${result.pass ? 'ok' : 'err'}`}>
       <span className="seq">{String(index + 1).padStart(3, '0')}</span>{' '}

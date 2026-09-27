@@ -8,10 +8,7 @@
 
 import type { LyteboatStateValue } from '@lyteboat/contracts'
 import type { RawData } from './transforms.ts'
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
+import { isA2uiRecord } from './a2ui-record.ts'
 
 /** The reference `_collect_raw_data`: each state key namespaced and flattened. */
 export function collectRawData(state: LyteboatStateValue | undefined, stateKeys: readonly string[]): RawData {
@@ -26,7 +23,7 @@ export function collectRawData(state: LyteboatStateValue | undefined, stateKeys:
         continue
       }
     }
-    if (isRecord(data)) {
+    if (isA2uiRecord(data)) {
       raw[key] = data
       Object.assign(raw, data)
     }
@@ -37,7 +34,7 @@ export function collectRawData(state: LyteboatStateValue | undefined, stateKeys:
 /** The reference `_parse_object_args`: an object, a JSON object string, or nothing. */
 export function parseObjectArgs(value: unknown): Record<string, unknown> | undefined {
   if (value === undefined || value === null || value === '') return undefined
-  if (isRecord(value)) return value
+  if (isA2uiRecord(value)) return value
   if (typeof value === 'string') {
     let parsed: unknown
     try {
@@ -45,7 +42,7 @@ export function parseObjectArgs(value: unknown): Record<string, unknown> | undef
     } catch {
       throw new Error('template_args 必须是 JSON 对象')
     }
-    if (isRecord(parsed)) return parsed
+    if (isA2uiRecord(parsed)) return parsed
   }
   throw new Error('template_args 必须是 JSON 对象')
 }

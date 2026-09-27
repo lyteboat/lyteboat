@@ -1,0 +1,8 @@
+# The repository's text is LF, in the repository and in every checkout, as in
+# dsh's own repository: the kernel is imported byte for byte, and the digests
+# and byte comparisons (Typert source digests, an agent's digest and release
+# lock, the release gate's replay of a baseline, test goldens) must see the
+# same bytes on every host. Without this, Git for Windows (core.autocrlf=true)
+# checks text out with CRLF.
+* text=auto eol=lf
+*.cmd text eol=crlf

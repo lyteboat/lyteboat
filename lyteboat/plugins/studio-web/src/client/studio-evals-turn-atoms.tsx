@@ -1,7 +1,8 @@
 /**
  * The pieces every Evals page draws a turn with, as the original Studio's
- * turn atoms and expectation table draw them: the turn card's gutter (number,
- * verdict, foot label), the read-only user echo, the connector between turns,
+ * turn atoms and expectation table draw them: a case's pass or fail pill with
+ * the turns it passed, the turn card's gutter (number, verdict, foot label),
+ * the read-only user echo, the connector between turns,
  * a check's name behind its group badge (behavior: skill, tools, model
  * requests; output: text and cards; flow: the outcome), a JSON value as the
  * tables show it, a request context as tags, the expectations of a case turn
@@ -13,6 +14,8 @@
 
 import type { JsonValue } from '@lyteboat/contracts'
 import type { StudioEvalCheck, StudioEvalExpect } from '@lyteboat/contracts/studio'
+import { formatStudioEvalTurnsPassed } from './studio-evals-format.ts'
+import { CheckIcon, CloseIcon } from './studio-icons.tsx'
 
 type StudioEvalsCheckGroup = 'behavior' | 'output' | 'flow'
 
@@ -87,6 +90,15 @@ export function StudioEvalsContextTags({ context }: { context: { [key: string]: 
       {Object.entries(context).map(([key, value]) => <span className="evals-tag" key={key} title={`${key}: ${studioEvalScalarText(value)}`}>{key}: {studioEvalScalarText(value)}</span>)}
     </span>
   )
+}
+
+/** A case's verdict: `✓ pass · 2/3` or `✗ fail`; `—` for a case the run does not have. */
+export function StudioEvalsVerdictPill({ pass, passedTurns, turnCount }: { pass: boolean | null; passedTurns: number; turnCount: number }) {
+  if (pass === null) return <span className="evals-muted">—</span>
+  const suffix = formatStudioEvalTurnsPassed(passedTurns, turnCount)
+  return pass
+    ? <span className="evals-pill evals-pill-ok"><CheckIcon /> pass{suffix}</span>
+    : <span className="evals-pill evals-pill-err"><CloseIcon /> fail{suffix}</span>
 }
 
 /** The `3 ≡` badge of a multi-turn case. */
@@ -190,7 +202,7 @@ export function StudioEvalsChecksTable({ checks }: { checks: readonly StudioEval
 }
 
 /** The failing checks of one side, in the `└─ check` tree the original Studio uses; nothing when none failed. */
-export function StudioEvalsFailPanel({ failures, noteOf }: { failures: readonly string[]; noteOf?: (failure: string) => string | undefined }) {
+export function StudioEvalsFailPanel({ failures }: { failures: readonly string[] }) {
   if (failures.length === 0) return null
   return (
     <div className="evals-turn-section">
@@ -200,18 +212,14 @@ export function StudioEvalsFailPanel({ failures, noteOf }: { failures: readonly 
         </span>
       </div>
       <div className="evals-turn-fail-panel">
-        {failures.map(failure => {
-          const note = noteOf?.(failure)
-          return (
-            <div className="evals-turn-fail-row" key={failure}>
-              <span aria-hidden="true" className="evals-turn-fail-tree">└─</span>
-              <div className="evals-turn-fail-content">
-                <div className="evals-turn-fail-rule">{failure}</div>
-                {note !== undefined && <div className="evals-turn-fail-note">{note}</div>}
-              </div>
+        {failures.map(failure => (
+          <div className="evals-turn-fail-row" key={failure}>
+            <span aria-hidden="true" className="evals-turn-fail-tree">└─</span>
+            <div className="evals-turn-fail-content">
+              <div className="evals-turn-fail-rule">{failure}</div>
             </div>
-          )
-        })}
+          </div>
+        ))}
       </div>
     </div>
   )

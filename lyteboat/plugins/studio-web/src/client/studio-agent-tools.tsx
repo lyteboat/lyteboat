@@ -15,7 +15,8 @@ import { studioApi } from './studio-api-client.ts'
 import { useStudioCall } from './studio-call-state.ts'
 import { StudioCodeBody } from './studio-code-body.tsx'
 import { StudioCollapsedRail, StudioRailToggle, useStudioRailCollapse } from './studio-collapsible-rail.tsx'
-import { SearchIcon } from './studio-icons.tsx'
+import { StudioSearchBox } from './studio-search-box.tsx'
+import { studioTextMatches } from './studio-text-filter.ts'
 
 const STUDIO_TOOL_REACH_LABEL: Record<StudioToolReach, string> = { always: 'always', activated: '激活后可见', hidden: 'hidden' }
 
@@ -38,11 +39,7 @@ function StudioToolRail({ tools, query, setQuery, selectedName, onSelect, onColl
   onSelect(name: string): void
   onCollapse(): void
 }) {
-  const shown = useMemo(() => {
-    const text = query.trim().toLowerCase()
-    if (text === '') return tools
-    return tools.filter(tool => [tool.name, tool.description, ...tool.requiredBy].some(field => field.toLowerCase().includes(text)))
-  }, [query, tools])
+  const shown = useMemo(() => tools.filter(tool => studioTextMatches(query, [tool.name, tool.description, ...tool.requiredBy])), [query, tools])
   return (
     <div className="workspace-surface split-list">
       <div className="surface-heading">
@@ -52,12 +49,7 @@ function StudioToolRail({ tools, query, setQuery, selectedName, onSelect, onColl
           <StudioRailToggle label="Collapse tools" onToggle={onCollapse} />
         </span>
       </div>
-      <div className="filter-bar">
-        <label className="search">
-          <SearchIcon />
-          <input aria-label="Search tools" onChange={event => setQuery(event.target.value)} placeholder="Search tools" value={query} />
-        </label>
-      </div>
+      <StudioSearchBox label="Search tools" onChange={setQuery} placeholder="Search tools" value={query} />
       <div className="document-list">
         {shown.map(tool => (
           <button className={`document-card document-button tool-list-card ${selectedName === tool.name ? 'active' : ''}`} key={tool.name} onClick={() => onSelect(tool.name)} type="button">

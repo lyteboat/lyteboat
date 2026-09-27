@@ -18,7 +18,7 @@ import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import z from '@deepseek-ai/schemastery'
 import { LYTEBOAT_EVAL_RUN_ID_PATTERN, lyteboatEvalRunRecordSchema } from '@lyteboat/contracts'
 import { evalCaseFilesOf, readEvalCaseFile, type EvalCase } from './eval-case.ts'
-import { compareEvalResults, readEvalResults, type EvalChange, type EvalRunRecord, type EvalTurnResult } from './eval-report.ts'
+import { compareEvalResults, evalRunRecordFile, evalRunResultsFile, readEvalResults, type EvalChange, type EvalRunRecord, type EvalTurnResult } from './eval-report.ts'
 
 export type { EvalCase } from './eval-case.ts'
 export type { EvalChange, EvalRunRecord, EvalTurnResult } from './eval-report.ts'
@@ -85,7 +85,7 @@ export class EvalRecordsService extends Service {
     const dir = this.runDir(runId)
     if (dir === undefined) return undefined
     const listing = this.listing(runId)
-    return { ...listing, results: existsSync(join(dir, 'results.jsonl')) ? readEvalResults(dir) : [] }
+    return { ...listing, results: existsSync(evalRunResultsFile(dir)) ? readEvalResults(dir) : [] }
   }
 
   /**
@@ -136,7 +136,7 @@ export class EvalRecordsService extends Service {
 
   private listing(runId: string): EvalRunListing {
     const dir = join(this.dir, runId)
-    const record = this.record(runId, join(dir, 'run.json'))
+    const record = this.record(runId, evalRunRecordFile(dir))
     return { runId, dir, ...record === undefined ? {} : { record }, modifiedAt: Math.round(statSync(dir).mtimeMs) }
   }
 

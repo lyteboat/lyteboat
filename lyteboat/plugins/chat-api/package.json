@@ -33,7 +33,6 @@
     "@deepseek-ai/dsh-session": "workspace:*"
   },
   "devDependencies": {
-    "@lyteboat/testing": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-agent": "workspace:*",
     "@deepseek-ai/dsh-api-session-controller": "workspace:*",

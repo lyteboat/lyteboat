@@ -18,11 +18,13 @@ import type { StudioEvalRun, StudioEvalRunStatus } from '@lyteboat/contracts/stu
 import { studioApi, studioErrorMessage } from './studio-api-client.ts'
 import { useStudioConfirm } from './studio-confirm-dialog.tsx'
 import { useStudioEvalsAgent } from './studio-evals-agent-scope.tsx'
-import { formatStudioEvalDuration, formatStudioEvalFraction, studioEvalCaseResults, studioEvalModelLabel, studioEvalPassRate, studioEvalShortDigest, studioEvalTone } from './studio-evals-format.ts'
+import { formatStudioEvalDuration, formatStudioEvalFraction, studioEvalCaseResults, studioEvalModelLabel, studioEvalPassRate, studioEvalRunWritten, studioEvalShortDigest, studioEvalTone } from './studio-evals-format.ts'
 import { StudioEvalsEmpty, StudioEvalsErrorCallout, StudioEvalsFilterChip, StudioEvalsModePill, StudioEvalsPagination, StudioEvalsProgressBar, StudioEvalsScoreBar, StudioEvalsStatusPill } from './studio-evals-primitives.tsx'
 import { CloseIcon, SearchIcon } from './studio-icons.tsx'
 import { formatStudioRelativeTime } from './studio-relative-time.ts'
 import { formatStudioSessionTime } from './studio-session-format.ts'
+import { studioTextMatches } from './studio-text-filter.ts'
+import { toggledStudioSet } from './studio-toggled-set.ts'
 
 type StudioEvalsRunFilter = 'all' | 'passed' | 'failed' | 'running' | 'unfinished'
 
@@ -41,13 +43,9 @@ const STUDIO_EVAL_RUN_FILTER_OF: Record<StudioEvalRunStatus, StudioEvalsRunFilte
 const STUDIO_EVAL_RUNS_POLL_MS = 2000
 const STUDIO_EVAL_RUNNING_LOCK = '运行中的 run 不能对比或删除'
 
-/** A run with results to compare: one that finished passed or failed. */
-function studioEvalRunWritten(run: StudioEvalRun): boolean {
-  return run.status === 'passed' || run.status === 'failed'
-}
-
+/** A run's searchable facts as one text, so a filter may span two of them (`real passed`). */
 function studioEvalRunText(run: StudioEvalRun): string {
-  return [run.runId, run.mode, run.status, run.from ?? '', run.startedBy ?? '', run.agent?.version ?? '', studioEvalModelLabel(run.model), ...run.caseIds ?? []].join(' ').toLowerCase()
+  return [run.runId, run.mode, run.status, run.from ?? '', run.startedBy ?? '', run.agent?.version ?? '', studioEvalModelLabel(run.model), ...run.caseIds ?? []].join(' ')
 }
 
 function StudioEvalsRunPassCell({ run }: { run: StudioEvalRun }) {
@@ -179,10 +177,7 @@ export function StudioEvalsRunList({ canRun }: { canRun: boolean }) {
     return () => window.clearInterval(timer)
   }, [anyRunning, reloadRuns])
 
-  const visible = useMemo(() => {
-    const needle = text.trim().toLowerCase()
-    return all.filter(run => (filter === 'all' || STUDIO_EVAL_RUN_FILTER_OF[run.status] === filter) && (needle === '' || studioEvalRunText(run).includes(needle)))
-  }, [all, filter, text])
+  const visible = useMemo(() => all.filter(run => (filter === 'all' || STUDIO_EVAL_RUN_FILTER_OF[run.status] === filter) && studioTextMatches(text, [studioEvalRunText(run)])), [all, filter, text])
   const pages = Math.max(1, Math.ceil(visible.length / perPage))
   const current = Math.min(page, pages)
   const paged = visible.slice((current - 1) * perPage, current * perPage)
@@ -193,13 +188,7 @@ export function StudioEvalsRunList({ canRun }: { canRun: boolean }) {
   if (runs === null) return <div className="evals-list-page"><StudioEvalsEmpty hint="Loading runs…" /></div>
   if (all.length === 0) return <div className="evals-list-page"><StudioEvalsEmpty hint={canRun ? 'Click New Run to run this agent\'s eval cases.' : 'Runs show up here when an editor starts one, or when lyteboat eval writes one.'} title="No runs yet" /></div>
 
-  const toggle = (runId: string): void => {
-    setSelected(previous => {
-      const next = new Set(previous)
-      if (!next.delete(runId)) next.add(runId)
-      return next
-    })
-  }
+  const toggle = (runId: string): void => { setSelected(previous => toggledStudioSet(previous, runId)) }
   const toggleAll = (): void => {
     setSelected(previous => {
       const next = new Set(previous)

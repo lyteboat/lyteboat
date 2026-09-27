@@ -55,8 +55,23 @@ interface BootOptions {
   plugin?: string[]
 }
 
+/** A subcommand that boots a profile: `lyteboat <name> [launcher flags] [inner arguments]`. */
+interface LyteboatProfileCommand {
+  name: string
+  description: string
+  /** The positional argument's syntax and description, for help. */
+  argument: [string, string]
+  /** The default `--profile`. */
+  profile: string
+  /** A command of the booted app the inner arguments go to (`lyteboat release …` is `eval release …`). */
+  innerCommand?: string
+}
+
 /** Repeatable single-value collector; never variadic, which would swallow the inner arguments. */
 const collect = (value: string, previous: string[] = []): string[] => [...previous, value]
+
+const PATCH_OPTION_HELP = 'extra patch-list overlay applied after the profile layer (repeatable)'
+const PLUGIN_OPTION_HELP = 'insert a local ESM plugin file as a row of the tree (repeatable)'
 
 const HELP_EXAMPLES = `
 Examples:
@@ -113,91 +128,37 @@ export function parseLyteboatArgs(argv: readonly string[], versions: LyteboatVer
     .exitOverride()
     .enablePositionalOptions()
 
-  const tryCommand = passThrough(program.command('try'))
-    .description(`answer one task and exit (profile: ${DEFAULT_TRY_PROFILE})`)
-    .argument('[task...]', 'the task text and any flags of the one-shot app')
-    .option('--profile <name>', 'the profile under $LYTEBOAT_HOME/profiles to boot', DEFAULT_TRY_PROFILE)
-    .option('--patch <path>', 'extra patch-list overlay applied after the profile layer (repeatable)', collect)
-    .option('--plugin <file>', 'insert a local ESM plugin file as a row of the tree (repeatable)', collect)
-    .action((args: string[], options: BootOptions) => {
-      const { profile, patches, plugins } = validateBoot(tryCommand, options)
-      resolved = { mode: 'profile', profile, patches, plugins, args }
-    })
-
-  const web = passThrough(program.command('web'))
-    .description(`serve dsh web with lyteboat's pages (profile: ${DEFAULT_WEB_PROFILE}); dsh web's own flags follow`)
-    .argument('[args...]', 'arguments for dsh web (see: lyteboat web --help)')
-    .option('--profile <name>', 'the profile under $LYTEBOAT_HOME/profiles to boot', DEFAULT_WEB_PROFILE)
-    .option('--patch <path>', 'extra patch-list overlay applied after the profile layer (repeatable)', collect)
-    .option('--plugin <file>', 'insert a local ESM plugin file as a row of the tree (repeatable)', collect)
-    .action((args: string[], options: BootOptions) => {
-      const { profile, patches, plugins } = validateBoot(web, options)
-      resolved = { mode: 'profile', profile, patches, plugins, args }
-    })
-
-  const serve = passThrough(program.command('serve'))
-    .description(`serve agents over HTTP (profile: ${DEFAULT_SERVE_PROFILE}); the service's own flags follow`)
-    .argument('[args...]', 'arguments for the service (see: lyteboat serve --help)')
-    .option('--profile <name>', 'the profile under $LYTEBOAT_HOME/profiles to boot', DEFAULT_SERVE_PROFILE)
-    .option('--patch <path>', 'extra patch-list overlay applied after the profile layer (repeatable)', collect)
-    .option('--plugin <file>', 'insert a local ESM plugin file as a row of the tree (repeatable)', collect)
-    .action((args: string[], options: BootOptions) => {
-      const { profile, patches, plugins } = validateBoot(serve, options)
-      resolved = { mode: 'profile', profile, patches, plugins, args }
-    })
-
-  const evalCommand = passThrough(program.command('eval'))
-    .description(`run an agent's eval cases, replay a recorded run, or compare two runs (profile: ${DEFAULT_EVAL_PROFILE}); the eval app's own flags follow`)
-    .argument('[args...]', 'arguments for the eval app (see: lyteboat eval --help)')
-    .option('--profile <name>', 'the profile under $LYTEBOAT_HOME/profiles to boot', DEFAULT_EVAL_PROFILE)
-    .option('--patch <path>', 'extra patch-list overlay applied after the profile layer (repeatable)', collect)
-    .option('--plugin <file>', 'insert a local ESM plugin file as a row of the tree (repeatable)', collect)
-    .action((args: string[], options: BootOptions) => {
-      const { profile, patches, plugins } = validateBoot(evalCommand, options)
-      resolved = { mode: 'profile', profile, patches, plugins, args }
-    })
-
-  // A release is an eval run: the eval profile with the eval app's release command.
-  const release = passThrough(program.command('release'))
-    .description(`put an agent through the release gate and write its release lock (profile: ${DEFAULT_EVAL_PROFILE}, as lyteboat eval release); the release command's own flags follow`)
-    .argument('[args...]', 'arguments for the release command (see: lyteboat release --help)')
-    .option('--profile <name>', 'the profile under $LYTEBOAT_HOME/profiles to boot', DEFAULT_EVAL_PROFILE)
-    .option('--patch <path>', 'extra patch-list overlay applied after the profile layer (repeatable)', collect)
-    .option('--plugin <file>', 'insert a local ESM plugin file as a row of the tree (repeatable)', collect)
-    .action((args: string[], options: BootOptions) => {
-      const { profile, patches, plugins } = validateBoot(release, options)
-      resolved = { mode: 'profile', profile, patches, plugins, args: ['release', ...args] }
-    })
-
-  const studio = passThrough(program.command('studio'))
-    .description(`serve the Studio workshop, or manage its accounts (profile: ${DEFAULT_STUDIO_PROFILE}); the Studio's own flags follow`)
-    .argument('[args...]', 'arguments for the Studio (see: lyteboat studio --help)')
-    .option('--profile <name>', 'the profile under $LYTEBOAT_HOME/profiles to boot', DEFAULT_STUDIO_PROFILE)
-    .option('--patch <path>', 'extra patch-list overlay applied after the profile layer (repeatable)', collect)
-    .option('--plugin <file>', 'insert a local ESM plugin file as a row of the tree (repeatable)', collect)
-    .action((args: string[], options: BootOptions) => {
-      const { profile, patches, plugins } = validateBoot(studio, options)
-      resolved = { mode: 'profile', profile, patches, plugins, args }
-    })
-
-  const inspect = passThrough(program.command('inspect'))
-    .description(`mount one agent and print what it is made of: tools, skills and their checks, eval case files (profile: ${DEFAULT_INSPECT_PROFILE}); the inspect app's own flags follow`)
-    .argument('[args...]', 'arguments for the inspect app (see: lyteboat inspect --help)')
-    .option('--profile <name>', 'the profile under $LYTEBOAT_HOME/profiles to boot', DEFAULT_INSPECT_PROFILE)
-    .option('--patch <path>', 'extra patch-list overlay applied after the profile layer (repeatable)', collect)
-    .option('--plugin <file>', 'insert a local ESM plugin file as a row of the tree (repeatable)', collect)
-    .action((args: string[], options: BootOptions) => {
-      const { profile, patches, plugins } = validateBoot(inspect, options)
-      resolved = { mode: 'profile', profile, patches, plugins, args }
-    })
+  // The subcommands that boot a profile, in help order.
+  const profileCommands: LyteboatProfileCommand[] = [
+    { name: 'try', description: `answer one task and exit (profile: ${DEFAULT_TRY_PROFILE})`, argument: ['[task...]', 'the task text and any flags of the one-shot app'], profile: DEFAULT_TRY_PROFILE },
+    { name: 'web', description: `serve dsh web with lyteboat's pages (profile: ${DEFAULT_WEB_PROFILE}); dsh web's own flags follow`, argument: ['[args...]', 'arguments for dsh web (see: lyteboat web --help)'], profile: DEFAULT_WEB_PROFILE },
+    { name: 'serve', description: `serve agents over HTTP (profile: ${DEFAULT_SERVE_PROFILE}); the service's own flags follow`, argument: ['[args...]', 'arguments for the service (see: lyteboat serve --help)'], profile: DEFAULT_SERVE_PROFILE },
+    { name: 'eval', description: `run an agent's eval cases, replay a recorded run, or compare two runs (profile: ${DEFAULT_EVAL_PROFILE}); the eval app's own flags follow`, argument: ['[args...]', 'arguments for the eval app (see: lyteboat eval --help)'], profile: DEFAULT_EVAL_PROFILE },
+    // A release is an eval run: the eval profile with the eval app's release command.
+    { name: 'release', description: `put an agent through the release gate and write its release lock (profile: ${DEFAULT_EVAL_PROFILE}, as lyteboat eval release); the release command's own flags follow`, argument: ['[args...]', 'arguments for the release command (see: lyteboat release --help)'], profile: DEFAULT_EVAL_PROFILE, innerCommand: 'release' },
+    { name: 'studio', description: `serve the Studio workshop, or manage its accounts (profile: ${DEFAULT_STUDIO_PROFILE}); the Studio's own flags follow`, argument: ['[args...]', 'arguments for the Studio (see: lyteboat studio --help)'], profile: DEFAULT_STUDIO_PROFILE },
+    { name: 'inspect', description: `mount one agent and print what it is made of: tools, skills and their checks, eval case files (profile: ${DEFAULT_INSPECT_PROFILE}); the inspect app's own flags follow`, argument: ['[args...]', 'arguments for the inspect app (see: lyteboat inspect --help)'], profile: DEFAULT_INSPECT_PROFILE },
+  ]
+  for (const spec of profileCommands) {
+    const command: Command = passThrough(program.command(spec.name))
+      .description(spec.description)
+      .argument(...spec.argument)
+      .option('--profile <name>', 'the profile under $LYTEBOAT_HOME/profiles to boot', spec.profile)
+      .option('--patch <path>', PATCH_OPTION_HELP, collect)
+      .option('--plugin <file>', PLUGIN_OPTION_HELP, collect)
+      .action((args: string[], options: BootOptions) => {
+        const { profile, patches, plugins } = validateBoot(command, options)
+        resolved = { mode: 'profile', profile, patches, plugins, args: spec.innerCommand === undefined ? args : [spec.innerCommand, ...args] }
+      })
+  }
 
   const config = program.command('config').description('inspect profile composition without booting')
   const dump = config.command('dump')
     .description('print the composed profile tree and exit')
     .option('--profile <name>', 'the profile to compose', DEFAULT_TRY_PROFILE)
     .option('--default', 'print the bundle layers only, without the user layer or --patch overlays')
-    .option('--patch <path>', 'extra patch-list overlay applied after the profile layer (repeatable)', collect)
-    .option('--plugin <file>', 'insert a local ESM plugin file as a row of the tree (repeatable)', collect)
+    .option('--patch <path>', PATCH_OPTION_HELP, collect)
+    .option('--plugin <file>', PLUGIN_OPTION_HELP, collect)
     .action((options: BootOptions & { default?: boolean }) => {
       const { profile, patches, plugins } = validateBoot(dump, options)
       const defaultOnly = options.default === true

@@ -6,8 +6,7 @@
  * the bounded search; one session's timeline and its stored form; and a
  * listing that follows a session written after it.
  */
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
@@ -19,13 +18,10 @@ import AgentCatalogService from '@lyteboat/agent-catalog'
 import type { LyteboatRequest } from '@lyteboat/contracts'
 import SessionIndexService from '@lyteboat/session-index'
 import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
+import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import { SessionLogBuilder } from './session-log-builder.ts'
 
-const dirs: string[] = []
-afterEach(() => {
-  vi.useRealTimers()
-  for (const dir of dirs.splice(0)) rmSync(dir, { recursive: true, force: true })
-})
+afterEach(() => { vi.useRealTimers() })
 
 interface IndexFixture {
   ctx: Context
@@ -34,8 +30,7 @@ interface IndexFixture {
 }
 
 async function indexFixture(): Promise<IndexFixture> {
-  const root = mkdtempSync(join(tmpdir(), 'session-index-'))
-  dirs.push(root)
+  const root = lyteboatTempDir('session-index')
   for (const id of ['alpha', 'beta']) {
     mkdirSync(join(root, 'agents', id), { recursive: true })
     writeFileSync(join(root, 'agents', id, 'agent.cordis.yml'), '[]\n')

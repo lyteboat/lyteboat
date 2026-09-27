@@ -16,7 +16,6 @@
   "dependencies": {
     "@lyteboat/contracts": "workspace:*",
     "@lyteboat/tool-policy": "workspace:*",
-    "@deepseek-ai/dsh-scope": "catalog:dsh",
     "yaml": "^2.4.2"
   },
   "peerDependencies": {

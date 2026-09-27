@@ -40,6 +40,13 @@ export interface RecordedRequest {
   body: ChatRequest
   /** The last user-role message's text; a message holding only tool results has none. */
   lastUser: string
+  /**
+   * What the caller wrote last: the last text block of the last user-role message
+   * that is not dsh's runtime context. Consecutive human messages (one after a
+   * cancelled turn) share one request message, and dsh appends its runtime context
+   * to it, so `lastUser` holds all of them.
+   */
+  latestMessage: string
   /** The request's system prompt and every system update in its history. */
   systemText: string
   /** The tools the request offers, by name, in request order. */
@@ -63,6 +70,9 @@ export interface ScriptedModel {
   close(): Promise<void>
 }
 
+/** The sentence dsh-system-prompt's `joinContextSections` opens every runtime-context snapshot with. */
+const DSH_RUNTIME_CONTEXT_OPENING = 'Current runtime context.'
+
 function textOf(blocks: readonly ChatBlock[]): string {
   return blocks.filter(block => block.type === 'text').map(block => block.text ?? '').join('')
 }
@@ -71,7 +81,9 @@ function classify(body: ChatRequest): RecordedRequest {
   const updates = body.messages.filter(message => message.role === 'system').map(message => textOf(message.content))
   const systemText = [body.system ?? '', ...updates].filter(text => text !== '').join('\n')
   const users = body.messages.filter(message => message.role === 'user' && message.content.some(block => block.type === 'text'))
-  const lastUser = textOf(users.at(-1)?.content ?? [])
+  const lastUserTexts = users.at(-1)?.content.filter(block => block.type === 'text').map(block => block.text ?? '') ?? []
+  const lastUser = lastUserTexts.join('')
+  const latestMessage = lastUserTexts.filter(text => !text.startsWith(DSH_RUNTIME_CONTEXT_OPENING)).at(-1) ?? ''
   const toolNames = (body.tools ?? []).map(tool => tool.name)
   const calledTools = body.messages
     .filter(message => message.role === 'assistant')
@@ -79,7 +91,7 @@ function classify(body: ChatRequest): RecordedRequest {
   let purpose: RequestPurpose = 'loop'
   if (/concise title/iu.test(systemText)) purpose = 'title'
   else if (/skill 路由器/u.test(systemText)) purpose = 'router'
-  return { purpose, body, lastUser, systemText, toolNames, calledTools }
+  return { purpose, body, lastUser, latestMessage, systemText, toolNames, calledTools }
 }
 
 async function readJson(request: IncomingMessage): Promise<ChatRequest> {
