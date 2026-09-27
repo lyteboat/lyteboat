@@ -83,7 +83,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 
 | 词 | 意思 | lyteboat 里的例子 | 出处 |
 |---|---|---|---|
-| cordis 插件、服务、`inject` | cordis 是 dsh 底下的插件框架。插件是带 `apply(ctx)` 的对象或 `Service` 子类；服务在 `ctx` 上占一个稳定的键（`ctx.llm`、`ctx.sessions`）；`inject` 列出依赖的服务，服务不在，插件就停在等待状态 | `lyteboat/plugins/distro/src/index.ts` 用 `super(ctx, 'lyteboatDistro')` 发布服务；第三方插件以 `inject = ['lyteboatDistro']` 依赖它（§4.4） | `up:docs/cordis-primer.md`「Cordis In Five Ideas」 |
+| cordis 插件、服务、`inject` | cordis 是 dsh 底下的插件框架。插件是导出 `apply(ctx)` 的模块，或默认导出的一个类（`Service` 子类或普通类）；lyteboat 自己的插件模块都默认导出一个类（`CLAUDE.md`「Coding conventions」的 “A plugin is a class”）；服务在 `ctx` 上占一个稳定的键（`ctx.llm`、`ctx.sessions`）；`inject` 列出依赖的服务，服务不在，插件就停在等待状态 | `lyteboat/plugins/distro/src/index.ts` 用 `super(ctx, 'lyteboatDistro')` 发布服务；第三方插件以 `inject = ['lyteboatDistro']` 依赖它（§4.4） | `up:docs/cordis-primer.md`「Cordis In Five Ideas」 |
 | 事件与派发模式 | 服务用声明合并声明事件名，按 `emit`、`waterfall`、`parallel`、`serial`、`bail` 之一派发；**派发模式是事件公开契约的一部分** | 契约快照 `events.json` 为每个事件记下模式，G1 比对它（§4.1） | `up:docs/cordis-primer.md`「Dispatch Modes」 |
 | waterfall 与 `next()` | 环绕式中间件：监听器收到 `(...args, next)`，调 `next()` 交给下一个，不调就短路后面所有监听器 | 内核在 `dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.preStep` 派发 `lyteboat/intake`，链尾的默认值是 `{ kind: 'pass' }` | `up:docs/cordis-primer.md`「Cordis Waterfall Semantics」 |
 | seam、provider | seam 是一个可替换的能力：一个服务定义（占 `ctx.<key>`）、一个或多个 provider、一个或多个消费方 | `ctx.llm` 由内核 `dsh-llm` 定义，npm 上的 `dsh-llm-deepseek` 是 provider（它对 `dsh-llm` 是 peer 依赖） | `up:docs/glossary.md`「capability-seam」 |
@@ -1005,16 +1005,16 @@ lyteboat-next 与 lyteboat-stable 的规则见 [dsh-compat/COMPAT.md §7](../dsh
 | `files` | 摘要背后的逐文件 sha256（POSIX 相对路径 → 64 位十六进制） |
 | `baseline` | 回放过的基线：`startedAt`，用例、轮次、检查的个数，`results.jsonl` 按 LF 读（CRLF 读作 LF）的 sha256 |
 
-**[实跑]** 在 finance 上（它的基线已经带着身份录好，`examples/agents/finance/evals/baseline`；不需要 key，闸门只回放）：
+**[实跑]** 在 finance 上（它的基线带着录制时的身份，`examples/agents/finance/evals/baseline`；不需要 key，闸门只回放）：
 
 ```console
 $ node lyteboat/apps/cli/lib/bin.js release --agents ./examples/agents --agent finance
-lyteboat release: finance 1.0.0 (sha256:184e1e45…) released; lock: <仓库>/examples/agents/finance/agent.release.json; replay: $LYTEBOAT_HOME/evals/<运行 id>/report.md
+lyteboat release: refused at stamps: the baseline ran finance 1.0.0 (sha256:184e1e45…), but the agent is now finance 1.0.0 (sha256:97d6bed7…); record the baseline again
 ```
 
-退出码 0。锁的 `files` 是摘要覆盖的每一个文件（`agent.cordis.yml`、`agent.yml`、`package.json`、`tsconfig.json`、`assets/`、`src/`，以及构建出的 `lib/`）；`baseline` 记下基线的开始时间，用例、轮次、检查的个数和 `results.jsonl` 的哈希。摘要随本机构建出的 `lib/` 而定，所以省略。示例 agent 不提交锁。
+这一行写在 stderr，退出码 1，不写锁（`lyteboat/bundles/eval/src/index.ts`）。基线录于 finance 成为一个 `lyteboatAgentDef` 之前，记下的是那时的目录摘要；现在目录里没有 `agent.cordis.yml`，`src/` 多了 `finance-persona.ts`，`agent.yml` 也不再写 `name`，摘要变了，闸门停在 stamps 这一步。要再发布，先用真实 key 重录基线（[03-agent-development.md](03-agent-development.md) §4.16）。闸门放行时退出 0，在 stdout 打印 `lyteboat release: <id> <版本> (<摘要>) released; lock: <锁>; replay: <运行目录>/report.md`。锁的 `files` 是摘要覆盖的每一个文件（`agent.yml`、`package.json`、`tsconfig.json`、`assets/`、`src/`，以及构建出的 `lib/`；有 `agent.cordis.yml` 的 agent 还有它），finance 现在是 98 个，其中 `lib/` 下 60 个；`baseline` 记下基线的开始时间，用例、轮次、检查的个数和 `results.jsonl` 的哈希。摘要随本机构建出的 `lib/` 而定。示例 agent 不提交锁。
 
-**serve 查什么**（`lyteboat/bundles/serve/src/startup.ts` `readReleaseLock`、`apply`，`lyteboat/plugins/agent-catalog/src/index.ts` `AgentCatalogService.declareAll`、`AgentCatalogService.pinProblem`、`AgentCatalogService.modelProblem`），按先后：
+**serve 查什么**（`lyteboat/bundles/serve/src/startup.ts` `readReleaseLock`、`LyteboatServeStartup`，`lyteboat/plugins/agent-catalog/src/index.ts` `AgentCatalogService.declareAll`、`AgentCatalogService.pinProblem`、`AgentCatalogService.modelProblem`），按先后：
 
 1. 锁能按 schema 读出；读不出或有未知键：`error: --release <锁> is not a release lock: …`。
 2. 锁所在的目录就是 agent 目录，目录名必须等于 `agent.id`：`error: --release <锁> releases <id>, but lies in <目录>; a lock stays in its agent's directory`；它的上一级目录作为 agent 根。
