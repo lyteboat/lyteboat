@@ -41,16 +41,10 @@ import { studioSessionRoutes } from './studio-session-routes.ts'
 import { studioSystemRoutes } from './studio-system-routes.ts'
 import { studioWorkspaceRoutes } from './studio-workspace-routes.ts'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-studio-api'
-
-/** The services the API answers from. */
-export const inject = ['webServer', 'studioAuth', 'agentCatalog', 'agentInspector', 'sessionIndex', 'runMetricsReader', 'evalRecords', 'lyteboatDistro']
-
 /** Where the API sits on the web server. */
 export const STUDIO_API_PREFIX = '/api/studio'
 
-export interface Config {
+export interface StudioApiConfig {
   /** Where the audit log lives; default `$LYTEBOAT_HOME/studio`, beside the accounts. */
   dir?: string
   /** Host header values accepted beside the loopback names: `name` (any port) or `name:port`. */
@@ -68,17 +62,6 @@ export interface Config {
   lyteboatBin?: string
 }
 
-export const Config: z<Config> = z.object({
-  dir: z.string(),
-  trustedHosts: z.array(z.string()).default([]),
-  agentRoots: z.array(z.string()).default([]),
-  lyteboatVersion: z.string(),
-  traceLinkTemplate: z.string(),
-  maskedEnv: z.array(z.string()).default([]),
-  maxBodyBytes: z.natural().default(1024 * 1024),
-  lyteboatBin: z.string(),
-})
-
 const STUDIO_API_CONFIG_KEYS = new Set(['dir', 'trustedHosts', 'agentRoots', 'lyteboatVersion', 'traceLinkTemplate', 'maskedEnv', 'maxBodyBytes', 'lyteboatBin'])
 
 /** An eval process's environment: the Studio's own, without the secrets it masks, in the Studio's lyteboat home. */
@@ -88,46 +71,61 @@ function studioEvalEnv(masked: readonly string[]): NodeJS.ProcessEnv {
   return env
 }
 
-/**
- * Register `/api/studio` on the web server.
- * @param ctx - plugin context carrying the web server, studioAuth, the agent catalog, inspector, and session index, the run-metrics reader, the eval records, and the distro marker.
- * @param config - the validated config.
- * @throws when a config key is unknown or the trace link template has no `{trace_id}`.
- */
-export function apply(ctx: Context, config: Config): void {
-  // schemastery passes unknown keys through; a misspelt one must not be ignored.
-  const unknown = Object.keys(config).filter(key => !STUDIO_API_CONFIG_KEYS.has(key))
-  if (unknown.length > 0) throw new Error(`studio-api: unknown config key ${unknown.map(key => JSON.stringify(key)).join(', ')}; allowed: ${[...STUDIO_API_CONFIG_KEYS].join(', ')}`)
-  if (config.traceLinkTemplate !== undefined && !config.traceLinkTemplate.includes('{trace_id}')) {
-    throw new Error('studio-api: traceLinkTemplate must hold {trace_id}, where a session\'s trace id goes')
+export default class StudioApiRoutes {
+  /** The services the API answers from. */
+  static inject = ['webServer', 'studioAuth', 'agentCatalog', 'agentInspector', 'sessionIndex', 'runMetricsReader', 'evalRecords', 'lyteboatDistro']
+  static Config: z<StudioApiConfig> = z.object({
+    dir: z.string(),
+    trustedHosts: z.array(z.string()).default([]),
+    agentRoots: z.array(z.string()).default([]),
+    lyteboatVersion: z.string(),
+    traceLinkTemplate: z.string(),
+    maskedEnv: z.array(z.string()).default([]),
+    maxBodyBytes: z.natural().default(1024 * 1024),
+    lyteboatBin: z.string(),
+  })
+
+  /**
+   * Register `/api/studio` on the web server.
+   * @param ctx - plugin context carrying the web server, studioAuth, the agent catalog, inspector, and session index, the run-metrics reader, the eval records, and the distro marker.
+   * @param studioApiConfig - the validated config.
+   * @throws when a config key is unknown or the trace link template has no `{trace_id}`.
+   */
+  constructor(ctx: Context, studioApiConfig: StudioApiConfig) {
+    // schemastery passes unknown keys through; a misspelt one must not be ignored.
+    const unknown = Object.keys(studioApiConfig).filter(key => !STUDIO_API_CONFIG_KEYS.has(key))
+    if (unknown.length > 0) throw new Error(`studio-api: unknown config key ${unknown.map(key => JSON.stringify(key)).join(', ')}; allowed: ${[...STUDIO_API_CONFIG_KEYS].join(', ')}`)
+    if (studioApiConfig.traceLinkTemplate !== undefined && !studioApiConfig.traceLinkTemplate.includes('{trace_id}')) {
+      throw new Error('studio-api: traceLinkTemplate must hold {trace_id}, where a session\'s trace id goes')
+    }
+    const studioDir = studioApiConfig.dir ?? dshHomePath('studio')
+    const audit = new StudioAudit(studioDir, message => ctx.logger.warn(message))
+    const jobs = new StudioEvalJobs(studioDir, studioApiConfig.lyteboatBin === undefined ? undefined : {
+      bin: studioApiConfig.lyteboatBin,
+      agentRoots: studioApiConfig.agentRoots ?? [],
+      env: studioEvalEnv(studioApiConfig.maskedEnv ?? []),
+    }, message => ctx.logger.warn(message))
+    const router = new StudioApiRouter({
+      prefix: STUDIO_API_PREFIX,
+      trustedHosts: studioApiConfig.trustedHosts ?? [],
+      maxBodyBytes: studioApiConfig.maxBodyBytes ?? 1024 * 1024,
+      principal: headers => ctx.studioAuth.principal(headers),
+      internalError: error => ctx.logger.error(`lyteboat studio api: ${error instanceof Error ? error.stack ?? error.message : String(error)}`),
+    }, [
+      ...studioAuthRoutes(ctx.studioAuth, audit),
+      ...studioSystemRoutes(() => ({
+        distro: ctx.lyteboatDistro,
+        lyteboatVersion: studioApiConfig.lyteboatVersion,
+        agentRoots: studioApiConfig.agentRoots ?? [],
+        maskedEnv: studioApiConfig.maskedEnv ?? [],
+        env: process.env,
+      }), studioApiConfig.traceLinkTemplate),
+      ...studioAgentRoutes(ctx.agentCatalog, audit),
+      ...studioWorkspaceRoutes({ catalog: ctx.agentCatalog, inspector: ctx.agentInspector, audit }),
+      ...studioSessionRoutes(ctx.sessionIndex),
+      ...studioDashboardRoutes({ catalog: ctx.agentCatalog, inspector: ctx.agentInspector, sessions: ctx.sessionIndex, metrics: ctx.runMetricsReader, evals: ctx.evalRecords }),
+      ...studioEvalRoutes({ catalog: ctx.agentCatalog, records: ctx.evalRecords, jobs, audit }),
+    ])
+    ctx.effect(() => ctx.webServer.register({ kind: 'prefix', path: STUDIO_API_PREFIX, handler: (request, response) => router.handle(request, response) }), 'studio-api: /api/studio')
   }
-  const studioDir = config.dir ?? dshHomePath('studio')
-  const audit = new StudioAudit(studioDir, message => ctx.logger.warn(message))
-  const jobs = new StudioEvalJobs(studioDir, config.lyteboatBin === undefined ? undefined : {
-    bin: config.lyteboatBin,
-    agentRoots: config.agentRoots ?? [],
-    env: studioEvalEnv(config.maskedEnv ?? []),
-  }, message => ctx.logger.warn(message))
-  const router = new StudioApiRouter({
-    prefix: STUDIO_API_PREFIX,
-    trustedHosts: config.trustedHosts ?? [],
-    maxBodyBytes: config.maxBodyBytes ?? 1024 * 1024,
-    principal: headers => ctx.studioAuth.principal(headers),
-    internalError: error => ctx.logger.error(`lyteboat studio api: ${error instanceof Error ? error.stack ?? error.message : String(error)}`),
-  }, [
-    ...studioAuthRoutes(ctx.studioAuth, audit),
-    ...studioSystemRoutes(() => ({
-      distro: ctx.lyteboatDistro,
-      lyteboatVersion: config.lyteboatVersion,
-      agentRoots: config.agentRoots ?? [],
-      maskedEnv: config.maskedEnv ?? [],
-      env: process.env,
-    }), config.traceLinkTemplate),
-    ...studioAgentRoutes(ctx.agentCatalog, audit),
-    ...studioWorkspaceRoutes({ catalog: ctx.agentCatalog, inspector: ctx.agentInspector, audit }),
-    ...studioSessionRoutes(ctx.sessionIndex),
-    ...studioDashboardRoutes({ catalog: ctx.agentCatalog, inspector: ctx.agentInspector, sessions: ctx.sessionIndex, metrics: ctx.runMetricsReader, evals: ctx.evalRecords }),
-    ...studioEvalRoutes({ catalog: ctx.agentCatalog, records: ctx.evalRecords, jobs, audit }),
-  ])
-  ctx.effect(() => ctx.webServer.register({ kind: 'prefix', path: STUDIO_API_PREFIX, handler: (request, response) => router.handle(request, response) }), 'studio-api: /api/studio')
 }

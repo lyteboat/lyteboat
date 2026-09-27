@@ -18,12 +18,6 @@ import { parseCmdline } from '@deepseek-ai/dsh-cmdline'
 import type { AgentCatalogPin } from '@lyteboat/agent-catalog'
 import { lyteboatAgentReleaseSchema, type LyteboatAgentRelease } from '@lyteboat/contracts'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-serve-startup'
-
-/** Services required before the invocation can be read. */
-export const inject = ['cmdlineArgs', 'lyteboatDistro']
-
 /** Service provided by this plugin and injected by the catalog, web server, and chat-api rows. */
 export const LYTEBOAT_SERVE_STARTUP_SERVICE = 'lyteboatServeStartup'
 
@@ -94,46 +88,51 @@ Examples:
 `)
 }
 
-/**
- * Parse and provide the invocation. A missing or unknown agent root, a lock
- * that cannot be served, both `--agents` and `--release`, a host other than
- * the two, a bad port, or `--auth none` on every interface is a usage error,
- * so nothing is provided.
- * @param ctx - plugin context carrying the command line and this build's dsh release.
- */
-export function apply(ctx: Context): void {
-  const program = command()
-  program.action(() => {
-    const options = program.opts<{ agents?: string[]; release?: string[]; host: string; port: string; auth: string; secretEnv: string }>()
-    const releaseFiles = options.release ?? []
-    if (releaseFiles.length > 0 && options.agents !== undefined) program.error('error: --release and --agents are exclusive: serve released agents, or every agent of the directories')
-    const releases = releaseFiles.map(file => readReleaseLock(program, file, ctx.lyteboatDistro.dsh))
-    const include = releases.map(({ release }) => release.agent.id)
-    const twice = include.find((id, index) => include.indexOf(id) !== index)
-    if (twice !== undefined) program.error(`error: --release names agent ${twice} twice`)
-    const agentRoots = releases.length > 0 ? [...new Set(releases.map(({ dir }) => dirname(dir)))] : (options.agents ?? []).map(dir => resolve(dir))
-    if (agentRoots.length === 0) program.error('error: at least one --agents directory or --release lock is required')
-    for (const dir of agentRoots) {
-      if (!existsSync(dir) || !statSync(dir).isDirectory()) program.error(`error: --agents directory not found: ${dir}`)
-    }
-    const pinnedAgents = Object.fromEntries(releases.map(({ release: { agent, files } }) => [agent.id, { version: agent.version, digest: agent.digest, files }]))
-    if (options.host !== '127.0.0.1' && options.host !== '0.0.0.0') program.error('error: --host must be 127.0.0.1 or 0.0.0.0')
-    const port = Number(options.port)
-    if (!Number.isInteger(port) || port < 0 || port > 65_535) program.error(`error: --port must be an integer from 0 to 65535, not ${options.port}`)
-    if (options.auth !== 'none' && options.auth !== 'shared-secret') program.error('error: --auth must be none or shared-secret')
-    if (options.auth === 'none' && options.host !== '127.0.0.1') program.error('error: --auth none serves only 127.0.0.1; use --auth shared-secret with --host 0.0.0.0')
-    // program.error() exits, but TypeScript cannot narrow through it.
-    const host = options.host === '0.0.0.0' ? '0.0.0.0' : '127.0.0.1'
-    const auth = options.auth === 'shared-secret' ? 'shared-secret' : 'none'
-    ctx.provide(LYTEBOAT_SERVE_STARTUP_SERVICE, {
-      agentRoots,
-      include,
-      pinnedAgents,
-      host,
-      port,
-      auth,
-      credentialRef: options.secretEnv,
-    } satisfies LyteboatServeStartupValues)
-  })
-  parseCmdline(ctx, program)
+export default class LyteboatServeStartup {
+  /** Services required before the invocation can be read. */
+  static inject = ['cmdlineArgs', 'lyteboatDistro']
+
+  /**
+   * Parse and provide the invocation. A missing or unknown agent root, a lock
+   * that cannot be served, both `--agents` and `--release`, a host other than
+   * the two, a bad port, or `--auth none` on every interface is a usage error,
+   * so nothing is provided.
+   * @param ctx - plugin context carrying the command line and this build's dsh release.
+   */
+  constructor(ctx: Context) {
+    const program = command()
+    program.action(() => {
+      const options = program.opts<{ agents?: string[]; release?: string[]; host: string; port: string; auth: string; secretEnv: string }>()
+      const releaseFiles = options.release ?? []
+      if (releaseFiles.length > 0 && options.agents !== undefined) program.error('error: --release and --agents are exclusive: serve released agents, or every agent of the directories')
+      const releases = releaseFiles.map(file => readReleaseLock(program, file, ctx.lyteboatDistro.dsh))
+      const include = releases.map(({ release }) => release.agent.id)
+      const twice = include.find((id, index) => include.indexOf(id) !== index)
+      if (twice !== undefined) program.error(`error: --release names agent ${twice} twice`)
+      const agentRoots = releases.length > 0 ? [...new Set(releases.map(({ dir }) => dirname(dir)))] : (options.agents ?? []).map(dir => resolve(dir))
+      if (agentRoots.length === 0) program.error('error: at least one --agents directory or --release lock is required')
+      for (const dir of agentRoots) {
+        if (!existsSync(dir) || !statSync(dir).isDirectory()) program.error(`error: --agents directory not found: ${dir}`)
+      }
+      const pinnedAgents = Object.fromEntries(releases.map(({ release: { agent, files } }) => [agent.id, { version: agent.version, digest: agent.digest, files }]))
+      if (options.host !== '127.0.0.1' && options.host !== '0.0.0.0') program.error('error: --host must be 127.0.0.1 or 0.0.0.0')
+      const port = Number(options.port)
+      if (!Number.isInteger(port) || port < 0 || port > 65_535) program.error(`error: --port must be an integer from 0 to 65535, not ${options.port}`)
+      if (options.auth !== 'none' && options.auth !== 'shared-secret') program.error('error: --auth must be none or shared-secret')
+      if (options.auth === 'none' && options.host !== '127.0.0.1') program.error('error: --auth none serves only 127.0.0.1; use --auth shared-secret with --host 0.0.0.0')
+      // program.error() exits, but TypeScript cannot narrow through it.
+      const host = options.host === '0.0.0.0' ? '0.0.0.0' : '127.0.0.1'
+      const auth = options.auth === 'shared-secret' ? 'shared-secret' : 'none'
+      ctx.provide(LYTEBOAT_SERVE_STARTUP_SERVICE, {
+        agentRoots,
+        include,
+        pinnedAgents,
+        host,
+        port,
+        auth,
+        credentialRef: options.secretEnv,
+      } satisfies LyteboatServeStartupValues)
+    })
+    parseCmdline(ctx, program)
+  }
 }

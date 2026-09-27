@@ -18,23 +18,13 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import z from '@deepseek-ai/schemastery'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-studio-web'
-
-/** The web server the pages are served on. */
-export const inject = ['webServer']
-
 /** Where the pages sit on the web server. */
 export const STUDIO_WEB_PREFIX = '/studio'
 
-export interface Config {
+export interface StudioWebConfig {
   /** The built pages; default this package's `lib/web`. */
   webDir?: string
 }
-
-export const Config: z<Config> = z.object({
-  webDir: z.string(),
-})
 
 // Loaded from src/ (tests) or lib/ (the launcher), the package root is one level up either way.
 const BUILT_WEB_DIR = fileURLToPath(new URL('../lib/web/', import.meta.url))
@@ -89,35 +79,43 @@ function sendBuiltFile(request: IncomingMessage, response: ServerResponse, file:
   else createReadStream(file).pipe(response)
 }
 
-/**
- * Serve the pages under `/studio` and redirect `/` to them.
- * @param ctx - plugin context carrying the web server.
- * @param config - where the built pages are.
- * @throws when the pages are not built.
- */
-export function apply(ctx: Context, config: Config): void {
-  const webDir = resolve(config.webDir ?? BUILT_WEB_DIR)
-  if (!existsSync(join(webDir, 'index.html'))) throw new Error(`studio-web: the pages are not built (no ${join(webDir, 'index.html')}); run pnpm run build`)
-  const index = readFileSync(join(webDir, 'index.html'))
-  const handler = (request: IncomingMessage, response: ServerResponse): void => {
-    if (request.method !== 'GET' && request.method !== 'HEAD') {
-      sendStudioText(response, 405, 'use GET', { allow: 'GET, HEAD' })
-      return
+export default class StudioWebPages {
+  /** The web server the pages are served on. */
+  static inject = ['webServer']
+  static Config: z<StudioWebConfig> = z.object({
+    webDir: z.string(),
+  })
+
+  /**
+   * Serve the pages under `/studio` and redirect `/` to them.
+   * @param ctx - plugin context carrying the web server.
+   * @param studioWebConfig - where the built pages are.
+   * @throws when the pages are not built.
+   */
+  constructor(ctx: Context, studioWebConfig: StudioWebConfig) {
+    const webDir = resolve(studioWebConfig.webDir ?? BUILT_WEB_DIR)
+    if (!existsSync(join(webDir, 'index.html'))) throw new Error(`studio-web: the pages are not built (no ${join(webDir, 'index.html')}); run pnpm run build`)
+    const index = readFileSync(join(webDir, 'index.html'))
+    const handler = (request: IncomingMessage, response: ServerResponse): void => {
+      if (request.method !== 'GET' && request.method !== 'HEAD') {
+        sendStudioText(response, 405, 'use GET', { allow: 'GET, HEAD' })
+        return
+      }
+      const path = new URL(request.url ?? '/', 'http://studio.invalid').pathname.slice(STUDIO_WEB_PREFIX.length)
+      const file = path === '' || path === '/' ? undefined : builtFileOf(webDir, path)
+      if (file !== undefined) {
+        sendBuiltFile(request, response, file, path.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache')
+        return
+      }
+      // A missing script or stylesheet must not come back as the page: a stale tab would run HTML as code.
+      if (path.startsWith('/assets/')) {
+        sendStudioText(response, 404, 'not found')
+        return
+      }
+      response.writeHead(200, { ...STUDIO_PAGE_HEADERS, 'content-type': CONTENT_TYPES['.html'] ?? 'text/html', 'content-length': index.byteLength, 'cache-control': 'no-cache' })
+      response.end(request.method === 'HEAD' ? undefined : index)
     }
-    const path = new URL(request.url ?? '/', 'http://studio.invalid').pathname.slice(STUDIO_WEB_PREFIX.length)
-    const file = path === '' || path === '/' ? undefined : builtFileOf(webDir, path)
-    if (file !== undefined) {
-      sendBuiltFile(request, response, file, path.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache')
-      return
-    }
-    // A missing script or stylesheet must not come back as the page: a stale tab would run HTML as code.
-    if (path.startsWith('/assets/')) {
-      sendStudioText(response, 404, 'not found')
-      return
-    }
-    response.writeHead(200, { ...STUDIO_PAGE_HEADERS, 'content-type': CONTENT_TYPES['.html'] ?? 'text/html', 'content-length': index.byteLength, 'cache-control': 'no-cache' })
-    response.end(request.method === 'HEAD' ? undefined : index)
+    ctx.effect(() => ctx.webServer.register({ kind: 'prefix', path: STUDIO_WEB_PREFIX, handler }), 'studio-web: /studio')
+    ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/', handler: (_request, response) => { sendStudioText(response, 302, 'the Studio is at /studio/', { location: `${STUDIO_WEB_PREFIX}/` }) } }), 'studio-web: /')
   }
-  ctx.effect(() => ctx.webServer.register({ kind: 'prefix', path: STUDIO_WEB_PREFIX, handler }), 'studio-web: /studio')
-  ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/', handler: (_request, response) => { sendStudioText(response, 302, 'the Studio is at /studio/', { location: `${STUDIO_WEB_PREFIX}/` }) } }), 'studio-web: /')
 }

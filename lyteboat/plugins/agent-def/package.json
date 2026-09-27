@@ -1,0 +1,49 @@
+{
+  "name": "@lyteboat/agent-def",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "description": "lyteboat's business-agent definition: lyteboatAgentDef({…}) checks one declaration (identity, persona, skills, skill routing, tool policy, model request overrides, tools, admission, the render_a2ui tool, event listeners) and returns the one row an agent directory mounts in the agent's standing scope, which hands each declaration to the host service that owns it",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@lyteboat/source": "./src/index.ts",
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "files": [
+    "lib"
+  ],
+  "dependencies": {
+    "@lyteboat/a2ui": "workspace:*",
+    "@lyteboat/aux-llm": "workspace:*",
+    "@lyteboat/contracts": "workspace:*",
+    "@lyteboat/intake-guard": "workspace:*",
+    "@lyteboat/request-context": "workspace:*",
+    "@lyteboat/skill-router": "workspace:*",
+    "@lyteboat/tool-policy": "workspace:*",
+    "@deepseek-ai/dsh-scope": "catalog:dsh",
+    "zod": "catalog:"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "catalog:cordis",
+    "@deepseek-ai/dsh-agent": "workspace:*",
+    "@deepseek-ai/dsh-llm": "workspace:*",
+    "@deepseek-ai/dsh-persona": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-skill-filesystem": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-tools": "workspace:*"
+  },
+  "devDependencies": {
+    "@lyteboat/distro": "workspace:*",
+    "@lyteboat/testing": "workspace:*",
+    "@deepseek-ai/cordis": "catalog:cordis",
+    "@deepseek-ai/dsh-agent": "workspace:*",
+    "@deepseek-ai/dsh-llm": "workspace:*",
+    "@deepseek-ai/dsh-persona": "catalog:dsh",
+    "@deepseek-ai/dsh-session": "workspace:*",
+    "@deepseek-ai/dsh-skill": "workspace:*",
+    "@deepseek-ai/dsh-skill-filesystem": "catalog:dsh",
+    "@deepseek-ai/dsh-tools": "workspace:*"
+  }
+}

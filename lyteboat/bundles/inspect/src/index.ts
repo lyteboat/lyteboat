@@ -20,12 +20,6 @@ import type { LyteboatInspectedCaseFile, LyteboatInspectMounted, LyteboatInspect
 import type {} from '@lyteboat/eval-runner/records'
 import type {} from './startup.ts'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-inspect'
-
-/** The rows this one reads. */
-export const inject = ['agentCatalog', 'agentInspector', 'evalRecords', 'lyteboatInspectStartup']
-
 function caseFilesOf(ctx: Context, agentDir: string): LyteboatInspectedCaseFile[] {
   return ctx.evalRecords.cases(agentDir).map(listing => ({
     file: relative(agentDir, listing.file).split(sep).join('/'),
@@ -79,23 +73,28 @@ function resultText(result: LyteboatInspectResult): string {
   return [head, `eval case files (${String(result.cases.length)}):`, ...cases].join('\n') + '\n'
 }
 
-/**
- * Inspect, print, and exit with the result.
- * @param ctx - plugin context carrying the catalog, the inspector, the eval records, the invocation, and the launcher's exit request.
- */
-export function apply(ctx: Context): void {
-  const exit = ctx.get('appExit')
-  if (exit === undefined) throw new Error('lyteboat-inspect: the launcher must provide ctx.appExit before the tree mounts')
-  void (async () => {
-    await ctx.get('loader')?.await()
-    const { agent, result: format } = ctx.lyteboatInspectStartup
-    try {
-      const result = await inspect(ctx, agent)
-      process.stdout.write(format === 'json' ? `${JSON.stringify(result)}\n` : resultText(result))
-      exit(result.mounted ? 0 : 1)
-    } catch (error: unknown) {
-      process.stderr.write(`lyteboat: ${error instanceof Error ? error.message : String(error)}\n`)
-      exit(2)
-    }
-  })()
+export default class LyteboatInspectRunner {
+  /** The rows this one reads. */
+  static inject = ['agentCatalog', 'agentInspector', 'evalRecords', 'lyteboatInspectStartup']
+
+  /**
+   * Inspect, print, and exit with the result.
+   * @param ctx - plugin context carrying the catalog, the inspector, the eval records, the invocation, and the launcher's exit request.
+   */
+  constructor(ctx: Context) {
+    const exit = ctx.get('appExit')
+    if (exit === undefined) throw new Error('lyteboat-inspect: the launcher must provide ctx.appExit before the tree mounts')
+    void (async () => {
+      await ctx.get('loader')?.await()
+      const { agent, result: format } = ctx.lyteboatInspectStartup
+      try {
+        const result = await inspect(ctx, agent)
+        process.stdout.write(format === 'json' ? `${JSON.stringify(result)}\n` : resultText(result))
+        exit(result.mounted ? 0 : 1)
+      } catch (error: unknown) {
+        process.stderr.write(`lyteboat: ${error instanceof Error ? error.message : String(error)}\n`)
+        exit(2)
+      }
+    })()
+  }
 }

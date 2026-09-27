@@ -12,12 +12,6 @@ import { Command } from 'commander'
 import type { Context } from '@deepseek-ai/cordis'
 import { parseCmdline } from '@deepseek-ai/dsh-cmdline'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-inspect-startup'
-
-/** Services required before the invocation can be read. */
-export const inject = ['cmdlineArgs']
-
 /** Service provided by this plugin and injected by the catalog and inspect rows. */
 export const LYTEBOAT_INSPECT_STARTUP_SERVICE = 'lyteboatInspectStartup'
 
@@ -54,28 +48,33 @@ Examples:
 `)
 }
 
-/**
- * Parse and provide the invocation.
- * @param ctx - plugin context carrying the command line.
- */
-export function apply(ctx: Context): void {
-  const program = command()
-  program.action(() => {
-    const options = program.opts<{ agents?: string[]; agent?: string; result: string }>()
-    const agentRoots = (options.agents ?? []).map(dir => resolve(dir))
-    if (agentRoots.length === 0) program.error('error: at least one --agents directory is required', USAGE)
-    for (const dir of agentRoots) {
-      if (!existsSync(dir) || !statSync(dir).isDirectory()) program.error(`error: --agents directory not found: ${dir}`, USAGE)
-    }
-    const agent = options.agent ?? ''
-    if (agent === '') program.error('error: --agent is required', USAGE)
-    if (options.result !== 'text' && options.result !== 'json') program.error('error: --result must be text or json', USAGE)
-    ctx.provide(LYTEBOAT_INSPECT_STARTUP_SERVICE, {
-      agentRoots,
-      agent,
-      // program.error() exits, but TypeScript cannot narrow through it.
-      result: options.result === 'json' ? 'json' : 'text',
-    } satisfies LyteboatInspectStartupValues)
-  })
-  parseCmdline(ctx, program)
+export default class LyteboatInspectStartup {
+  /** Services required before the invocation can be read. */
+  static inject = ['cmdlineArgs']
+
+  /**
+   * Parse and provide the invocation.
+   * @param ctx - plugin context carrying the command line.
+   */
+  constructor(ctx: Context) {
+    const program = command()
+    program.action(() => {
+      const options = program.opts<{ agents?: string[]; agent?: string; result: string }>()
+      const agentRoots = (options.agents ?? []).map(dir => resolve(dir))
+      if (agentRoots.length === 0) program.error('error: at least one --agents directory is required', USAGE)
+      for (const dir of agentRoots) {
+        if (!existsSync(dir) || !statSync(dir).isDirectory()) program.error(`error: --agents directory not found: ${dir}`, USAGE)
+      }
+      const agent = options.agent ?? ''
+      if (agent === '') program.error('error: --agent is required', USAGE)
+      if (options.result !== 'text' && options.result !== 'json') program.error('error: --result must be text or json', USAGE)
+      ctx.provide(LYTEBOAT_INSPECT_STARTUP_SERVICE, {
+        agentRoots,
+        agent,
+        // program.error() exits, but TypeScript cannot narrow through it.
+        result: options.result === 'json' ? 'json' : 'text',
+      } satisfies LyteboatInspectStartupValues)
+    })
+    parseCmdline(ctx, program)
+  }
 }

@@ -25,39 +25,34 @@
   "files": [
     "lib",
     "agent.yml",
-    "agent.cordis.yml",
     "assets"
   ],
   "dependencies": {
+    "@lyteboat/agent-def": "workspace:*",
     "@lyteboat/contracts": "workspace:*",
-    "@deepseek-ai/dsh-skill-filesystem": "catalog:dsh",
     "@deepseek-ai/dsh-tools": "workspace:*",
     "zod": "catalog:"
   },
   "peerDependencies": {
     "@lyteboat/a2ui": "workspace:*",
-    "@lyteboat/aux-llm": "workspace:*",
     "@lyteboat/intake-guard": "workspace:*",
-    "@lyteboat/request-context": "workspace:*",
-    "@lyteboat/tool-policy": "workspace:*",
-    "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-agent": "workspace:*"
   },
   "devDependencies": {
     "@lyteboat/a2ui": "workspace:*",
     "@lyteboat/aux-llm": "workspace:*",
+    "@lyteboat/business-base": "workspace:*",
     "@lyteboat/cli": "workspace:*",
     "@lyteboat/distro": "workspace:*",
     "@lyteboat/eval": "workspace:*",
     "@lyteboat/host": "workspace:*",
-    "@lyteboat/business-base": "workspace:*",
     "@lyteboat/intake-guard": "workspace:*",
     "@lyteboat/request-context": "workspace:*",
-    "@lyteboat/try": "workspace:*",
     "@lyteboat/serve": "workspace:*",
     "@lyteboat/skill-router": "workspace:*",
     "@lyteboat/testing": "workspace:*",
     "@lyteboat/tool-policy": "workspace:*",
+    "@lyteboat/try": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-agent": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",

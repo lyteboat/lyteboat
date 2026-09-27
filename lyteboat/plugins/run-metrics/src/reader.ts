@@ -34,7 +34,7 @@ export interface Config {
   dir?: string
 }
 
-export const Config: z<Config> = z.object({
+const Config: z<Config> = z.object({
   dir: z.string(),
 })
 

@@ -192,10 +192,11 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 
 一个业务 agent 是一个目录 `examples/agents/<id>/`，目录名就是 id。业务 agent 不属于发行版：它建在 `lyteboat/` 之上，`lyteboat/` 里没有任何包依赖它。
 
-- `agent.cordis.yml`（必需）：persona、技能路由、工具与策略等插件行；每一行只作用于这个 agent 的会话。要用的 dsh 工具（例如 `@deepseek-ai/dsh-tool-todo`）也在这里列一行：业务模式除了 dsh 的 `skill` 工具，不给 agent 它没声明的工具。
-- `agent.yml`（可选）：清单，名字、描述、排序等展示信息，以及版本（`version`）和评测用的模型（`model`）；未知键加载时报错。
-- `assets/`：运行时读的非代码文件，与 `src/`、`lib/` 同级：`skills/`（每个技能一个 `SKILL.md`）、`a2ui/`（卡片模板）、`sample-data/`（示例数据）。
-- `src/`：业务代码，编译到 `lib/`，由组合文件里的 `./lib/x.js` 行加载。
+- `src/agent.ts`：agent 的唯一声明，默认导出 `lyteboatAgentDef({…})`（`@lyteboat/agent-def`）：`agentId`（即目录名）、`agentName`，以及要用到的人设、技能路由、工具策略、模型请求参数、业务工具、准入函数、事件监听。每一项只作用于这个 agent 的会话；业务模式除了 dsh 的 `skill` 工具，不给 agent 它没声明的工具。
+- `src/` 里其余的业务代码：工具、准入、纯逻辑，编译到 `lib/`；框架加载 `lib/agent.js`。
+- `assets/`：运行时读的非代码文件，与 `src/`、`lib/` 同级：`skills/`（每个技能一个 `SKILL.md`，默认从这里挂载）、`a2ui/`（卡片模板）、`sample-data/`（示例数据）。
+- `agent.yml`（可选）：清单，描述、排序等展示信息，以及版本（`version`）和评测用的模型（`model`）；未知键加载时报错。
+- `agent.cordis.yml`（可选）：有它时以它为准，原样作为这个 agent 的插件行。只在 agent 要加一个 dsh 工具（例如 `@deepseek-ai/dsh-tool-todo`）这类额外的行时才写：第一行是 `./lib/agent.js`，后面列那一行。
 - `evals/`：评测用例（`lyteboat eval` 默认读这里）和一份真模型录下的基线，组合测试免 key 回放它。
 
 完整步骤和一个可运行的例子见[开发业务 agent](docs/03-agent-development.md)，现成的示例是 [`examples/agents/finance`](examples/agents/finance)：一个刻意做到最小、只为跑通端到端流程的金融智能体。
@@ -261,7 +262,8 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | `lyteboat/plugins/agent-inspector` | `@lyteboat/agent-inspector` | 查看一个 agent 由什么组成，不建 agent 实例、不写盘：从它的常驻作用域读出工具（怎样到达模型、哪些技能要求它）、技能与路由方式，以及每个技能的确定性检查；Studio 和 `lyteboat inspect` 用它 |
 | `lyteboat/plugins/session-index` | `@lyteboat/session-index` | 只读地列出、查找一个 agent 存下的会话（按它的工作目录，不拿写所有权），把一个会话折成时间线或原样读出；Studio 的会话页用它 |
 | `lyteboat/plugins/run-metrics` | `@lyteboat/run-metrics` | 运行指标：记录器（serve 挂）每轮结束后往 `$LYTEBOAT_HOME/run-metrics/<日期>.jsonl` 追加一行，并写正在运行的轮次的心跳，不进模型请求也不进会话日志；读取器（`./reader`）给 Studio 的看板用 |
-| `lyteboat/plugins/agent-catalog` | `@lyteboat/agent-catalog` | agent 目录：扫描 agent 根目录，把每个 agent 声明成 dsh preset，给出它的工作目录，报告挂载失败的 agent；`reload()` 按根目录现在的内容重新声明，`watch` 时目录一变就自动重载 |
+| `lyteboat/plugins/agent-catalog` | `@lyteboat/agent-catalog` | agent 目录：扫描 agent 根目录，把每个 agent 声明成 dsh preset（没有 `agent.cordis.yml` 的 agent 跑它的 `lib/agent.js`，名字取 `agentName`），给出它的工作目录，报告挂载失败的 agent；`reload()` 按根目录现在的内容重新声明，`watch` 时目录一变就自动重载 |
+| `lyteboat/plugins/agent-def` | `@lyteboat/agent-def` | 业务 agent 的唯一声明 `lyteboatAgentDef({…})`：身份、人设、技能目录、技能路由、工具策略、模型请求参数、工具、准入、`render_a2ui` 工具、事件监听；它就是 agent 目录里的那一行，挂载时逐项交给负责它的宿主服务 |
 | `lyteboat/plugins/chat-api` | `@lyteboat/chat-api` | `/chat`：业务调用方的入口。消息经 dsh 的 session-controller 进会话，请求（owner、trace id、上下文）记在人类消息上；回答是一个 JSON 或 enterprise 事件流，卡片放在正文标记处；共享密钥鉴权、会话归属、重复 `message_id` 检查、断连取消；agent 行可以登记帧装饰器给帧加字段 |
 | `lyteboat/plugins/eval-runner` | `@lyteboat/eval-runner` | 评测：读用例（YAML，严格校验），每个用例一个新会话、逐轮经 session-controller 提交，从会话日志读出每轮的表现并检查；real 模式录下会话，replay 模式不调模型、按录音回放；写出运行结果与报告，比较两次运行；`./records` 给 Studio 读磁盘上的运行与用例文件 |
 | `lyteboat/plugins/web-pages` | `@lyteboat/web-pages` | 轻舟在 dsh web 里的页面：Agents（列表、挂载失败的原因、重载）、Evals（运行列表与报告），以及会话右侧栏的 lyteboat 页签：带请求上下文发一条消息，实时显示会话的激活技能、请求、卡片、状态；Host 面在 dsh 连接的 `/api/lyteboat/<端点>` 上回答页面 |
@@ -305,7 +307,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 - 已知限制：
   - `lyteboat web` 是 dsh web 加轻舟的页面，保留 dsh 自己的能力（编码工具、沙箱、审批），会话不按 `/chat` 的方式跑；要按 `/chat` 的样子调试 agent，用 `lyteboat eval` 或 `lyteboat try --agent`。`lyteboat web` 里经 dsh 自己的输入框发的消息不带请求上下文，要带就用 lyteboat 页签发；dsh 的对话里卡片只显示标记，卡片内容在页签里以 JSON 显示。
   - 业务模式的模型请求里还有几处宿主的痕迹：dsh 的技能调用消息带着技能目录的绝对路径；上下文压缩的摘要指令是按编码助手写的；persona 里的 `{{cwd}}` 渲染成服务器上的路径，业务 persona 不要用它。另外，启动器仍会读它启动目录里的 `.env`（留给运维放部署配置）。
-  - 没有记忆和推荐问。旁路调用默认用 agent 自己的模型；技能路由可以在 `@lyteboat/skill-router/agent` 行里另指 provider 和 model，准入分类还不能单独指定。
+  - 没有记忆和推荐问。旁路调用默认用 agent 自己的模型；技能路由可以在 `lyteboatAgentDef` 的 `skillRouting` 里另指 provider 和 model，准入分类还不能单独指定。
 - 后续计划见[参考实现对齐分析](docs/04-reference-alignment.md)。
 
 ## 参与贡献

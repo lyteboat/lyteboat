@@ -1,23 +1,6 @@
 # A desk agent the Studio inspects: its own tools (one always visible, one a
 # skill must activate) and skills, every inherited tool the policy does not
-# declare hidden, `skill` kept, and routed skills.
-- id: persona
-  name: '@deepseek-ai/dsh-persona'
-  config:
-    prefix: >-
-      You are STUDIO-DESK, a test agent powered by the {{model}} model.
-
-- id: desk
-  name: ./desk.mjs
-
-- id: desk-tool-surface
-  name: '@lyteboat/tool-policy/agent'
-  config:
-    inherited: hidden
-    tools:
-      skill: { visibility: always }
-
-- id: desk-router
-  name: '@lyteboat/skill-router/agent'
-  config:
-    mode: dynamic
+# declare hidden, `skill` kept, and routed skills. A JavaScript fixture has no
+# build output, so its one row names ./agent.mjs.
+- id: desk-agent
+  name: ./agent.mjs

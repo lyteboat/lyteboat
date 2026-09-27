@@ -7,7 +7,8 @@
 
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
-import { cardMarker, cardsPresentationMeta, type A2uiService } from '@lyteboat/a2ui'
+import { cardMarker, cardsPresentationMeta } from '@lyteboat/a2ui'
+import type { LyteboatAgentHost } from '@lyteboat/agent-def'
 import type { JsonValue, LyteboatResultCard } from '@lyteboat/contracts'
 import type { FinanceCustomer, FinanceCustomerSource } from '../data/finance-customer.ts'
 import type { KnowledgeEntry } from '../capabilities/investor-knowledge.ts'
@@ -21,7 +22,7 @@ export interface FinanceToolDeps {
   /** Absolute path of the agent's a2ui templates root. */
   templates: string
   knowledge: readonly KnowledgeEntry[]
-  a2ui: A2uiService
+  a2ui: LyteboatAgentHost['a2ui']
 }
 
 /** The value every finance tool returns. */

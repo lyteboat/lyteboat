@@ -50,6 +50,7 @@
     "@deepseek-ai/dsh-session": "workspace:*"
   },
   "devDependencies": {
+    "@lyteboat/agent-def": "workspace:*",
     "@lyteboat/host": "workspace:*",
     "@lyteboat/business-base": "workspace:*",
     "@lyteboat/testing": "workspace:*",

@@ -47,7 +47,7 @@ export interface Config {
   turnTimeoutMs?: number
 }
 
-export const Config: z<Config> = z.object({
+const Config: z<Config> = z.object({
   turnTimeoutMs: z.natural().default(300_000),
 })
 

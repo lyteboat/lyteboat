@@ -38,7 +38,7 @@ export interface Config {
   reasoningEffort?: string
 }
 
-export const Config: z<Config> = z.object({
+const Config: z<Config> = z.object({
   reasoningEffort: z.string().min(1),
 })
 

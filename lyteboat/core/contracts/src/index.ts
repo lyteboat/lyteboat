@@ -296,6 +296,27 @@ export const lyteboatAgentManifestSchema: z.ZodType<LyteboatAgentManifest> = z.s
 })
 
 /**
+ * Who an agent says it is in its code: the `agentId` and `agentName` of its
+ * `lyteboatAgentDef({…})`, carried on the class the definition returns as the
+ * static `lyteboatAgentDefIdentity`. The id equals the agent's directory name;
+ * the name is what the agent catalog shows.
+ */
+export type LyteboatAgentDefIdentity = {
+  agentId: string
+  agentName: string
+}
+
+/**
+ * The schema of {@link LyteboatAgentDefIdentity}: a kebab-case id and a
+ * non-empty name. Its object type is kept (`satisfies`), so the definition's
+ * own schema extends its shape.
+ */
+export const lyteboatAgentDefIdentitySchema = z.strictObject({
+  agentId: z.string().regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u, 'must be kebab-case, as an agent directory name is'),
+  agentName: z.string().min(1),
+}) satisfies z.ZodType<LyteboatAgentDefIdentity>
+
+/**
  * Which agent answered: its id, the version its manifest declares, and the
  * digest of its directory (`sha256:` and 64 lowercase hex digits, computed by
  * `@lyteboat/agent-catalog`). A request, an eval run, and a release lock carry

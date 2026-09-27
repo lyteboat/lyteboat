@@ -9,9 +9,6 @@
   ],
   "references": [
     {
-      "path": "../../../dsh/llm/llm"
-    },
-    {
       "path": "../../../dsh/core/agent"
     },
     {
@@ -21,19 +18,13 @@
       "path": "../../../lyteboat/core/contracts"
     },
     {
-      "path": "../../../lyteboat/plugins/tool-policy"
-    },
-    {
       "path": "../../../lyteboat/plugins/a2ui"
     },
     {
-      "path": "../../../lyteboat/plugins/aux-llm"
+      "path": "../../../lyteboat/plugins/agent-def"
     },
     {
       "path": "../../../lyteboat/plugins/intake-guard"
-    },
-    {
-      "path": "../../../lyteboat/plugins/request-context"
     }
   ]
 }

@@ -13,27 +13,26 @@ import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@lyteboat/agent-catalog'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-web'
+export default class LyteboatWebRunner {
+  /** The row this one reports on. */
+  static inject = ['agentCatalog']
 
-/** The row this one reports on. */
-export const inject = ['agentCatalog']
-
-/**
- * Report the agents once the catalog has declared them.
- * @param ctx - plugin context carrying the catalog.
- */
-export function apply(ctx: Context): void {
-  void (async () => {
-    await ctx.get('loader')?.await()
-    try {
-      await ctx.agentCatalog.whenReady()
-    } catch (error: unknown) {
-      // Not strict: only a root-level fault (two roots holding one id) rejects, and the page reports it too.
-      process.stderr.write(`lyteboat web: ${error instanceof Error ? error.message : String(error)}\n`)
-    }
-    const agents = ctx.agentCatalog.list().map(agent => agent.id)
-    process.stdout.write(`lyteboat web: agents ${agents.join(', ') || 'none'}\n`)
-    for (const failure of ctx.agentCatalog.failures()) process.stderr.write(`lyteboat web: agent ${failure.id} failed: ${failure.reason}\n`)
-  })()
+  /**
+   * Report the agents once the catalog has declared them.
+   * @param ctx - plugin context carrying the catalog.
+   */
+  constructor(ctx: Context) {
+    void (async () => {
+      await ctx.get('loader')?.await()
+      try {
+        await ctx.agentCatalog.whenReady()
+      } catch (error: unknown) {
+        // Not strict: only a root-level fault (two roots holding one id) rejects, and the page reports it too.
+        process.stderr.write(`lyteboat web: ${error instanceof Error ? error.message : String(error)}\n`)
+      }
+      const agents = ctx.agentCatalog.list().map(agent => agent.id)
+      process.stdout.write(`lyteboat web: agents ${agents.join(', ') || 'none'}\n`)
+      for (const failure of ctx.agentCatalog.failures()) process.stderr.write(`lyteboat web: agent ${failure.id} failed: ${failure.reason}\n`)
+    })()
+  }
 }

@@ -45,7 +45,8 @@ describe('finance agent behind /chat (in process, scripted model)', () => {
       env: scriptedModelEnv(model),
       timeoutMs: 170_000,
     })
-    chat = (await serve.waitForStdout(/^lyteboat serve: (http:\/\/\S+\/chat) \(agents: finance\)$/mu))[1] ?? ''
+    // The root is the repository's examples/agents, which may hold other agents beside finance.
+    chat = (await serve.waitForStdout(/^lyteboat serve: (http:\/\/\S+\/chat) \(agents: (?:[a-z0-9-]+, )*finance(?:, [a-z0-9-]+)*\)$/mu))[1] ?? ''
   })
 
   afterAll(async () => {

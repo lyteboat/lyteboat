@@ -16,12 +16,6 @@ import type { Context } from '@deepseek-ai/cordis'
 import { parseCmdline } from '@deepseek-ai/dsh-cmdline'
 import { agentIds } from '@lyteboat/agent-catalog'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-web-startup'
-
-/** Services required before the invocation can be read. */
-export const inject = ['cmdlineArgs']
-
 /** Service provided by this plugin and injected by the agent catalog and preset registry rows. */
 export const LYTEBOAT_WEB_STARTUP_SERVICE = 'lyteboatWebStartup'
 
@@ -68,34 +62,39 @@ Examples:
 `)
 }
 
-/**
- * Parse and provide the invocation. A missing agent root, an `--agent` no
- * root holds, `--host 0.0.0.0`, or a non-numeric port is a usage error, so
- * nothing is provided.
- * @param ctx - plugin context carrying the command line.
- */
-export function apply(ctx: Context): void {
-  const program = command()
-  program.action(() => {
-    const options = program.opts<{ agents?: string[]; agent?: string; host?: string; open: boolean; port?: string; trustedHost?: string[] }>()
-    const agentRoots = (options.agents ?? []).map(dir => resolve(dir))
-    for (const dir of agentRoots) {
-      if (!existsSync(dir) || !statSync(dir).isDirectory()) program.error(`error: --agents directory not found: ${dir}`)
-    }
-    const ids = agentIds(agentRoots)
-    if (options.agent !== undefined && !ids.includes(options.agent)) program.error(`error: no --agents directory holds agent "${options.agent}" (available: ${ids.join(', ') || 'none'})`)
-    // dsh web creates a new session under the registry's default, which must name a declared agent.
-    const defaultAgent = options.agent ?? ids[0] ?? 'none'
-    // dsh web's own rule: the browser UI runs code on this machine, so it never binds every interface.
-    if (options.host === '0.0.0.0') program.error('error: --host 0.0.0.0 is not supported: the browser UI would expose code execution to the network; use 127.0.0.1')
-    if (options.port !== undefined && !/^\d+$/u.test(options.port)) program.error(`error: --port must be a number, got ${JSON.stringify(options.port)}`)
-    ctx.provide('webStartup', {
-      openBrowser: options.open,
-      ...options.host === undefined ? {} : { host: options.host },
-      ...options.port === undefined ? {} : { port: Number(options.port) },
-      trustedHosts: options.trustedHost ?? [],
-    } satisfies DshWebStartupValues)
-    ctx.provide(LYTEBOAT_WEB_STARTUP_SERVICE, { agentRoots, defaultAgent } satisfies LyteboatWebStartupValues)
-  })
-  parseCmdline(ctx, program)
+export default class LyteboatWebStartup {
+  /** Services required before the invocation can be read. */
+  static inject = ['cmdlineArgs']
+
+  /**
+   * Parse and provide the invocation. A missing agent root, an `--agent` no
+   * root holds, `--host 0.0.0.0`, or a non-numeric port is a usage error, so
+   * nothing is provided.
+   * @param ctx - plugin context carrying the command line.
+   */
+  constructor(ctx: Context) {
+    const program = command()
+    program.action(() => {
+      const options = program.opts<{ agents?: string[]; agent?: string; host?: string; open: boolean; port?: string; trustedHost?: string[] }>()
+      const agentRoots = (options.agents ?? []).map(dir => resolve(dir))
+      for (const dir of agentRoots) {
+        if (!existsSync(dir) || !statSync(dir).isDirectory()) program.error(`error: --agents directory not found: ${dir}`)
+      }
+      const ids = agentIds(agentRoots)
+      if (options.agent !== undefined && !ids.includes(options.agent)) program.error(`error: no --agents directory holds agent "${options.agent}" (available: ${ids.join(', ') || 'none'})`)
+      // dsh web creates a new session under the registry's default, which must name a declared agent.
+      const defaultAgent = options.agent ?? ids[0] ?? 'none'
+      // dsh web's own rule: the browser UI runs code on this machine, so it never binds every interface.
+      if (options.host === '0.0.0.0') program.error('error: --host 0.0.0.0 is not supported: the browser UI would expose code execution to the network; use 127.0.0.1')
+      if (options.port !== undefined && !/^\d+$/u.test(options.port)) program.error(`error: --port must be a number, got ${JSON.stringify(options.port)}`)
+      ctx.provide('webStartup', {
+        openBrowser: options.open,
+        ...options.host === undefined ? {} : { host: options.host },
+        ...options.port === undefined ? {} : { port: Number(options.port) },
+        trustedHosts: options.trustedHost ?? [],
+      } satisfies DshWebStartupValues)
+      ctx.provide(LYTEBOAT_WEB_STARTUP_SERVICE, { agentRoots, defaultAgent } satisfies LyteboatWebStartupValues)
+    })
+    parseCmdline(ctx, program)
+  }
 }

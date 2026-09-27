@@ -1,7 +1,9 @@
 /**
  * @lyteboat/agent-catalog — the agents a lyteboat process serves. It scans
- * the configured roots (each direct subdirectory holding `agent.cordis.yml` is
- * an agent, its directory name the id), declares every agent to dsh's agent
+ * the configured roots (each direct subdirectory holding `agent.cordis.yml`,
+ * `agent.yml`, `lib/agent.js`, or `src/agent.ts` is an agent, its directory
+ * name the id; an agent without `agent.cordis.yml` runs `lib/agent.js`, its
+ * `lyteboatAgentDef`, which names it), declares every agent to dsh's agent
  * preset registry with its directory as the base URL, and reports the agents
  * that fail to read or mount, using the registry's own diagnostics. It answers
  * only which agents there are and where each one works (its working directory,
@@ -30,7 +32,7 @@ import { isSkillName } from '@deepseek-ai/dsh-skill'
 import z from '@deepseek-ai/schemastery'
 import type { LyteboatAgentIdentity, LyteboatAgentModel } from '@lyteboat/contracts'
 import { agentDigest, type AgentDigest } from './agent-digest.ts'
-import { locateAgents, readAgentDefinition } from './agent-directory.ts'
+import { locateAgents, readAgentDefIdentity, readAgentDefinition } from './agent-directory.ts'
 import type { AgentCatalogLocation, AgentDirectoryDefinition } from './agent-directory.ts'
 
 export { agentIds } from './agent-directory.ts'
@@ -96,7 +98,7 @@ export interface Config {
   pinnedAgents?: Record<string, AgentCatalogPin>
 }
 
-export const Config: z<Config> = z.object({
+const Config: z<Config> = z.object({
   roots: z.array(z.string()).required(),
   include: z.array(z.string()),
   strict: z.boolean().default(true),
@@ -231,7 +233,20 @@ export class AgentCatalogService extends Service {
     return `agent.yml declares model ${modelName(declared)}, but this process runs ${modelName(running)}; run it with that default model (the agent-default-model row) or change agent.yml`
   }
 
-  // Everything that can refuse an agent runs before presets.register, which imports and runs its code.
+  /** The preset the agent's `lyteboatAgentDef` names, when it has one; the manifest's name, when it gives one, must agree. */
+  private async namedPreset(definition: AgentDirectoryDefinition): Promise<AgentDirectoryDefinition['preset']> {
+    const identity = await readAgentDefIdentity(definition.agentDefSource)
+    if (identity === undefined) return definition.preset
+    const { agentName } = identity
+    const manifestName = definition.preset.name
+    if (manifestName !== undefined && manifestName !== agentName) {
+      throw new Error(`agent.yml names the agent "${manifestName}", but its lyteboatAgentDef names it "${agentName}"; keep one of them`)
+    }
+    return { ...definition.preset, name: agentName }
+  }
+
+  // Everything that can refuse an agent runs before its code does: the pin and the model
+  // before its lyteboatAgentDef module is read, and all of them before presets.register mounts it.
   private async declare({ id, dir }: AgentCatalogLocation): Promise<void> {
     const fail = (reason: string): void => { this.problems.set(id, { id, dir, reason }) }
     if (!isSkillName(id)) return fail(`"${id}" is not a kebab-case id; rename the directory`)
@@ -247,16 +262,20 @@ export class AgentCatalogService extends Service {
     if (pinProblem !== undefined) return fail(pinProblem)
     const modelProblem = this.modelProblem(definition.model)
     if (modelProblem !== undefined) return fail(modelProblem)
+    let presetDefinition = definition.preset
     // The registry takes the declaration's base URL from its caller's context.
     const presets = this.ctx.extend({ baseUrl: pathToFileURL(join(dir, sep)).href }).agentPresets
     try {
-      this.declared.set(id, this.ctx.effect(() => presets.register(definition.preset), `agent-catalog.declare(${id})`))
+      presetDefinition = await this.namedPreset(definition)
+      const declared = presetDefinition
+      this.declared.set(id, this.ctx.effect(() => presets.register(declared), `agent-catalog.declare(${id})`))
     } catch (error: unknown) {
       return fail(error instanceof Error ? error.message : String(error))
     }
     const preset = await this.ctx.agentPresets.resolve(id)
     if (preset.broken !== undefined) return fail(preset.broken)
-    const { preset: { name, description, order }, version, model } = definition
+    const { name, description, order } = presetDefinition
+    const { version, model } = definition
     this.entries.set(id, {
       id, dir,
       workdir: join(this.config.workdirsDir ?? dshHomePath('agent-workdirs'), id),

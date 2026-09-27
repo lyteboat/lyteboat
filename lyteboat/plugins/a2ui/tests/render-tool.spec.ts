@@ -15,7 +15,6 @@ import LyteboatDistroService from '@lyteboat/distro'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testing'
 import ToolPolicyService from '@lyteboat/tool-policy'
 import A2uiService from '@lyteboat/a2ui'
-import * as A2uiAgent from '@lyteboat/a2ui/agent'
 import { lyteboatCardsProjectionDefinition } from '../src/cards-projection.ts'
 import { collectRawData, parseObjectArgs } from '../src/render-tool-input.ts'
 import { REFERENCE_A2UI_COMPONENT_CATALOG } from './fixtures/reference-component-catalog.ts'
@@ -185,26 +184,17 @@ describe('render_a2ui over cards with arguments and hierarchies', () => {
   })
 })
 
-describe('the agent row', () => {
-  it('registers the render tool its config names', async () => {
+describe('a render tool with its own name', () => {
+  it('registers under the name its options give', async () => {
     const adapter = new MockAdapter([toolCallResponse('c1', 'render_card', { template: 'unauthorized' }), textResponse('done')])
     const ctx = await createLyteboatUnitHost(adapter)
     await ctx.plugin(LyteboatDistroService)
     await ctx.plugin(ToolPolicyService)
     await ctx.plugin(A2uiService)
-    await ctx.plugin(A2uiAgent, { templates: TEMPLATES, name: 'render_card' })
-    const agent = await ctx.agentLoop.create(SessionId('row'), { provider: 'mock', model: 'mock' })
+    await ctx.a2ui.registerRenderTool({ templates: TEMPLATES, name: 'render_card' })
+    const agent = await ctx.agentLoop.create(SessionId('named'), { provider: 'mock', model: 'mock' })
     await send(agent, '授权')
     expect(ctx.a2ui.cardsOf(agent).map(card => card.area)).toEqual(['unauthorized'])
-  })
-
-  it('rejects a key its config does not declare, at the top level and under components', async () => {
-    const ctx = await createLyteboatUnitHost(new MockAdapter([]))
-    await ctx.plugin(LyteboatDistroService)
-    await ctx.plugin(ToolPolicyService)
-    await ctx.plugin(A2uiService)
-    await expect(ctx.plugin(A2uiAgent, { templates: TEMPLATES, stateKey: ['assets_view'] } as never)).rejects.toThrow(/unknown key "stateKey"; allowed: templates, stateKeys, /u)
-    await expect(ctx.plugin(A2uiAgent, { templates: TEMPLATES, components: { types: ['Text'], bindings: {} } } as never)).rejects.toThrow(/unknown key "components\.bindings"/u)
   })
 })
 

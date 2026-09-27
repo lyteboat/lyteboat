@@ -40,7 +40,7 @@ const STUDIO_SKILL_RULE_COPY: Record<LyteboatSkillFindingRule, StudioSkillRuleCo
     label: '要求的工具有策略声明',
     passed: () => '要求的工具都在工具策略里声明过。',
     failed: finding => `这些工具没有在工具策略里声明：${finding.tools.join(', ')}；路由只激活声明过的工具。`,
-    suggestion: '用 ctx.toolPolicy.register 注册，或在 @lyteboat/tool-policy/agent 行的 tools 里声明。',
+    suggestion: '在 lyteboatAgentDef 的 tools 里注册，或在它的 toolPolicy.tools 里声明。',
   },
   'required-tools-auto': {
     label: '要求的工具需要激活',

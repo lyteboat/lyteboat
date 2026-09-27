@@ -16,29 +16,28 @@ import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@lyteboat/agent-catalog'
 import type {} from '@lyteboat/chat-api'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-serve'
+export default class LyteboatServeRunner {
+  /** The rows this one reports on. */
+  static inject = ['agentCatalog', 'webServer', 'chatApi']
 
-/** The rows this one reports on. */
-export const inject = ['agentCatalog', 'webServer', 'chatApi']
-
-/**
- * Report the service once the catalog has declared its agents, or stop it.
- * @param ctx - plugin context carrying the catalog, the web server, and the launcher's exit request.
- */
-export function apply(ctx: Context): void {
-  const exit = ctx.get('appExit')
-  if (exit === undefined) throw new Error('lyteboat-serve: the launcher must provide ctx.appExit before the tree mounts')
-  void (async () => {
-    await ctx.get('loader')?.await()
-    try {
-      await ctx.agentCatalog.whenReady()
-    } catch (error: unknown) {
-      process.stderr.write(`lyteboat: ${error instanceof Error ? error.message : String(error)}\n`)
-      exit(1)
-      return
-    }
-    const agents = ctx.agentCatalog.list().map(agent => agent.id)
-    process.stdout.write(`lyteboat serve: http://${ctx.webServer.host}:${String(ctx.webServer.port)}/chat (agents: ${agents.join(', ') || 'none'})\n`)
-  })()
+  /**
+   * Report the service once the catalog has declared its agents, or stop it.
+   * @param ctx - plugin context carrying the catalog, the web server, and the launcher's exit request.
+   */
+  constructor(ctx: Context) {
+    const exit = ctx.get('appExit')
+    if (exit === undefined) throw new Error('lyteboat-serve: the launcher must provide ctx.appExit before the tree mounts')
+    void (async () => {
+      await ctx.get('loader')?.await()
+      try {
+        await ctx.agentCatalog.whenReady()
+      } catch (error: unknown) {
+        process.stderr.write(`lyteboat: ${error instanceof Error ? error.message : String(error)}\n`)
+        exit(1)
+        return
+      }
+      const agents = ctx.agentCatalog.list().map(agent => agent.id)
+      process.stdout.write(`lyteboat serve: http://${ctx.webServer.host}:${String(ctx.webServer.port)}/chat (agents: ${agents.join(', ') || 'none'})\n`)
+    })()
+  }
 }

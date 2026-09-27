@@ -21,12 +21,6 @@ import { parseCmdline } from '@deepseek-ai/dsh-cmdline'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import { LYTEBOAT_EVAL_RUN_ID_PATTERN } from '@lyteboat/contracts'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-eval-startup'
-
-/** Services required before the invocation can be read. */
-export const inject = ['cmdlineArgs']
-
 /** Service provided by this plugin and injected by the catalog and eval rows. */
 export const LYTEBOAT_EVAL_STARTUP_SERVICE = 'lyteboatEvalStartup'
 
@@ -132,57 +126,62 @@ Examples:
 `)
 }
 
-/**
- * Parse and provide the invocation.
- * @param ctx - plugin context carrying the command line.
- */
-export function apply(ctx: Context): void {
-  const program = command()
-  program.action(() => {
-    const options = program.opts<{ agents?: string[]; agent?: string; cases?: string[]; case?: string[]; runId?: string; model: string; from?: string }>()
-    const { agentRoots, agent } = agentOf(program, options)
-    if (options.model !== 'real' && options.model !== 'replay') program.error('error: --model must be real or replay', USAGE)
-    // program.error() exits, but TypeScript cannot narrow through it.
-    const mode = options.model === 'replay' ? 'replay' : 'real'
-    const from = options.from === undefined ? undefined : runDirOf(options.from)
-    if (options.from !== undefined && from === undefined) program.error(`error: --from names no eval run: ${options.from}`, USAGE)
-    if (mode === 'replay' && from === undefined) program.error('error: --model replay needs --from, the recorded run to play back', USAGE)
-    const cases = (options.cases ?? []).map(path => resolve(path))
-    if (options.runId !== undefined && !LYTEBOAT_EVAL_RUN_ID_PATTERN.test(options.runId)) program.error(`error: --run-id must be letters, digits, dots, dashes, and underscores, not ${options.runId}`, USAGE)
-    const runDir = dshHomePath('evals', options.runId ?? newRunId())
-    if (existsSync(runDir)) program.error(`error: --run-id names a run that exists: ${runDir}`, USAGE)
-    ctx.provide(LYTEBOAT_EVAL_STARTUP_SERVICE, {
-      agentRoots,
-      include: [agent],
-      command: { action: 'run', agent, cases, caseIds: options.case ?? [], mode, from, runDir },
-    } satisfies LyteboatEvalStartupValues)
-  })
-  program.command('compare')
-    .description('list the checks whose results differ between two runs; a check that passed before and fails now is a regression (exit 1)')
-    .argument('<before>', 'the earlier run: its directory or its id under $LYTEBOAT_HOME/evals')
-    .argument('<after>', 'the later run')
-    .action((beforeRef: string, afterRef: string) => {
-      const before = runDirOf(beforeRef)
-      const after = runDirOf(afterRef)
-      if (before === undefined) program.error(`error: no eval run ${beforeRef}`, USAGE)
-      if (after === undefined) program.error(`error: no eval run ${afterRef}`, USAGE)
-      ctx.provide(LYTEBOAT_EVAL_STARTUP_SERVICE, {
-        agentRoots: [],
-        include: [],
-        command: { action: 'compare', before: before ?? '', after: after ?? '' },
-      } satisfies LyteboatEvalStartupValues)
-    })
-  const release = program.command('release')
-    .description('put an agent through the release gate and write <agent>/agent.release.json: agent.yml declares a version and a model; evals/baseline is a real run of this agent on that model; replaying it shows every turn as recorded and passes; no lock releases the same version with other content (exit 1 when the gate refuses)')
-    .option('--agents <dir>', 'a directory of agents (repeatable, at least one)', collect)
-    .option('--agent <id>', 'the agent to release')
-    .action((options: { agents?: string[]; agent?: string }) => {
-      const { agentRoots, agent } = agentOf(release, options)
+export default class LyteboatEvalStartup {
+  /** Services required before the invocation can be read. */
+  static inject = ['cmdlineArgs']
+
+  /**
+   * Parse and provide the invocation.
+   * @param ctx - plugin context carrying the command line.
+   */
+  constructor(ctx: Context) {
+    const program = command()
+    program.action(() => {
+      const options = program.opts<{ agents?: string[]; agent?: string; cases?: string[]; case?: string[]; runId?: string; model: string; from?: string }>()
+      const { agentRoots, agent } = agentOf(program, options)
+      if (options.model !== 'real' && options.model !== 'replay') program.error('error: --model must be real or replay', USAGE)
+      // program.error() exits, but TypeScript cannot narrow through it.
+      const mode = options.model === 'replay' ? 'replay' : 'real'
+      const from = options.from === undefined ? undefined : runDirOf(options.from)
+      if (options.from !== undefined && from === undefined) program.error(`error: --from names no eval run: ${options.from}`, USAGE)
+      if (mode === 'replay' && from === undefined) program.error('error: --model replay needs --from, the recorded run to play back', USAGE)
+      const cases = (options.cases ?? []).map(path => resolve(path))
+      if (options.runId !== undefined && !LYTEBOAT_EVAL_RUN_ID_PATTERN.test(options.runId)) program.error(`error: --run-id must be letters, digits, dots, dashes, and underscores, not ${options.runId}`, USAGE)
+      const runDir = dshHomePath('evals', options.runId ?? newRunId())
+      if (existsSync(runDir)) program.error(`error: --run-id names a run that exists: ${runDir}`, USAGE)
       ctx.provide(LYTEBOAT_EVAL_STARTUP_SERVICE, {
         agentRoots,
         include: [agent],
-        command: { action: 'release', agent, runDir: dshHomePath('evals', newRunId()) },
+        command: { action: 'run', agent, cases, caseIds: options.case ?? [], mode, from, runDir },
       } satisfies LyteboatEvalStartupValues)
     })
-  parseCmdline(ctx, program)
+    program.command('compare')
+      .description('list the checks whose results differ between two runs; a check that passed before and fails now is a regression (exit 1)')
+      .argument('<before>', 'the earlier run: its directory or its id under $LYTEBOAT_HOME/evals')
+      .argument('<after>', 'the later run')
+      .action((beforeRef: string, afterRef: string) => {
+        const before = runDirOf(beforeRef)
+        const after = runDirOf(afterRef)
+        if (before === undefined) program.error(`error: no eval run ${beforeRef}`, USAGE)
+        if (after === undefined) program.error(`error: no eval run ${afterRef}`, USAGE)
+        ctx.provide(LYTEBOAT_EVAL_STARTUP_SERVICE, {
+          agentRoots: [],
+          include: [],
+          command: { action: 'compare', before: before ?? '', after: after ?? '' },
+        } satisfies LyteboatEvalStartupValues)
+      })
+    const release = program.command('release')
+      .description('put an agent through the release gate and write <agent>/agent.release.json: agent.yml declares a version and a model; evals/baseline is a real run of this agent on that model; replaying it shows every turn as recorded and passes; no lock releases the same version with other content (exit 1 when the gate refuses)')
+      .option('--agents <dir>', 'a directory of agents (repeatable, at least one)', collect)
+      .option('--agent <id>', 'the agent to release')
+      .action((options: { agents?: string[]; agent?: string }) => {
+        const { agentRoots, agent } = agentOf(release, options)
+        ctx.provide(LYTEBOAT_EVAL_STARTUP_SERVICE, {
+          agentRoots,
+          include: [agent],
+          command: { action: 'release', agent, runDir: dshHomePath('evals', newRunId()) },
+        } satisfies LyteboatEvalStartupValues)
+      })
+    parseCmdline(ctx, program)
+  }
 }

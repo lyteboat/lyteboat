@@ -22,12 +22,6 @@ import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import { STUDIO_ROLES, type StudioRole } from '@lyteboat/contracts/studio'
 import { readStudioAccounts, readStudioGrants, removeStudioAccount, setStudioAccount, setStudioGrant } from '@lyteboat/studio-auth/accounts'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-studio-startup'
-
-/** Services required before the invocation can be read. */
-export const inject = ['cmdlineArgs']
-
 /** Service provided by this plugin and injected by the catalog, web server, studio-auth, and studio-api rows. */
 export const LYTEBOAT_STUDIO_STARTUP_SERVICE = 'lyteboatStudioStartup'
 
@@ -206,21 +200,26 @@ function accountCommands(program: Command, done: (text: string) => void): void {
   })
 }
 
-/**
- * Parse the invocation: provide the Studio's values, or do one account
- * command and exit. A bad flag, a missing directory, or a Studio without
- * accounts in internal mode is a usage error, so nothing is provided.
- * @param ctx - plugin context carrying the command line and the launcher's exit request.
- */
-export function apply(ctx: Context): void {
-  const program = command()
-  program.action(() => {
-    ctx.provide(LYTEBOAT_STUDIO_STARTUP_SERVICE, studioValuesOf(program, program.opts<StudioServeOptions>(), launcherOf(ctx)))
-  })
-  accountCommands(program, (text) => {
-    // The launcher's CLI output: an account command prints what it changed and ends the process.
-    process.stdout.write(text)
-    ctx.get('appExit')?.(0)
-  })
-  parseCmdline(ctx, program)
+export default class LyteboatStudioStartup {
+  /** Services required before the invocation can be read. */
+  static inject = ['cmdlineArgs']
+
+  /**
+   * Parse the invocation: provide the Studio's values, or do one account
+   * command and exit. A bad flag, a missing directory, or a Studio without
+   * accounts in internal mode is a usage error, so nothing is provided.
+   * @param ctx - plugin context carrying the command line and the launcher's exit request.
+   */
+  constructor(ctx: Context) {
+    const program = command()
+    program.action(() => {
+      ctx.provide(LYTEBOAT_STUDIO_STARTUP_SERVICE, studioValuesOf(program, program.opts<StudioServeOptions>(), launcherOf(ctx)))
+    })
+    accountCommands(program, (text) => {
+      // The launcher's CLI output: an account command prints what it changed and ends the process.
+      process.stdout.write(text)
+      ctx.get('appExit')?.(0)
+    })
+    parseCmdline(ctx, program)
+  }
 }

@@ -7,13 +7,15 @@
  * already shows (finance.composite.ts) is not repeated here: these are the
  * outcomes it does not reach, and the strict validation of the cards.
  */
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ContentBlock, GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
-import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
+import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
-import { MockAdapter, createLyteboatUnitHost, textResponse, toolCallResponse } from '@lyteboat/testing'
+import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
+import { MockAdapter, createLyteboatUnitHost, mountAgentStandingScope, textResponse, toolCallResponse, type AgentStandingScope } from '@lyteboat/testing'
 import ToolPolicyService from '@lyteboat/tool-policy'
 import AuxLlmService from '@lyteboat/aux-llm'
 import LyteboatDistroService from '@lyteboat/distro'
@@ -21,7 +23,7 @@ import SkillRouterService from '@lyteboat/skill-router'
 import A2uiService, { validateFullPayload } from '@lyteboat/a2ui'
 import RequestContextService from '@lyteboat/request-context'
 import IntakeGuardService from '@lyteboat/intake-guard'
-import * as financeAgent from '@lyteboat/agent-finance/agent'
+import FinanceAgent from '@lyteboat/agent-finance/agent'
 
 interface TurnPlan { skill: string; tool: string; args?: Record<string, unknown> }
 
@@ -75,7 +77,10 @@ function scriptFor(plans: ReadonlyMap<string, TurnPlan>, intents: ReadonlyMap<st
   }
 }
 
-async function harness(plans: ReadonlyMap<string, TurnPlan>, intents: ReadonlyMap<string, string> = new Map()): Promise<{ ctx: Context; adapter: MockAdapter }> {
+/** The finance agent's directory, whose assets its definition reads. */
+const FINANCE_DIR = fileURLToPath(new URL('..', import.meta.url))
+
+async function harness(plans: ReadonlyMap<string, TurnPlan>, intents: ReadonlyMap<string, string> = new Map()): Promise<{ ctx: Context; adapter: MockAdapter; finance: AgentStandingScope }> {
   const script = scriptFor(plans, intents)
   const adapter = new MockAdapter(Array.from({ length: 80 }, () => script))
   const ctx = await createLyteboatUnitHost(adapter)
@@ -83,12 +88,14 @@ async function harness(plans: ReadonlyMap<string, TurnPlan>, intents: ReadonlyMa
   await ctx.plugin(LyteboatDistroService)
   await ctx.plugin(ToolPolicyService)
   await ctx.plugin(AuxLlmService)
-  await ctx.plugin(SkillRouterService, { mode: 'dynamic', historyWindow: 6 })
+  await ctx.plugin(SkillRouterService)
   await ctx.plugin(A2uiService)
   await ctx.plugin(RequestContextService)
   await ctx.plugin(IntakeGuardService)
-  await ctx.plugin(financeAgent)
-  return { ctx, adapter }
+  // The host's skill tool (dsh-tool-skill in a business mode), which finance's tool policy keeps visible.
+  ctx.tools.register(defineContentToolFixture({ name: 'skill', description: 'Load a skill.', parameters: { name: { type: 'string', required: true } }, execute: async () => [{ type: 'text', text: 'loaded' }] }))
+  const finance = await mountAgentStandingScope(ctx, FINANCE_DIR, FinanceAgent)
+  return { ctx, adapter, finance }
 }
 
 /** One request as `lyteboat try` sends it: submitted (admitted, then followed up with its context and verdict), then settled. */
@@ -117,8 +124,8 @@ function payloadsOf(agent: Agent): Record<string, unknown>[] {
 
 describe('the finance agent on the unit host (scripted model)', () => {
   async function askOnce(customer: string, text: string, plan?: TurnPlan, intents: ReadonlyMap<string, string> = new Map()): Promise<{ agent: Agent; adapter: MockAdapter; ctx: Context }> {
-    const { ctx, adapter } = await harness(new Map(plan === undefined ? [] : [[text, plan]]), intents)
-    const agent = await ctx.agentLoop.create(SessionId(`finance-${customer}`), { provider: 'mock', model: 'mock' })
+    const { ctx, adapter, finance } = await harness(new Map(plan === undefined ? [] : [[text, plan]]), intents)
+    const agent = await finance.createAgentInstance(`finance-${customer}`)
     await send(ctx, agent, text, customer)
     return { agent, adapter, ctx }
   }
@@ -151,8 +158,8 @@ describe('the finance agent on the unit host (scripted model)', () => {
       ['看看我的资产', { skill: 'asset-overview', tool: 'asset_overview' }],
       ['诊断一下我的配置', { skill: 'allocation-diagnosis', tool: 'allocation_diagnosis' }],
     ])
-    const { ctx } = await harness(plans)
-    const agent = await ctx.agentLoop.create(SessionId('finance-strict'), { provider: 'mock', model: 'mock' })
+    const { ctx, finance } = await harness(plans)
+    const agent = await finance.createAgentInstance('finance-strict')
 
     await send(ctx, agent, '看看我的资产', 'young-idle-cash')
     await send(ctx, agent, '诊断一下我的配置')

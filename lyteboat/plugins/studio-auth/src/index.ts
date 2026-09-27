@@ -60,7 +60,7 @@ export interface Config {
   loginLockMs?: number
 }
 
-export const Config: z<Config> = z.object({
+const Config: z<Config> = z.object({
   dir: z.string(),
   // A one-member union, so an absent gateway stays absent: a schemastery object defaults to {}.
   gateway: z.union([z.object({

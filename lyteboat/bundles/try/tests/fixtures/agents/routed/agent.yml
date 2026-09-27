@@ -1,3 +1,2 @@
-name: 技能路由示例
 description: 打开 @lyteboat/skill-router 的 dynamic 档：每条用户输入先经路由模型选技能，技能正文与所需工具同一步进入请求。
 order: 3

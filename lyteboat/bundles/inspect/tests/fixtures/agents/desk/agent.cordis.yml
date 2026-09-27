@@ -1,24 +1,7 @@
 # A desk agent `lyteboat inspect` reads: its own tools (one always visible,
 # one a skill must activate) and skills, every inherited tool the policy does
 # not declare hidden, `skill` kept, and routed skills. desk-help requires the
-# always-visible tool, so its required-tools-auto check fails.
-- id: persona
-  name: '@deepseek-ai/dsh-persona'
-  config:
-    prefix: >-
-      You are STUDIO-DESK, a test agent powered by the {{model}} model.
-
-- id: desk
-  name: ./desk.mjs
-
-- id: desk-tool-surface
-  name: '@lyteboat/tool-policy/agent'
-  config:
-    inherited: hidden
-    tools:
-      skill: { visibility: always }
-
-- id: desk-router
-  name: '@lyteboat/skill-router/agent'
-  config:
-    mode: dynamic
+# always-visible tool, so its required-tools-auto check fails. A JavaScript
+# fixture has no build output, so its one row names ./agent.mjs.
+- id: desk-agent
+  name: ./agent.mjs

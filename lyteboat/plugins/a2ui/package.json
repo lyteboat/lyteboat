@@ -10,18 +10,12 @@
       "@lyteboat/source": "./src/index.ts",
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
-    },
-    "./agent": {
-      "@lyteboat/source": "./src/agent.ts",
-      "types": "./lib/agent.d.ts",
-      "default": "./lib/agent.js"
     }
   },
   "files": ["lib"],
   "dependencies": {
     "@lyteboat/contracts": "workspace:*",
     "@lyteboat/tool-policy": "workspace:*",
-    "@deepseek-ai/schemastery": "catalog:",
     "yaml": "^2.4.2"
   },
   "peerDependencies": {

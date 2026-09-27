@@ -3,9 +3,9 @@
  * registry, and report the ones that cannot be served. A row that fails to
  * mount needs the host's loader tree; the try composition covers it.
  */
-import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
@@ -241,5 +241,132 @@ describe('the agent catalog', () => {
 
       await vi.waitFor(() => { expect(ctx.agentCatalog.list().map(agent => agent.id)).toEqual(['alpha', 'beta']) }, { timeout: 5000 })
     })
+  })
+})
+
+describe('an agent without agent.cordis.yml', () => {
+  const roots: string[] = []
+  afterEach(() => { for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true }) })
+
+  /** A root holding one agent directory with the given files; directories are created as needed. */
+  function rootWithAgent(id: string, files: Record<string, string>): string {
+    const root = mkdtempSync(join(tmpdir(), 'agent-catalog-def-'))
+    roots.push(root)
+    for (const [name, text] of Object.entries(files)) {
+      mkdirSync(dirname(join(root, id, name)), { recursive: true })
+      writeFileSync(join(root, id, name), text)
+    }
+    return root
+  }
+
+  // What lyteboatAgentDef({…}) returns, reduced to what the catalog reads and the registry mounts.
+  const agentModule = (identity: string): string => `export default class Agent { static lyteboatAgentDefIdentity = ${identity} }\n`
+
+  it('runs lib/agent.js as its one row and names the agent after its lyteboatAgentDef', async () => {
+    const root = rootWithAgent('solo', { 'lib/agent.js': agentModule('{ agentId: \'solo\', agentName: \'Solo\' }') })
+    const ctx = await catalogHost({ roots: [root] })
+
+    await ctx.agentCatalog.whenReady()
+
+    expect(ctx.agentCatalog.get('solo')?.name).toBe('Solo')
+    // dsh's own preset list shows the same name as the catalog.
+    expect((await ctx.agentPresets.list()).find(preset => preset.id === 'solo')?.name).toBe('Solo')
+    expect((await ctx.agentPresets.readDocument('solo')).content).toContain('./lib/agent.js')
+  })
+
+  it('fails an agent whose agent.yml names it differently from its lyteboatAgentDef', async () => {
+    const root = rootWithAgent('named', { 'agent.yml': 'name: Other\n', 'lib/agent.js': agentModule('{ agentId: \'named\', agentName: \'Named\' }') })
+    const ctx = await catalogHost({ roots: [root], strict: false })
+
+    await ctx.agentCatalog.whenReady()
+
+    expect(ctx.agentCatalog.failures().map(problem => problem.reason)).toEqual(['agent.yml names the agent "Other", but its lyteboatAgentDef names it "Named"; keep one of them'])
+  })
+
+  it('fails an agent whose lib/agent.js is not a lyteboatAgentDef', async () => {
+    const root = rootWithAgent('plain', { 'lib/agent.js': 'export default class Agent {}\n' })
+    const ctx = await catalogHost({ roots: [root], strict: false })
+
+    await ctx.agentCatalog.whenReady()
+
+    expect(ctx.agentCatalog.failures()[0]?.reason).toMatch(/lib\/agent\.js must default-export lyteboatAgentDef/u)
+  })
+
+  it('fails an agent whose lyteboatAgentDef declares a malformed identity, naming the field', async () => {
+    const root = rootWithAgent('malformed', { 'lib/agent.js': agentModule('{ agentId: \'Bad_Id\', agentName: \'Malformed\' }') })
+    const ctx = await catalogHost({ roots: [root], strict: false })
+
+    await ctx.agentCatalog.whenReady()
+
+    expect(ctx.agentCatalog.failures()[0]?.reason).toMatch(/lib\/agent\.js: its lyteboatAgentDef declares agentId: must be kebab-case/u)
+  })
+
+  it('fails an agent whose lib/agent.js cannot be loaded, naming the module', async () => {
+    const root = rootWithAgent('broken', { 'lib/agent.js': 'import { lyteboatAgentDef } from \'@lyteboat/no-such-package\'\nexport default lyteboatAgentDef({})\n' })
+    const ctx = await catalogHost({ roots: [root], strict: false })
+
+    await ctx.agentCatalog.whenReady()
+
+    expect(ctx.agentCatalog.failures()[0]?.reason).toMatch(/lib\/agent\.js cannot be loaded: Cannot find package '@lyteboat\/no-such-package'/u)
+  })
+
+  describe('with agent.cordis.yml', () => {
+    const composition = '- id: composed-agent\n  name: ./agent.mjs\n- id: extra\n  name: ./extra.mjs\n'
+    const extraRow = 'export function apply() {}\n'
+
+    it('names the agent after the lyteboatAgentDef its composition lists beside other rows', async () => {
+      const root = rootWithAgent('composed', { 'agent.cordis.yml': composition, 'agent.mjs': agentModule('{ agentId: \'composed\', agentName: \'Composed\' }'), 'extra.mjs': extraRow })
+      const ctx = await catalogHost({ roots: [root] })
+
+      await ctx.agentCatalog.whenReady()
+
+      expect(ctx.agentCatalog.get('composed')?.name).toBe('Composed')
+    })
+
+    it('fails an agent whose agent.yml names it differently from the lyteboatAgentDef its composition lists', async () => {
+      const root = rootWithAgent('composed', { 'agent.cordis.yml': composition, 'agent.yml': 'name: Other\n', 'agent.mjs': agentModule('{ agentId: \'composed\', agentName: \'Composed\' }'), 'extra.mjs': extraRow })
+      const ctx = await catalogHost({ roots: [root], strict: false })
+
+      await ctx.agentCatalog.whenReady()
+
+      expect(ctx.agentCatalog.failures().map(problem => problem.reason)).toEqual(['agent.yml names the agent "Other", but its lyteboatAgentDef names it "Composed"; keep one of them'])
+    })
+
+    it('fails an agent whose composition lists two lyteboatAgentDef rows', async () => {
+      const identity = agentModule('{ agentId: \'twice\', agentName: \'Twice\' }')
+      const root = rootWithAgent('twice', { 'agent.cordis.yml': '- id: first\n  name: ./first.mjs\n- id: second\n  name: ./second.mjs\n', 'first.mjs': identity, 'second.mjs': identity })
+      const ctx = await catalogHost({ roots: [root], strict: false })
+
+      await ctx.agentCatalog.whenReady()
+
+      expect(ctx.agentCatalog.failures()[0]?.reason).toMatch(/agent\.cordis\.yml lists 2 lyteboatAgentDef rows \(.*first\.mjs, .*second\.mjs\); an agent has one/u)
+    })
+
+    it('fails an agent whose composition lists a module that does not exist, before importing any', async () => {
+      const root = rootWithAgent('unbuilt', { 'agent.cordis.yml': '- id: unbuilt-agent\n  name: ./lib/agent.js\n' })
+      const ctx = await catalogHost({ roots: [root], strict: false })
+
+      await ctx.agentCatalog.whenReady()
+
+      expect(ctx.agentCatalog.failures()[0]?.reason).toMatch(/agent\.cordis\.yml lists \.\/lib\/agent\.js, which does not exist; build the agent/u)
+    })
+
+    it('takes the manifest\'s name when its rows hold no lyteboatAgentDef', async () => {
+      const root = rootWithAgent('rows', { 'agent.cordis.yml': '- id: extra\n  name: ./extra.mjs\n', 'agent.yml': 'name: Rows\n', 'extra.mjs': extraRow })
+      const ctx = await catalogHost({ roots: [root] })
+
+      await ctx.agentCatalog.whenReady()
+
+      expect(ctx.agentCatalog.get('rows')?.name).toBe('Rows')
+    })
+  })
+
+  it('finds an agent that is not built yet and says to build it', async () => {
+    const root = rootWithAgent('unbuilt', { 'src/agent.ts': 'export {}\n' })
+    const ctx = await catalogHost({ roots: [root], strict: false })
+
+    await ctx.agentCatalog.whenReady()
+
+    expect(ctx.agentCatalog.failures()[0]?.reason).toMatch(/has no agent\.cordis\.yml and no lib\/agent\.js; build the agent/u)
   })
 })

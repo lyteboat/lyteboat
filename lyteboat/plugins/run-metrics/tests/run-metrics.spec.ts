@@ -14,7 +14,7 @@ import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
 import type { LyteboatRunHeartbeat, LyteboatRunMetric } from '@lyteboat/contracts'
-import * as runMetrics from '@lyteboat/run-metrics'
+import RunMetricsRecorder from '@lyteboat/run-metrics'
 import RunMetricsReaderService from '@lyteboat/run-metrics/reader'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testing'
 import { readJsonLines } from '@lyteboat/testing/json-lines'
@@ -23,7 +23,7 @@ import { runMetricDayOf } from '../src/run-metric-files.ts'
 
 async function recorderHost(adapter: MockAdapter, dir: string): Promise<Context> {
   const ctx = await createLyteboatUnitHost(adapter)
-  await ctx.plugin(runMetrics, { dir, heartbeatMs: 60_000 })
+  await ctx.plugin(RunMetricsRecorder, { dir, heartbeatMs: 60_000 })
   for (const name of ['lookup', 'skill']) {
     ctx.tools.register(defineContentToolFixture({ name, description: name, parameters: {}, execute: async () => [{ type: 'text', text: `${name} ran` }] }))
   }
@@ -137,6 +137,11 @@ describe('the run-metrics reader', () => {
     await ctx.plugin(RunMetricsReaderService, { dir })
     return ctx
   }
+
+  it('refuses a config its schema rejects instead of reading from it', async () => {
+    const ctx = await createLyteboatUnitHost(new MockAdapter([]))
+    await expect(ctx.plugin(RunMetricsReaderService, { dir: 42 } as never)).rejects.toThrow(/dir/u)
+  })
 
   it('answers the turns of a range across day files, of one agent or all, skipping lines that are not metrics', async () => {
     const dir = lyteboatTempDir('run-metrics')

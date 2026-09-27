@@ -33,7 +33,7 @@ import EvalRecordsService from '@lyteboat/eval-runner/records'
 import RunMetricsReaderService from '@lyteboat/run-metrics/reader'
 import SessionIndexService from '@lyteboat/session-index'
 import SkillRouterService from '@lyteboat/skill-router'
-import * as studioApi from '@lyteboat/studio-api'
+import StudioApiRoutes, { type StudioApiConfig } from '@lyteboat/studio-api'
 import StudioAuthService from '@lyteboat/studio-auth'
 import { setStudioAccount, setStudioGrant } from '@lyteboat/studio-auth/accounts'
 import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
@@ -64,7 +64,7 @@ const workspaceAgent = fileURLToPath(new URL('./fixtures/workspace/ledger', impo
 const repositoryModules = fileURLToPath(new URL('../../../../node_modules', import.meta.url))
 const evalProcess = fileURLToPath(new URL('./fixtures/eval-process.mjs', import.meta.url))
 
-async function studioFixture(config: studioApi.Config = {}, setup: { workspace?: boolean; home?: boolean } = {}): Promise<StudioFixture> {
+async function studioFixture(config: StudioApiConfig = {}, setup: { workspace?: boolean; home?: boolean } = {}): Promise<StudioFixture> {
   const root = lyteboatTempDir('studio-api')
   // An eval process runs in the Studio's lyteboat home, where the records read its runs.
   if (setup.home === true) vi.stubEnv('DSH_HOME', root)
@@ -101,7 +101,7 @@ async function studioFixture(config: studioApi.Config = {}, setup: { workspace?:
   await ctx.plugin(EvalRecordsService, { dir: join(root, 'evals') })
   await ctx.plugin(WebServer, { host: '127.0.0.1', port: 0 })
   await ctx.plugin(StudioAuthService, { dir: studioDir })
-  await ctx.plugin(studioApi, { dir: studioDir, agentRoots: [agentsDir], ...config })
+  await ctx.plugin(StudioApiRoutes, { dir: studioDir, agentRoots: [agentsDir], ...config })
   await ctx.agentCatalog.whenReady()
   const call: StudioFixture['call'] = (method, path, options = {}) => new Promise((resolve, reject) => {
     const payload = options.body === undefined ? undefined : typeof options.body === 'string' ? options.body : JSON.stringify(options.body)

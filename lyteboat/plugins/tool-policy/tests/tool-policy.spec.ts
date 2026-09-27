@@ -11,7 +11,6 @@ import { defineContentToolFixture, defineTool, type ToolDefinition } from '@deep
 import LyteboatDistroService from '@lyteboat/distro'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testing'
 import ToolPolicyService from '@lyteboat/tool-policy'
-import * as ToolPolicyAgent from '@lyteboat/tool-policy/agent'
 
 async function harness(adapter: MockAdapter): Promise<Context> {
   const ctx = await createLyteboatUnitHost(adapter)
@@ -102,7 +101,10 @@ describe('visibility', () => {
     ctx.toolPolicy.register(echo('auto_tool'), { visibility: 'auto' })
     const agent = await ctx.agentLoop.create(SessionId('inherited-hidden'), { provider: 'mock', model: 'mock' })
     const plain = await ctx.agentLoop.create(SessionId('inherited-default'), { provider: 'mock', model: 'mock' })
-    await agent.ctx.plugin(ToolPolicyAgent, { inherited: 'hidden', tools: { kept_tool: { visibility: 'always' } } })
+    await agent.ctx.inject(['toolPolicy'], (agentCtx) => {
+      agentCtx.toolPolicy.declareInherited('hidden')
+      agentCtx.toolPolicy.declare('kept_tool', { visibility: 'always' })
+    })
 
     await send(agent, 'hello')
     expect(toolNames(adapter, 0)).toEqual(['kept_tool'])
@@ -127,7 +129,12 @@ describe('visibility', () => {
     const open = {}
     createScope(ctx, open)
 
-    await standing.ctx.plugin(ToolPolicyAgent, { inherited: 'hidden', tools: { auto_tool: { visibility: 'auto' }, official_tool: { visibility: 'always' } } })
+    // Declared from the scope's own context, as an agent row declares them.
+    await standing.ctx.inject(['toolPolicy'], (standingCtx) => {
+      standingCtx.toolPolicy.declareInherited('hidden')
+      standingCtx.toolPolicy.declare('auto_tool', { visibility: 'auto' })
+      standingCtx.toolPolicy.declare('official_tool', { visibility: 'always' })
+    })
 
     expect(ctx.toolPolicy.visible(key)).toEqual(['official_tool'])
     expect(ctx.toolPolicy.visible(open)).toEqual(['official_tool', 'host_tool'])
@@ -266,24 +273,5 @@ describe('distribution', () => {
     await ctx.plugin(LyteboatDistroService)
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(ctx.get('toolPolicy')).toBeDefined()
-  })
-})
-
-describe('agent row', () => {
-  it('declares the configured policies in its scope and rejects a misspelt key instead of declaring nothing', async () => {
-    const adapter = new MockAdapter([textResponse('one')])
-    const ctx = await harness(adapter)
-    ctx.tools.register(echo('official_tool'))
-    await ctx.plugin(ToolPolicyAgent, { tools: { official_tool: { visibility: 'auto' } } })
-    expect(ctx.toolPolicy.metaOf('official_tool')).toEqual({ visibility: 'auto' })
-    await expect(ctx.plugin(ToolPolicyAgent, { tools: { official_tool: { visibilty: 'auto' } as never } })).rejects.toThrow(/unknown key "visibilty"/u)
-  })
-
-  it('rejects the retired keys instead of declaring nothing', async () => {
-    const ctx = await harness(new MockAdapter([]))
-    ctx.tools.register(echo('official_tool'))
-
-    await expect(ctx.plugin(ToolPolicyAgent, { undeclared: 'auto', tools: {} } as never)).rejects.toThrow(/unknown key "undeclared"/u)
-    await expect(ctx.plugin(ToolPolicyAgent, { tools: { official_tool: { visibility: 'always', requiresConfirmation: true } as never } })).rejects.toThrow(/unknown key "requiresConfirmation"/u)
   })
 })

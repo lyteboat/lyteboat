@@ -1,4 +1,3 @@
-name: 金融智能体
 description: 只用公开理财常识的示例业务 agent：资产总览、配置诊断、投资者教育。
 order: 1
 version: 1.0.0

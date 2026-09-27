@@ -18,6 +18,7 @@
   "dependencies": {
     "@lyteboat/contracts": "workspace:*",
     "@deepseek-ai/dsh-home-paths": "catalog:dsh",
+    "@deepseek-ai/dsh-util-values": "catalog:dsh",
     "@deepseek-ai/schemastery": "catalog:",
     "js-yaml": "catalog:"
   },

@@ -45,7 +45,7 @@ export interface Config {
   evalsDir?: string
 }
 
-export const Config: z<Config> = z.object({
+const Config: z<Config> = z.object({
   owner: z.string().default('web'),
   evalsDir: z.string(),
 })

@@ -1,11 +1,15 @@
 /**
- * An agent directory: `<root>/<id>/agent.cordis.yml` holds the agent's plugin
- * rows (a Cordis entry list, `!!js` included) and the optional
- * `<root>/<id>/agent.yml` its manifest (`LyteboatAgentManifest`: display
- * fields, version, model). A directory reads into one dsh agent preset
- * declaration (the id is the directory name, the rows are taken verbatim, the
- * display fields come from the manifest) and the manifest fields the preset
- * registry has no place for.
+ * An agent directory: `<root>/<id>/` holding any of `agent.cordis.yml`, the
+ * agent's plugin rows (a Cordis entry list, `!!js` included); `agent.yml`, its
+ * manifest (`LyteboatAgentManifest`: display fields, version, model);
+ * `lib/agent.js`, its built `lyteboatAgentDef` module; or `src/agent.ts`, that
+ * module's source. A directory reads into one dsh agent preset declaration
+ * (the id is the directory name, the display fields come from the manifest)
+ * and the manifest fields the preset registry has no place for. The rows are
+ * `agent.cordis.yml` taken verbatim when it exists, and otherwise the one row
+ * `./lib/agent.js`. The `lyteboatAgentDef` among them, that one row or the one
+ * module the composition names by a relative path whose default export is a
+ * definition, names the agent.
  *
  * The discovery is adapted from deepseek-ai/deepseek-harness
  * packages/preset/agent-presets/src/discovery.ts @ dsh-v0.1.5-alpha.2
@@ -16,27 +20,38 @@
  */
 
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import { load, type LoadOptions } from 'js-yaml'
 import { entryListSchema } from '@deepseek-ai/cordis-plugin-include'
-import type { PresetDefinition } from '@deepseek-ai/dsh-agent-preset-registry'
-import { lyteboatAgentManifestSchema, type LyteboatAgentManifest, type LyteboatAgentModel } from '@lyteboat/contracts'
+import { entryListProblem, type PresetDefinition } from '@deepseek-ai/dsh-agent-preset-registry'
+import { assertNever } from '@deepseek-ai/dsh-util-values'
+import { lyteboatAgentDefIdentitySchema, lyteboatAgentManifestSchema, type LyteboatAgentDefIdentity, type LyteboatAgentManifest, type LyteboatAgentModel } from '@lyteboat/contracts'
 
-/** The composition file that makes a directory an agent. */
+/** The composition file: the agent's rows, when it lists them itself. */
 const AGENT_COMPOSITION_FILE = 'agent.cordis.yml'
 
-/** The optional manifest beside the composition. */
+/** The optional manifest. */
 const AGENT_MANIFEST_FILE = 'agent.yml'
+
+/** The built module an agent without a composition file runs as its one row. */
+const AGENT_ENTRY_MODULE = 'lib/agent.js'
+
+/** That module's source: it marks an agent that has not been built yet. */
+const AGENT_SOURCE_MODULE = 'src/agent.ts'
+
+/** The files any one of which makes a directory an agent. */
+const AGENT_MARKER_FILES = [AGENT_COMPOSITION_FILE, AGENT_MANIFEST_FILE, AGENT_ENTRY_MODULE, AGENT_SOURCE_MODULE]
 
 /** The display-metadata file the manifest replaced; its presence is a stale directory. */
 const RETIRED_METADATA_FILE = 'preset.yml'
 
 function isAgentDirectory(root: string, name: string): boolean {
-  return existsSync(join(root, name, AGENT_COMPOSITION_FILE))
+  return AGENT_MARKER_FILES.some(file => existsSync(join(root, name, file)))
 }
 
 /**
- * The agent ids a set of roots holds: every direct subdirectory with an agent composition.
+ * The agent ids a set of roots holds: every direct subdirectory holding an agent's composition, manifest, or module.
  * @param roots - absolute agent root directories.
  * @returns the ids, deduplicated and sorted.
  */
@@ -102,11 +117,48 @@ function readManifest(dir: string): LyteboatAgentManifest {
   return parsed.data
 }
 
+/**
+ * Where an agent's `lyteboatAgentDef` is: the built module that is its one
+ * row, or among the modules its composition names by a relative path, where
+ * at most one declares it and the others are rows of their own.
+ */
+export type AgentDefSource =
+  | { readonly kind: 'entry-module'; readonly modulePath: string }
+  | { readonly kind: 'composition'; readonly compositionPath: string; readonly modulePaths: readonly string[] }
+
 /** One agent directory read: the preset the registry mounts, and the manifest fields it has no place for. */
 export interface AgentDirectoryDefinition {
   readonly preset: PresetDefinition
   readonly version?: string
   readonly model?: LyteboatAgentModel
+  readonly agentDefSource: AgentDefSource
+}
+
+function isRelativeModule(moduleName: string): boolean {
+  return moduleName.startsWith('./') || moduleName.startsWith('../')
+}
+
+/** The rows an agent runs: its composition file's, verbatim, or else the one row of its built module. */
+function readAgentRows(id: string, dir: string): { rows: PresetDefinition['plugins']; agentDefSource: AgentDefSource } {
+  const compositionPath = join(dir, AGENT_COMPOSITION_FILE)
+  if (existsSync(compositionPath)) {
+    const rows: unknown = readYaml(compositionPath, { schema: entryListSchema })
+    const problem = entryListProblem(rows, compositionPath)
+    if (problem !== undefined || !Array.isArray(rows)) throw new Error(`agent-catalog: ${problem ?? `${compositionPath} must be a list of plugin rows`}`)
+    // Checked by the registry's own entry-list check above.
+    const checkedRows = rows as PresetDefinition['plugins']
+    const modulePaths = checkedRows.filter(row => isRelativeModule(row.name)).map((row) => {
+      const modulePath = resolve(dir, row.name)
+      if (!existsSync(modulePath)) throw new Error(`agent-catalog: ${compositionPath} lists ${row.name}, which does not exist; build the agent, or fix the row`)
+      return modulePath
+    })
+    return { rows: checkedRows, agentDefSource: { kind: 'composition', compositionPath, modulePaths } }
+  }
+  const modulePath = join(dir, AGENT_ENTRY_MODULE)
+  if (!existsSync(modulePath)) {
+    throw new Error(`agent-catalog: ${dir} has no ${AGENT_COMPOSITION_FILE} and no ${AGENT_ENTRY_MODULE}; build the agent (${AGENT_SOURCE_MODULE} compiles to ${AGENT_ENTRY_MODULE}), or list its rows in ${AGENT_COMPOSITION_FILE}`)
+  }
+  return { rows: [{ id: `${id}-agent`, name: `./${AGENT_ENTRY_MODULE}` }], agentDefSource: { kind: 'entry-module', modulePath } }
 }
 
 /**
@@ -116,15 +168,12 @@ export interface AgentDirectoryDefinition {
  * @param id - the agent id.
  * @param dir - the agent directory.
  * @returns the declaration to register, with the manifest's version and model.
- * @throws when a file is unreadable or not the shape its role requires, or the retired `preset.yml` is still there.
+ * @throws when a file is unreadable or not the shape its role requires, the directory has neither rows nor a built module, or the retired `preset.yml` is still there.
  */
 export function readAgentDefinition(id: string, dir: string): AgentDirectoryDefinition {
-  const path = join(dir, AGENT_COMPOSITION_FILE)
-  const rows = readYaml(path, { schema: entryListSchema })
-  if (!Array.isArray(rows)) throw new Error(`agent-catalog: ${path} must be a list of plugin rows`)
+  const { rows, agentDefSource } = readAgentRows(id, dir)
   const { name, description, order, version, model } = readManifest(dir)
   return {
-    // YAML boundary: beyond being a list the rows are unchecked here; the registry validates each one.
     preset: {
       id,
       ...name === undefined ? {} : { name },
@@ -134,5 +183,62 @@ export function readAgentDefinition(id: string, dir: string): AgentDirectoryDefi
     },
     ...version === undefined ? {} : { version },
     ...model === undefined ? {} : { model },
+    agentDefSource,
+  }
+}
+
+/**
+ * The identity a module declares, when its default export is the class
+ * `lyteboatAgentDef({…})` returns, which carries it as a static.
+ * @returns undefined when the default export is no definition.
+ * @throws when the module fails to load, or its definition's identity is malformed.
+ */
+async function agentDefIdentityOf(modulePath: string): Promise<LyteboatAgentDefIdentity | undefined> {
+  // A file boundary: whatever the module exports is checked against the identity's schema.
+  let agentModule: { default?: { lyteboatAgentDefIdentity?: unknown } }
+  try {
+    agentModule = await import(pathToFileURL(modulePath).href)
+  } catch (error: unknown) {
+    throw new Error(`agent-catalog: ${modulePath} cannot be loaded: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
+  }
+  const declared = agentModule.default?.lyteboatAgentDefIdentity
+  if (declared === undefined) return undefined
+  const identity = lyteboatAgentDefIdentitySchema.safeParse(declared)
+  if (!identity.success) {
+    throw new Error(`agent-catalog: ${modulePath}: its lyteboatAgentDef declares ${identity.error.issues.map(issue => `${issue.path.join('.')}: ${issue.message}`).join('; ')}`)
+  }
+  return identity.data
+}
+
+/**
+ * The identity an agent's `lyteboatAgentDef` declares. The modules are
+ * imported here, before the registry mounts them, so an error in one is
+ * reported with its own message.
+ * @param agentDefSource - where the definition is.
+ * @returns the declared agent id and name; undefined when a composition's modules hold no definition.
+ * @throws when a module fails to load, the one row is no definition, a composition names two, or an identity is malformed.
+ */
+export async function readAgentDefIdentity(agentDefSource: AgentDefSource): Promise<LyteboatAgentDefIdentity | undefined> {
+  switch (agentDefSource.kind) {
+    case 'entry-module': {
+      const identity = await agentDefIdentityOf(agentDefSource.modulePath)
+      if (identity === undefined) {
+        throw new Error(`agent-catalog: ${agentDefSource.modulePath} must default-export lyteboatAgentDef({…}) from @lyteboat/agent-def, or its directory must list its rows in ${AGENT_COMPOSITION_FILE}`)
+      }
+      return identity
+    }
+    case 'composition': {
+      const declaring: { modulePath: string; identity: LyteboatAgentDefIdentity }[] = []
+      for (const modulePath of agentDefSource.modulePaths) {
+        const identity = await agentDefIdentityOf(modulePath)
+        if (identity !== undefined) declaring.push({ modulePath, identity })
+      }
+      if (declaring.length > 1) {
+        throw new Error(`agent-catalog: ${agentDefSource.compositionPath} lists ${String(declaring.length)} lyteboatAgentDef rows (${declaring.map(({ modulePath }) => modulePath).join(', ')}); an agent has one`)
+      }
+      return declaring[0]?.identity
+    }
+    default:
+      return assertNever(agentDefSource, 'agent-catalog lyteboatAgentDef source')
   }
 }

@@ -24,13 +24,7 @@ import type { LyteboatRunHeartbeat, LyteboatRunMetric } from '@lyteboat/contract
 import { RUN_METRIC_RUNNING_DIR, runMetricDayFile, runMetricDayOf, runMetricDayOfFile } from './run-metric-files.ts'
 import { RunMetricTurn } from './run-metric-turn.ts'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-run-metrics'
-
-/** The session projections carry the active skill the recorder notes. */
-export const inject = ['sessionProjections']
-
-export interface Config {
+export interface RunMetricsRecorderConfig {
   /** Where the metrics live; default `$LYTEBOAT_HOME/run-metrics`. */
   dir?: string
   /** Day files older than this many days are removed at start. */
@@ -38,77 +32,81 @@ export interface Config {
   heartbeatMs?: number
 }
 
-export const Config: z<Config> = z.object({
-  dir: z.string(),
-  retentionDays: z.natural().default(90),
-  heartbeatMs: z.natural().default(10_000),
-})
-
 const DAY_MS = 86_400_000
 
-/**
- * Record every turn of this process's sessions.
- * @param ctx - the host context: session events and projections.
- * @param config - the validated config.
- */
-export function apply(ctx: Context, config: Config): void {
-  const dir = config.dir ?? dshHomePath('run-metrics')
-  const heartbeatFile = join(dir, RUN_METRIC_RUNNING_DIR, `${hostname()}-${String(process.pid)}.json`)
-  const turns = new WeakMap<Session, RunMetricTurn>()
-  const running = new Map<string, LyteboatRunHeartbeat['turns'][number]>()
-  let queue: Promise<void> = mkdir(join(dir, RUN_METRIC_RUNNING_DIR), { recursive: true }).then(() => pruneDays(dir, config.retentionDays ?? 90))
-  const enqueue = (label: string, write: () => Promise<void>): void => {
-    queue = queue.then(write).catch((error: unknown) => {
-      ctx.logger.warn(`lyteboat run metrics: ${label} failed: ${error instanceof Error ? error.message : String(error)}`)
-    })
-  }
-  const beat = (): void => {
-    const heartbeat: LyteboatRunHeartbeat = { host: hostname(), pid: process.pid, heartbeatAt: Date.now(), turns: [...running.values()] }
-    enqueue('the heartbeat', () => replaceFile(heartbeatFile, JSON.stringify(heartbeat)))
-  }
-
-  const observe = (session: Session, event: SessionEvent): void => {
-    if (event.type === 'turn/start') {
-      const agentId = session.header.agentPreset
-      if (agentId === undefined) return
-      turns.set(session, new RunMetricTurn(agentId, session.id, event.data.turn, event.time))
-      running.set(`${session.id}:${String(event.data.turn)}`, { agentId, sessionId: session.id, turn: event.data.turn, startedAt: event.time })
-      beat()
-      return
-    }
-    const turn = turns.get(session)
-    if (turn === undefined) return
-    if (event.type !== 'turn/end') {
-      turn.add(event)
-      turn.noteActiveSkill(ctx.sessionProjections.stateOf(session, 'lyteboatActiveSkill')?.active)
-      return
-    }
-    turns.delete(session)
-    running.delete(`${session.id}:${String(event.data.turn)}`)
-    const metric: LyteboatRunMetric = turn.ended(event)
-    enqueue(`the metric of ${session.id} turn ${String(event.data.turn)}`, () => appendFile(runMetricDayFile(dir, metric.startedAt), `${JSON.stringify(metric)}\n`))
-    beat()
-  }
-
-  ctx.on('session/event', (session, event) => {
-    try {
-      observe(session, event)
-    } catch (error: unknown) {
-      // The recorder must never fail a turn; a fold it cannot make is lost, and said so.
-      ctx.logger.warn(`lyteboat run metrics: ${session.id}: ${error instanceof Error ? error.message : String(error)}`)
-    }
+export default class RunMetricsRecorder {
+  /** The session projections carry the active skill the recorder notes. */
+  static inject = ['sessionProjections']
+  static Config: z<RunMetricsRecorderConfig> = z.object({
+    dir: z.string(),
+    retentionDays: z.natural().default(90),
+    heartbeatMs: z.natural().default(10_000),
   })
-  ctx.effect(() => {
-    beat()
-    const timer = setInterval(beat, config.heartbeatMs ?? 10_000)
-    timer.unref()
-    return async () => {
-      clearInterval(timer)
-      running.clear()
-      enqueue('removing the heartbeat', () => rm(heartbeatFile, { force: true }))
-      await queue
+
+  /**
+   * Record every turn of this process's sessions.
+   * @param ctx - the host context: session events and projections.
+   * @param recorderConfig - the validated config.
+   */
+  constructor(ctx: Context, recorderConfig: RunMetricsRecorderConfig) {
+    const dir = recorderConfig.dir ?? dshHomePath('run-metrics')
+    const heartbeatFile = join(dir, RUN_METRIC_RUNNING_DIR, `${hostname()}-${String(process.pid)}.json`)
+    const turns = new WeakMap<Session, RunMetricTurn>()
+    const running = new Map<string, LyteboatRunHeartbeat['turns'][number]>()
+    let queue: Promise<void> = mkdir(join(dir, RUN_METRIC_RUNNING_DIR), { recursive: true }).then(() => pruneDays(dir, recorderConfig.retentionDays ?? 90))
+    const enqueue = (label: string, write: () => Promise<void>): void => {
+      queue = queue.then(write).catch((error: unknown) => {
+        ctx.logger.warn(`lyteboat run metrics: ${label} failed: ${error instanceof Error ? error.message : String(error)}`)
+      })
     }
-  }, 'lyteboat run metrics: the heartbeat')
+    const beat = (): void => {
+      const heartbeat: LyteboatRunHeartbeat = { host: hostname(), pid: process.pid, heartbeatAt: Date.now(), turns: [...running.values()] }
+      enqueue('the heartbeat', () => replaceFile(heartbeatFile, JSON.stringify(heartbeat)))
+    }
+
+    const observe = (session: Session, event: SessionEvent): void => {
+      if (event.type === 'turn/start') {
+        const agentId = session.header.agentPreset
+        if (agentId === undefined) return
+        turns.set(session, new RunMetricTurn(agentId, session.id, event.data.turn, event.time))
+        running.set(`${session.id}:${String(event.data.turn)}`, { agentId, sessionId: session.id, turn: event.data.turn, startedAt: event.time })
+        beat()
+        return
+      }
+      const turn = turns.get(session)
+      if (turn === undefined) return
+      if (event.type !== 'turn/end') {
+        turn.add(event)
+        turn.noteActiveSkill(ctx.sessionProjections.stateOf(session, 'lyteboatActiveSkill')?.active)
+        return
+      }
+      turns.delete(session)
+      running.delete(`${session.id}:${String(event.data.turn)}`)
+      const metric: LyteboatRunMetric = turn.ended(event)
+      enqueue(`the metric of ${session.id} turn ${String(event.data.turn)}`, () => appendFile(runMetricDayFile(dir, metric.startedAt), `${JSON.stringify(metric)}\n`))
+      beat()
+    }
+
+    ctx.on('session/event', (session, event) => {
+      try {
+        observe(session, event)
+      } catch (error: unknown) {
+        // The recorder must never fail a turn; a fold it cannot make is lost, and said so.
+        ctx.logger.warn(`lyteboat run metrics: ${session.id}: ${error instanceof Error ? error.message : String(error)}`)
+      }
+    })
+    ctx.effect(() => {
+      beat()
+      const timer = setInterval(beat, recorderConfig.heartbeatMs ?? 10_000)
+      timer.unref()
+      return async () => {
+        clearInterval(timer)
+        running.clear()
+        enqueue('removing the heartbeat', () => rm(heartbeatFile, { force: true }))
+        await queue
+      }
+    }, 'lyteboat run metrics: the heartbeat')
+  }
 }
 
 /** Write a file whole through a temporary sibling, so a reader never sees half of it. */

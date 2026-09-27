@@ -73,7 +73,7 @@ export interface SkillRouterSettings {
 /** Plugin config (the host row): the process-wide defaults. */
 export type Config = Partial<SkillRouterSettings>
 
-export const Config: z<Config> = z.object({
+const Config: z<Config> = z.object({
   mode: z.union(['off', 'full', 'dynamic'] as const).default('off'),
   historyWindow: z.natural().default(6),
   timeoutMs: z.natural().default(10_000),

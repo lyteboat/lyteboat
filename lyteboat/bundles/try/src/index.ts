@@ -45,17 +45,11 @@ import type { SeedResult } from '@lyteboat/history-import'
 import type {} from '@deepseek-ai/cordis-plugin-loader'
 import type {} from '@deepseek-ai/dsh-cmdline'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-try'
-
 /** Who a task typed at the command line comes from. */
 const CLI_OWNER: LyteboatRequestOwner = { kind: 'operator', id: 'cli' }
 
-/** Core services required before the one-shot turn can start. */
-export const inject = ['agentDefaultModel', 'agents', 'agentPresets', 'agentCatalog', 'sessions', 'sessionQuery', 'sessionProjections', 'historyImport', 'a2ui', 'intakeGuard']
-
 /** Plugin config: the task and agent resolved from the startup provider service. */
-export interface Config {
+export interface LyteboatTryConfig {
   /** The prompt text for the single run. */
   task: string
   /** The agent to compose from (its agent preset id, declared by the agent catalog); absent runs the host composition alone. */
@@ -69,15 +63,6 @@ export interface Config {
   /** How the turn is printed: the answer as text, or one {@link LyteboatTryResult} object. */
   result?: 'text' | 'json'
 }
-
-export const Config: z<Config> = z.object({
-  task: z.string().required(),
-  agent: z.string(),
-  history: z.string(),
-  sessionId: z.string(),
-  context: z.dict(z.any()),
-  result: z.union(['text', 'json'] as const).default('text'),
-})
 
 interface RunIo {
   stdout: { write(chunk: string): unknown }
@@ -255,7 +240,7 @@ function fail(io: RunIo, error: unknown): void {
  * @param config - the task and optional agent.
  * @param io - process-facing effects.
  */
-async function run(ctx: Context, config: Config, io: RunIo): Promise<void> {
+async function run(ctx: Context, config: LyteboatTryConfig, io: RunIo): Promise<void> {
   await ctx.get('loader')?.await()
   // Injected, so present while this row is active; a tree disposed during the
   // settlement above makes these reads throw, and the failure still exits.
@@ -322,16 +307,29 @@ async function run(ctx: Context, config: Config, io: RunIo): Promise<void> {
   io.exit(reason?.kind === 'completed' ? 0 : 1)
 }
 
-/**
- * Mount the one-shot runner.
- * @param ctx - plugin context carrying core services and the launcher-provided exit request.
- * @param config - validated task config.
- */
-export function apply(ctx: Context, config: Config): void {
-  const exit = ctx.get('appExit')
-  if (exit === undefined) {
-    throw new Error('lyteboat-try: the launcher must provide ctx.appExit before the tree mounts')
+export default class LyteboatTryRunner {
+  /** Core services required before the one-shot turn can start. */
+  static inject = ['agentDefaultModel', 'agents', 'agentPresets', 'agentCatalog', 'sessions', 'sessionQuery', 'sessionProjections', 'historyImport', 'a2ui', 'intakeGuard']
+  static Config: z<LyteboatTryConfig> = z.object({
+    task: z.string().required(),
+    agent: z.string(),
+    history: z.string(),
+    sessionId: z.string(),
+    context: z.dict(z.any()),
+    result: z.union(['text', 'json'] as const).default('text'),
+  })
+
+  /**
+   * Mount the one-shot runner.
+   * @param ctx - plugin context carrying core services and the launcher-provided exit request.
+   * @param tryConfig - validated task config.
+   */
+  constructor(ctx: Context, tryConfig: LyteboatTryConfig) {
+    const exit = ctx.get('appExit')
+    if (exit === undefined) {
+      throw new Error('lyteboat-try: the launcher must provide ctx.appExit before the tree mounts')
+    }
+    const io: RunIo = { stdout: process.stdout, stderr: process.stderr, exit }
+    void run(ctx, tryConfig, io).catch((error: unknown) => { fail(io, error) })
   }
-  const io: RunIo = { stdout: process.stdout, stderr: process.stderr, exit }
-  void run(ctx, config, io).catch((error: unknown) => { fail(io, error) })
 }

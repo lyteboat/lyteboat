@@ -20,28 +20,27 @@ import type {} from '@lyteboat/agent-catalog'
 import type {} from '@lyteboat/studio-auth'
 import type {} from './startup.ts'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-studio'
+export default class LyteboatStudioRunner {
+  /** The rows this one reports on. */
+  static inject = ['agentCatalog', 'webServer', 'studioAuth', 'lyteboatStudioStartup']
 
-/** The rows this one reports on. */
-export const inject = ['agentCatalog', 'webServer', 'studioAuth', 'lyteboatStudioStartup']
-
-/**
- * Report the listener and the agents once the catalog has declared them.
- * @param ctx - plugin context carrying the catalog, the web server, and the invocation.
- */
-export function apply(ctx: Context): void {
-  void (async () => {
-    await ctx.get('loader')?.await()
-    try {
-      await ctx.agentCatalog.whenReady()
-    } catch (error: unknown) {
-      // Not strict: only a root-level fault (two roots holding one id) rejects; the radar reports it too.
-      process.stderr.write(`lyteboat studio: ${error instanceof Error ? error.message : String(error)}\n`)
-    }
-    const { host } = ctx.lyteboatStudioStartup
-    process.stdout.write(`lyteboat studio: http://${host}:${String(ctx.webServer.port)}/studio/ (${ctx.studioAuth.mode().mode} sign-in)\n`)
-    process.stdout.write(`lyteboat studio: agents ${ctx.agentCatalog.list().map(agent => agent.id).join(', ') || 'none'}\n`)
-    for (const failure of ctx.agentCatalog.failures()) process.stderr.write(`lyteboat studio: agent ${failure.id} failed: ${failure.reason}\n`)
-  })()
+  /**
+   * Report the listener and the agents once the catalog has declared them.
+   * @param ctx - plugin context carrying the catalog, the web server, and the invocation.
+   */
+  constructor(ctx: Context) {
+    void (async () => {
+      await ctx.get('loader')?.await()
+      try {
+        await ctx.agentCatalog.whenReady()
+      } catch (error: unknown) {
+        // Not strict: only a root-level fault (two roots holding one id) rejects; the radar reports it too.
+        process.stderr.write(`lyteboat studio: ${error instanceof Error ? error.message : String(error)}\n`)
+      }
+      const { host } = ctx.lyteboatStudioStartup
+      process.stdout.write(`lyteboat studio: http://${host}:${String(ctx.webServer.port)}/studio/ (${ctx.studioAuth.mode().mode} sign-in)\n`)
+      process.stdout.write(`lyteboat studio: agents ${ctx.agentCatalog.list().map(agent => agent.id).join(', ') || 'none'}\n`)
+      for (const failure of ctx.agentCatalog.failures()) process.stderr.write(`lyteboat studio: agent ${failure.id} failed: ${failure.reason}\n`)
+    })()
+  }
 }

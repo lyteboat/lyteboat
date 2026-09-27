@@ -21,12 +21,6 @@ import { parseCmdline } from '@deepseek-ai/dsh-cmdline'
 import type { JsonValue } from '@lyteboat/contracts'
 import { agentIds } from '@lyteboat/agent-catalog'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-try-startup'
-
-/** Services required before the task can be resolved. */
-export const inject = ['cmdlineArgs']
-
 /** Service provided by this plugin and injected by the agent catalog, preset registry, and runner rows. */
 export const LYTEBOAT_TRY_STARTUP_SERVICE = 'lyteboatTryStartup'
 
@@ -98,46 +92,51 @@ Examples:
 `)
 }
 
-/**
- * Parse and provide the one-shot invocation as an ordinary Cordis service. A
- * missing task, an unknown directory, an agent without roots, or an agent no
- * root holds is a usage error, so on rejection (and on `--help`) nothing is provided.
- * @param ctx - plugin context carrying the command line.
- */
-export function apply(ctx: Context): void {
-  const program = command()
-  program.action(() => {
-    const options = program.opts<{ agent?: string; agents?: string[]; history?: string; sessionId?: string; context?: string; result: string }>()
-    const task = program.args.join(' ')
-    if (task.trim() === '') program.error('error: a task is required, for example: lyteboat try "run the tests"')
-    const agentRoots = (options.agents ?? []).map(dir => resolve(dir))
-    for (const dir of agentRoots) {
-      if (!existsSync(dir) || !statSync(dir).isDirectory()) program.error(`error: --agents directory not found: ${dir}`)
-    }
-    const agent = options.agent
-    if (agent !== undefined && agentRoots.length === 0) program.error('error: --agent needs at least one --agents directory')
-    if (agentRoots.length > 0 && agent === undefined) program.error('error: --agents needs --agent to choose the agent')
-    if (agent !== undefined && !agentIds(agentRoots).includes(agent)) {
-      program.error(`error: agent ${JSON.stringify(agent)} not found in the --agents directories (available: ${agentIds(agentRoots).join(', ') || 'none'})`)
-    }
-    const history = options.history === undefined ? undefined : resolve(options.history)
-    if (history !== undefined && !existsSync(history)) program.error(`error: --history file not found: ${history}`)
-    const sessionId = options.sessionId
-    if (sessionId !== undefined && sessionId.trim() === '') program.error('error: --session-id needs a session id')
-    if (sessionId !== undefined && history !== undefined) program.error('error: --history seeds a new session; it cannot be combined with --session-id')
-    const read = options.context === undefined ? undefined : readContext(options.context)
-    if (read?.kind === 'problem') program.error(`error: ${read.problem}`)
-    if (options.result !== 'text' && options.result !== 'json') program.error('error: --result must be text or json')
-    ctx.provide(LYTEBOAT_TRY_STARTUP_SERVICE, {
-      task,
-      agent,
-      agentRoots,
-      history,
-      sessionId,
-      context: read?.kind === 'context' ? read.context : undefined,
-      // program.error() exits, but TypeScript cannot narrow through it.
-      result: options.result === 'json' ? 'json' : 'text',
-    } satisfies LyteboatTryStartupValues)
-  })
-  parseCmdline(ctx, program)
+export default class LyteboatTryStartup {
+  /** Services required before the task can be resolved. */
+  static inject = ['cmdlineArgs']
+
+  /**
+   * Parse and provide the one-shot invocation as an ordinary Cordis service. A
+   * missing task, an unknown directory, an agent without roots, or an agent no
+   * root holds is a usage error, so on rejection (and on `--help`) nothing is provided.
+   * @param ctx - plugin context carrying the command line.
+   */
+  constructor(ctx: Context) {
+    const program = command()
+    program.action(() => {
+      const options = program.opts<{ agent?: string; agents?: string[]; history?: string; sessionId?: string; context?: string; result: string }>()
+      const task = program.args.join(' ')
+      if (task.trim() === '') program.error('error: a task is required, for example: lyteboat try "run the tests"')
+      const agentRoots = (options.agents ?? []).map(dir => resolve(dir))
+      for (const dir of agentRoots) {
+        if (!existsSync(dir) || !statSync(dir).isDirectory()) program.error(`error: --agents directory not found: ${dir}`)
+      }
+      const agent = options.agent
+      if (agent !== undefined && agentRoots.length === 0) program.error('error: --agent needs at least one --agents directory')
+      if (agentRoots.length > 0 && agent === undefined) program.error('error: --agents needs --agent to choose the agent')
+      if (agent !== undefined && !agentIds(agentRoots).includes(agent)) {
+        program.error(`error: agent ${JSON.stringify(agent)} not found in the --agents directories (available: ${agentIds(agentRoots).join(', ') || 'none'})`)
+      }
+      const history = options.history === undefined ? undefined : resolve(options.history)
+      if (history !== undefined && !existsSync(history)) program.error(`error: --history file not found: ${history}`)
+      const sessionId = options.sessionId
+      if (sessionId !== undefined && sessionId.trim() === '') program.error('error: --session-id needs a session id')
+      if (sessionId !== undefined && history !== undefined) program.error('error: --history seeds a new session; it cannot be combined with --session-id')
+      const read = options.context === undefined ? undefined : readContext(options.context)
+      if (read?.kind === 'problem') program.error(`error: ${read.problem}`)
+      if (options.result !== 'text' && options.result !== 'json') program.error('error: --result must be text or json')
+      ctx.provide(LYTEBOAT_TRY_STARTUP_SERVICE, {
+        task,
+        agent,
+        agentRoots,
+        history,
+        sessionId,
+        context: read?.kind === 'context' ? read.context : undefined,
+        // program.error() exits, but TypeScript cannot narrow through it.
+        result: options.result === 'json' ? 'json' : 'text',
+      } satisfies LyteboatTryStartupValues)
+    })
+    parseCmdline(ctx, program)
+  }
 }

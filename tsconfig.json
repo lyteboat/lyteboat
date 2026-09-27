@@ -75,6 +75,9 @@
       "path": "./lyteboat/plugins/agent-catalog"
     },
     {
+      "path": "./lyteboat/plugins/agent-def"
+    },
+    {
       "path": "./lyteboat/plugins/chat-api"
     },
     {

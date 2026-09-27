@@ -1,22 +1,12 @@
 # An agent that brings the one dsh tool it needs in its own composition and
-# hides everything it inherits from the host: the preset's rows run in its
-# standing scope, so the tool and the policy cover every agent joined to this
-# preset and no other.
-- id: persona
-  name: '@deepseek-ai/dsh-persona'
-  config:
-    prefix: >-
-      You are POLICY-PRESET-PERSONA, a test agent powered by the {{model}} model.
+# hides everything it inherits from the host: its definition (./agent.mjs)
+# declares the persona and the tool policy, and the official todo row follows
+# it. Every row runs in the agent's standing scope, so the tool and the policy
+# cover every session of this agent and no other.
+- id: policy-agent
+  name: ./agent.mjs
 
 - id: todo
   name: '@deepseek-ai/dsh-tool-todo'
   config:
     allowParallelInProgress: false
-
-- id: lyteboat-tool-policy
-  name: '@lyteboat/tool-policy/agent'
-  config:
-    inherited: hidden
-    tools:
-      todo_write:
-        visibility: always

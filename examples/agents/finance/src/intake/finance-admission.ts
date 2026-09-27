@@ -13,8 +13,7 @@
  */
 
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import type { A2uiService } from '@lyteboat/a2ui'
-import type { AuxLlmService } from '@lyteboat/aux-llm'
+import type { LyteboatAgentHost } from '@lyteboat/agent-def'
 import { LYTEBOAT_HISTORY_IMPORT_SOURCE, type JsonValue } from '@lyteboat/contracts'
 import type { LyteboatAdmission } from '@lyteboat/intake-guard'
 import type { FinanceCustomerSource } from '../data/finance-customer.ts'
@@ -91,8 +90,8 @@ export function intentOf(answer: string): FinanceIntent | undefined {
 /** What the admission reads. */
 export interface FinanceAdmissionDeps {
   customers: FinanceCustomerSource
-  auxLlm: AuxLlmService
-  a2ui: A2uiService
+  auxLlm: LyteboatAgentHost['auxLlm']
+  a2ui: LyteboatAgentHost['a2ui']
   /** Absolute path of the agent's a2ui templates root. */
   templates: string
 }

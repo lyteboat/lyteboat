@@ -9,7 +9,7 @@ import { request as httpRequest } from 'node:http'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import WebServer from '@deepseek-ai/dsh-host-webserver'
-import * as studioWeb from '@lyteboat/studio-web'
+import StudioWebPages from '@lyteboat/studio-web'
 import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
 
 const WEB = fileURLToPath(new URL('./fixtures/web', import.meta.url))
@@ -17,7 +17,7 @@ const WEB = fileURLToPath(new URL('./fixtures/web', import.meta.url))
 async function pagesHost(webDir = WEB): Promise<(method: string, path: string) => Promise<{ status: number; headers: Record<string, string | string[] | undefined>; body: string }>> {
   const ctx = await createLyteboatUnitHost(new MockAdapter([]))
   await ctx.plugin(WebServer, { host: '127.0.0.1', port: 0 })
-  await ctx.plugin(studioWeb, { webDir })
+  await ctx.plugin(StudioWebPages, { webDir })
   return (method, path) => new Promise((resolve, reject) => {
     const request = httpRequest({ host: '127.0.0.1', port: ctx.webServer.port, method, path }, (response) => {
       const chunks: Buffer[] = []

@@ -57,7 +57,7 @@ export interface Config {
   keepAliveMs?: number
 }
 
-export const Config: z<Config> = z.object({
+const Config: z<Config> = z.object({
   auth: z.union([z.const('shared-secret' as const), z.const('none' as const)]).required(),
   credentialRef: z.string(),
   maxBodyBytes: z.natural().default(1024 * 1024),

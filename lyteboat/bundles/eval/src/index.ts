@@ -18,12 +18,6 @@ import type {} from '@lyteboat/contracts'
 import type { EvalChange, EvalTurnResult } from '@lyteboat/eval-runner'
 import type { LyteboatEvalCompareCommand, LyteboatEvalReleaseCommand, LyteboatEvalRunCommand } from './startup.ts'
 
-/** Stable Cordis plugin name. */
-export const name = 'lyteboat-eval'
-
-/** The rows this one drives. */
-export const inject = ['evalRunner', 'lyteboatEvalStartup', 'lyteboatDistro']
-
 /** One case as the terminal shows it: ✓ with its turn count, or ✗ with each failed turn's checks. */
 function caseLine(id: string, results: readonly EvalTurnResult[]): string {
   const failed = results.filter(result => !result.pass)
@@ -68,21 +62,26 @@ async function releaseAgent(ctx: Context, command: LyteboatEvalReleaseCommand): 
   return 0
 }
 
-/**
- * Run, compare, or release, then exit with the result.
- * @param ctx - plugin context carrying the eval runner, the invocation, and the launcher's exit request.
- */
-export function apply(ctx: Context): void {
-  const exit = ctx.get('appExit')
-  if (exit === undefined) throw new Error('lyteboat-eval: the launcher must provide ctx.appExit before the tree mounts')
-  void (async () => {
-    await ctx.get('loader')?.await()
-    const { command } = ctx.lyteboatEvalStartup
-    try {
-      exit(command.action === 'compare' ? compareRuns(ctx, command) : command.action === 'release' ? await releaseAgent(ctx, command) : await runCases(ctx, command))
-    } catch (error: unknown) {
-      process.stderr.write(`lyteboat: ${error instanceof Error ? error.message : String(error)}\n`)
-      exit(2)
-    }
-  })()
+export default class LyteboatEvalRunner {
+  /** The rows this one drives. */
+  static inject = ['evalRunner', 'lyteboatEvalStartup', 'lyteboatDistro']
+
+  /**
+   * Run, compare, or release, then exit with the result.
+   * @param ctx - plugin context carrying the eval runner, the invocation, and the launcher's exit request.
+   */
+  constructor(ctx: Context) {
+    const exit = ctx.get('appExit')
+    if (exit === undefined) throw new Error('lyteboat-eval: the launcher must provide ctx.appExit before the tree mounts')
+    void (async () => {
+      await ctx.get('loader')?.await()
+      const { command } = ctx.lyteboatEvalStartup
+      try {
+        exit(command.action === 'compare' ? compareRuns(ctx, command) : command.action === 'release' ? await releaseAgent(ctx, command) : await runCases(ctx, command))
+      } catch (error: unknown) {
+        process.stderr.write(`lyteboat: ${error instanceof Error ? error.message : String(error)}\n`)
+        exit(2)
+      }
+    })()
+  }
 }

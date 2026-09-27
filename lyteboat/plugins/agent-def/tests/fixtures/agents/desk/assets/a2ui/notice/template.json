@@ -1,0 +1,10 @@
+{
+  "event": "beginRendering",
+  "version": "1.0.0",
+  "surfaceId": "notice",
+  "rootComponentId": "root",
+  "components": [
+    { "id": "root", "component": { "Column": { "children": { "explicitList": ["line"] } } } },
+    { "id": "line", "component": { "Text": { "text": { "literalString": "Noted." } } } }
+  ]
+}
