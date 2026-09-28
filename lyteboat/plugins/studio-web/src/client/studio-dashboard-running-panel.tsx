@@ -71,7 +71,7 @@ function StudioRunningBody({ running, failed }: { running: StudioDashboardRunnin
 export function StudioDashboardRunningPanel() {
   const { running, failed } = useStudioRunningPoll()
   return (
-    <article className="workspace-surface dashboard-insight-panel metric-tone-sessions">
+    <article className="workspace-surface dashboard-insight-panel">
       <div className="surface-heading dashboard-insight-heading">
         <span>Running messages</span>
         <b>{failed ? '—' : `${String(running.total)} running`}</b>

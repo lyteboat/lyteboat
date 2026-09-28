@@ -28,7 +28,7 @@ function studioRoleOf(value: string): StudioRole | undefined {
 }
 
 function roleBadgeClass(role: StudioRole): string {
-  if (role === 'admin') return 'badge err'
+  if (role === 'admin') return 'badge ink'
   if (role === 'editor') return 'badge accent'
   return 'badge'
 }

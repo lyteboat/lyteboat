@@ -15,7 +15,7 @@ import { useCallback, useState } from 'react'
 import type { StudioActivityItem, StudioDashboardSummary, StudioDistributionItem, StudioInsightStat, StudioTrendPoint } from '@lyteboat/contracts/studio'
 import { studioApi } from './studio-api-client.ts'
 import { useStudioCall } from './studio-call-state.ts'
-import { StudioMiniTrendChart, type StudioDashboardTone } from './studio-dashboard-charts.tsx'
+import { StudioMiniTrendChart } from './studio-dashboard-charts.tsx'
 import { formatStudioDashboardCount } from './studio-dashboard-format.ts'
 import { StudioDashboardNotice } from './studio-dashboard-notice.tsx'
 import { StudioDashboardRunningPanel } from './studio-dashboard-running-panel.tsx'
@@ -33,12 +33,12 @@ function studioTrendDelta(points: readonly StudioTrendPoint[]): number {
   return (points.at(-1)?.value ?? 0) - (points[0]?.value ?? 0)
 }
 
-function StudioDashboardMetricCard({ tone, label, value, points }: { tone: StudioDashboardTone; label: string; value: number; points?: readonly StudioTrendPoint[] }) {
+function StudioDashboardMetricCard({ label, value, points }: { label: string; value: number; points?: readonly StudioTrendPoint[] }) {
   const delta = points === undefined ? 0 : studioTrendDelta(points)
   const direction = delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat'
   const trendLabel = points !== undefined && points.length > 1 ? `${delta >= 0 ? '+' : ''}${formatStudioDashboardCount(delta)} in ${String(points.length)}m` : null
   return (
-    <article className={`workspace-surface dashboard-metric-card metric-tone-${tone}`}>
+    <article className="workspace-surface dashboard-metric-card">
       <div className="dashboard-metric-card-head">
         <span>{label}</span>
       </div>
@@ -48,7 +48,7 @@ function StudioDashboardMetricCard({ tone, label, value, points }: { tone: Studi
       </div>
       {points !== undefined && (
         <div className="dashboard-card-trend">
-          <StudioMiniTrendChart points={points} tone={tone} />
+          <StudioMiniTrendChart points={points} />
           <div aria-hidden="true" className="dashboard-card-trend-labels">
             <span>{points[0]?.shortLabel}</span>
             <span>{points.at(-1)?.shortLabel}</span>
@@ -69,10 +69,10 @@ function StudioInsightStatTile({ stat }: { stat: StudioInsightStat }) {
   )
 }
 
-function StudioDistributionCard({ title, items, emptyLabel, tone }: { title: string; items: readonly StudioDistributionItem[]; emptyLabel: string; tone: StudioDashboardTone }) {
+function StudioDistributionCard({ title, items, emptyLabel }: { title: string; items: readonly StudioDistributionItem[]; emptyLabel: string }) {
   const maxValue = Math.max(...items.map(item => item.value), 1)
   return (
-    <section className={`dashboard-distribution-card metric-tone-${tone}`}>
+    <section className="dashboard-distribution-card">
       <div className="dashboard-distribution-head"><strong>{title}</strong></div>
       {items.length === 0 ? <div className="dashboard-chart-empty">{emptyLabel}</div> : (
         <div className="dashboard-distribution-list">
@@ -128,7 +128,7 @@ function StudioActivityFeed({ items }: { items: readonly StudioActivityItem[] })
 function StudioCoverage({ summary }: { summary: StudioDashboardSummary }) {
   return (
     <section className="dashboard-insight-grid dashboard-insight-grid-coverage">
-      <article className="workspace-surface dashboard-insight-panel dashboard-insight-panel-skills metric-tone-skills">
+      <article className="workspace-surface dashboard-insight-panel dashboard-insight-panel-skills">
         <div className="surface-heading dashboard-insight-heading">
           <span>Skills coverage</span><b>{formatStudioDashboardCount(summary.totalSkills)} total</b>
         </div>
@@ -136,12 +136,12 @@ function StudioCoverage({ summary }: { summary: StudioDashboardSummary }) {
           {summary.skills.stats.map(stat => <StudioInsightStatTile key={stat.label} stat={stat} />)}
         </div>
         <div className="dashboard-distribution-grid">
-          <StudioDistributionCard emptyLabel="No skills yet" items={summary.skills.agents} title="Skills by Agent" tone="skills" />
-          <StudioDistributionCard emptyLabel="No required tools" items={summary.skills.requiredTools} title="Required Tools" tone="skills" />
+          <StudioDistributionCard emptyLabel="No skills yet" items={summary.skills.agents} title="Skills by Agent" />
+          <StudioDistributionCard emptyLabel="No required tools" items={summary.skills.requiredTools} title="Required Tools" />
         </div>
       </article>
 
-      <article className="workspace-surface dashboard-insight-panel dashboard-insight-panel-sessions metric-tone-sessions">
+      <article className="workspace-surface dashboard-insight-panel dashboard-insight-panel-sessions">
         <div className="surface-heading dashboard-insight-heading">
           <span>Sessions coverage</span><b>{formatStudioDashboardCount(summary.totalSessions)} total</b>
         </div>
@@ -149,8 +149,8 @@ function StudioCoverage({ summary }: { summary: StudioDashboardSummary }) {
           {summary.sessions.stats.map(stat => <StudioInsightStatTile key={stat.label} stat={stat} />)}
         </div>
         <div className="dashboard-distribution-grid dashboard-distribution-grid-stacked">
-          <StudioDistributionCard emptyLabel="No sessions yet" items={summary.sessions.agents} title="Sessions by Agent" tone="sessions" />
-          <StudioDistributionCard emptyLabel="No session messages" items={summary.sessions.messageBands} title="Message Count Bands" tone="sessions" />
+          <StudioDistributionCard emptyLabel="No sessions yet" items={summary.sessions.agents} title="Sessions by Agent" />
+          <StudioDistributionCard emptyLabel="No session messages" items={summary.sessions.messageBands} title="Message Count Bands" />
         </div>
       </article>
       <StudioDashboardRunningPanel />
@@ -173,11 +173,11 @@ function StudioStaticContent() {
       </div>
 
       <section className="dashboard-metric-grid dashboard-metric-grid-five">
-        <StudioDashboardMetricCard label="Total Agents" tone="agents" value={summary.totalAgents} />
-        <StudioDashboardMetricCard label="Total Skills" points={summary.trends.skills} tone="skills" value={summary.totalSkills} />
-        <StudioDashboardMetricCard label="Total Tools" tone="tools" value={summary.totalTools} />
-        <StudioDashboardMetricCard label="Total Users" points={summary.trends.users} tone="users" value={summary.totalUsers} />
-        <StudioDashboardMetricCard label="Total Sessions" points={summary.trends.sessions} tone="sessions" value={summary.totalSessions} />
+        <StudioDashboardMetricCard label="Total Agents" value={summary.totalAgents} />
+        <StudioDashboardMetricCard label="Total Skills" points={summary.trends.skills} value={summary.totalSkills} />
+        <StudioDashboardMetricCard label="Total Tools" value={summary.totalTools} />
+        <StudioDashboardMetricCard label="Total Users" points={summary.trends.users} value={summary.totalUsers} />
+        <StudioDashboardMetricCard label="Total Sessions" points={summary.trends.sessions} value={summary.totalSessions} />
       </section>
 
       <StudioCoverage summary={summary} />
