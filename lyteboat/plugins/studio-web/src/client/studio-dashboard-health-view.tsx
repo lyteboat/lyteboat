@@ -38,16 +38,16 @@ const formatStudioHealthCount = (value: number | null): string => formatStudioDa
 const formatStudioHealthRatio = (value: number | null): string => formatStudioDashboardRatio(value ?? 0)
 
 const STUDIO_REQUEST_METRICS: StudioHealthChartMetric[] = [
-  { key: 'requestCount', label: '请求量', color: 'var(--accent)', format: formatStudioHealthCount, mode: 'bar' },
-  { key: 'peakConcurrentUsers', label: '并发用户', color: 'var(--ok)', format: formatStudioHealthCount, axis: 'secondary', area: true, showWithoutRequests: true },
+  { key: 'requestCount', label: '请求量', color: 'var(--pri)', format: formatStudioHealthCount, mode: 'bar' },
+  { key: 'peakConcurrentUsers', label: '并发用户', color: 'var(--chart-muted)', format: formatStudioHealthCount, axis: 'secondary', area: true, showWithoutRequests: true },
 ]
 const STUDIO_RESPONSE_METRICS: StudioHealthChartMetric[] = [
-  { key: 'firstContentP95Ms', label: '首内容 P95', color: 'var(--accent)', format: formatStudioDashboardDuration },
-  { key: 'durationP95Ms', label: '总耗时 P95', color: 'var(--warn)', format: formatStudioDashboardDuration },
+  { key: 'firstContentP95Ms', label: '首内容 P95', color: 'var(--pri)', format: formatStudioDashboardDuration },
+  { key: 'durationP95Ms', label: '总耗时 P95', color: 'var(--chart-muted)', format: formatStudioDashboardDuration },
 ]
 const STUDIO_TOOL_METRICS: StudioHealthChartMetric[] = [
-  { key: 'toolCallCount', label: '调用量', color: 'var(--accent)', format: formatStudioHealthCount, mode: 'bar' },
-  { key: 'toolErrorCount', label: '失败量', color: 'var(--err)', format: formatStudioHealthCount, mode: 'bar' },
+  { key: 'toolCallCount', label: '调用量', color: 'var(--pri)', format: formatStudioHealthCount, mode: 'bar' },
+  { key: 'toolErrorCount', label: '失败量', color: 'var(--danger)', format: formatStudioHealthCount, mode: 'bar' },
 ]
 
 /**
@@ -102,16 +102,15 @@ function studioHealthLaneFigures(summary: StudioHealthAggregate, compared: Studi
   }
 }
 
-function StudioHealthRanking({ title, subtitle, rows, emptyText, tone }: {
+function StudioHealthRanking({ title, subtitle, rows, emptyText }: {
   title: string
   subtitle: string
   rows: readonly StudioHealthRankingRow[]
   emptyText: string
-  tone: 'tool' | 'skill'
 }) {
   const maxCount = Math.max(...rows.map(row => row.count), 1)
   return (
-    <article className={`workspace-surface health-ranking-panel health-ranking-${tone}`}>
+    <article className="workspace-surface health-ranking-panel">
       <div className="health-panel-heading">
         <div><strong>{title}</strong><span>{subtitle}</span></div>
       </div>
@@ -184,14 +183,12 @@ function StudioHealthContent({ health }: { health: StudioDashboardHealth }) {
           rows={health.current.toolRankings.map(tool => ({ label: tool.name, count: tool.count, meta: `平均 ${formatStudioDashboardDuration(tool.averageDurationMs)}` }))}
           subtitle="业务工具调用次数 · 不含 Skill 加载"
           title="工具调用排行"
-          tone="tool"
         />
         <StudioHealthRanking
           emptyText="暂无 Skill 调用"
           rows={health.current.skillRankings.map(skill => ({ label: skill.skillId, count: skill.count, meta: `平均 ${formatStudioDashboardRatio(skill.averageTurns)} 轮` }))}
           subtitle="按关联 Run 计数 · 同一 Run 内去重"
           title="技能调用排行"
-          tone="skill"
         />
       </section>
 

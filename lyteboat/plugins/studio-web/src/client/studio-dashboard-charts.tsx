@@ -33,9 +33,6 @@ export interface StudioHealthLaneFigure {
   comparison: string | null
 }
 
-/** The colour family of a metric card or a distribution. */
-export type StudioDashboardTone = 'agents' | 'skills' | 'tools' | 'users' | 'sessions'
-
 /** How a lane scales its metrics over its buckets. */
 interface StudioHealthPlot {
   metrics: StudioHealthChartMetric[]
@@ -298,11 +295,11 @@ function studioMiniTrendPolyline(points: readonly StudioTrendPoint[]): string {
 }
 
 /** A metric card's sparkline: the trend as a line over its area. */
-export function StudioMiniTrendChart({ tone, points }: { tone: StudioDashboardTone; points: readonly StudioTrendPoint[] }) {
+export function StudioMiniTrendChart({ points }: { points: readonly StudioTrendPoint[] }) {
   if (points.length === 0) return <div className="dashboard-chart-empty">No trend</div>
   const polyline = studioMiniTrendPolyline(points)
   return (
-    <svg aria-hidden="true" className={`mini-trend-chart metric-tone-${tone}`} viewBox={`0 0 ${String(STUDIO_MINI_TREND_WIDTH)} ${String(STUDIO_MINI_TREND_HEIGHT)}`}>
+    <svg aria-hidden="true" className="mini-trend-chart" viewBox={`0 0 ${String(STUDIO_MINI_TREND_WIDTH)} ${String(STUDIO_MINI_TREND_HEIGHT)}`}>
       <polygon className="mini-trend-area" points={`${polyline} ${String(STUDIO_MINI_TREND_WIDTH)},${String(STUDIO_MINI_TREND_HEIGHT)} 0,${String(STUDIO_MINI_TREND_HEIGHT)}`} />
       <polyline className="mini-trend-line" fill="none" points={polyline} />
     </svg>

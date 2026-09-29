@@ -1,0 +1,185 @@
+/* =============================================================
+   学术蓝 Academic Blue — the Studio's colour tokens, the only place a
+   colour value is written: every rule in studio.css reads var(--token).
+   The theme's rules: the indigo brand colours are for the top bar alone;
+   the steel-blue primary marks actions, progress, selection, and a good
+   state; warn (amber) is missing or pending, alert (orange) is time,
+   danger (red) is failure, and no fourth warning colour joins them;
+   whatever a model wrote sits on the warm-grey chat-* colours, apart
+   from the cool workspace.
+   ============================================================= */
+
+:root {
+  /* Brand · top bar */
+  --brand: #0B2A45;
+  --brand-2: #17456B;
+  --brand-ink: #0B2A45;
+  --on-brand: #FFFFFF;
+  --brand-ink1: #DCE9F3;
+  --brand-ink2: #BFD3E4;
+  --brand-ink3: #8FAAC4;
+  --brand-ink4: #6F8CA8;
+  --brand-ico: #CFE0EE;
+
+  /* Primary */
+  --pri: #14598C;
+  --pri-deep: #0E4470;
+  --on-pri: #FFFFFF;
+  --pri-tint: #E6EEF6;
+  --pri-tint2: #EFF4FA;
+  --pri-line: #BBD1E6;
+  --pri-line2: #C9DCEC;
+  --pri-line3: #C3D6E8;
+  --pri-glow: rgba(20,89,140,.10);
+  --pri-glow2: rgba(20,89,140,.09);
+
+  /* Text */
+  --ink: #141A1F;
+  --ink2: #4A5560;
+  --ink2b: #5D6874;
+  --ink3: #7B8794;
+  --ink4: #98A3AE;
+  --ink-chip: #141A1F;
+
+  /* Surfaces */
+  --surface: #FFFFFF;
+  --panel: #FAFBFD;
+  --canvas: #F3F5F8;
+  --row-sel: #F1F6FB;
+  --row-hov: #F5F8FC;
+  --row-hov2: #F3F8FC;
+
+  /* Lines · neutral bars */
+  --line: #E3E7EB;
+  --line2: #ECEFF3;
+  --line3: #E8ECF0;
+  --line4: #E6EAEF;
+  --line5: #DBE1E7;
+  --rule: #D2D8DF;
+  --rule2: #CAD1D9;
+  --rule3: #B5BDC6;
+  --rule4: #A7B0BA;
+  --rule5: #B8C0C9;
+
+  /* Status */
+  --warn: #9A6B18;
+  --warn-bg: #FCF9F1;
+  --warn-bg2: #FCF6EA;
+  --warn-line: #E6DCC2;
+  --alert: #C05621;
+  --danger: #B02418;
+  --danger-bg: #FBEDEC;
+
+  /* AI zone (warm grey, apart from the cool workspace) */
+  --chat-bg: #F1F0EC;
+  --chat-bg2: #F7F6F3;
+  --chat-line: #DEDBD4;
+  --chat-line2: #E6E3DC;
+  --chat-line3: #EAE7E1;
+  --chat-line4: #D6D2CA;
+  --chat-line5: #E0DDD6;
+  --chat-line6: #D9D5CD;
+  --chat-ink: #4A4740;
+  --chat-ink-s: #36332C;
+  --chat-ink2: #7A7669;
+  --chat-ink3: #9B9689;
+
+  /* The Studio's additions, from the same palette. The theme's own danger
+     pill draws this border without naming it. */
+  --danger-line: #F0CFCB;
+  /* A chart's second series beside --pri: a grey far enough from it in
+     lightness for readers with and without colour vision. */
+  --chart-muted: var(--ink3);
+  --shadow-sm: 0 1px 0 rgba(20, 26, 31, 0.04);
+  --shadow-raise: 0 1px 3px rgba(20, 26, 31, 0.09);
+  --shadow-card: 0 1px 0 rgba(20, 26, 31, 0.02), 0 4px 14px -10px rgba(20, 26, 31, 0.08);
+  --shadow-card-hover: 0 1px 0 rgba(20, 26, 31, 0.04), 0 8px 18px -10px rgba(20, 26, 31, 0.12);
+  --shadow-modal: 0 20px 60px rgba(20, 26, 31, 0.2), 0 4px 12px rgba(20, 26, 31, 0.09);
+  --scrim: rgba(20, 26, 31, 0.36);
+  /* A run's live log is a dark terminal in both modes. */
+  --term-bg: #141A1F;
+  --term-ink: #DCE3EA;
+  --term-mute: #7B8794;
+  --term-id: #BFD3E4;
+  --term-pass: #79AEDF;
+  --term-fail: #EC7466;
+
+  color-scheme: light;
+}
+
+/* The theme defines light only. Dark keeps its hues: cool navy-grey
+   surfaces, a lighter primary that carries dark text, a warm-grey AI zone,
+   and the light theme's contrast pairs (body 4.5:1 and up, captions 3:1).
+   The top bar keeps its indigo in both modes. */
+[data-theme="dark"] {
+  --brand-ink: #CFE0EE;
+
+  --pri: #5596CF;
+  --pri-deep: #79AEDF;
+  --on-pri: #0B1A28;
+  --pri-tint: #172A3B;
+  --pri-tint2: #142331;
+  --pri-line: #2C4D6B;
+  --pri-line2: #264460;
+  --pri-line3: #294865;
+  --pri-glow: rgba(85, 150, 207, 0.22);
+  --pri-glow2: rgba(85, 150, 207, 0.16);
+
+  --ink: #E4E9EE;
+  --ink2: #B4BEC8;
+  --ink2b: #A1ACB7;
+  --ink3: #8C97A4;
+  --ink4: #6A7581;
+  --ink-chip: #DCE3EA;
+
+  --surface: #161C23;
+  --panel: #131920;
+  --canvas: #0F141A;
+  --row-sel: #172838;
+  --row-hov: #1B232C;
+  --row-hov2: #1A232D;
+
+  --line: #262F39;
+  --line2: #202830;
+  --line3: #232B34;
+  --line4: #242D36;
+  --line5: #2D3741;
+  --rule: #36414C;
+  --rule2: #3D4955;
+  --rule3: #56626F;
+  --rule4: #66727F;
+  --rule5: #5B6773;
+
+  --warn: #D9A54A;
+  --warn-bg: #251E12;
+  --warn-bg2: #2A2214;
+  --warn-line: #4A3B1E;
+  --alert: #E8864E;
+  --danger: #EC7466;
+  --danger-bg: #2C1917;
+
+  --chat-bg: #1D1C19;
+  --chat-bg2: #211F1C;
+  --chat-line: #34312B;
+  --chat-line2: #3A3730;
+  --chat-line3: #2E2C27;
+  --chat-line4: #4A463E;
+  --chat-line5: #37342E;
+  --chat-line6: #413D36;
+  --chat-ink: #D6D1C6;
+  --chat-ink-s: #EAE5DA;
+  --chat-ink2: #A7A193;
+  --chat-ink3: #878173;
+
+  --danger-line: #5A2A25;
+  --chart-muted: var(--rule3);
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.3);
+  --shadow-raise: 0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 1px 0 rgba(0, 0, 0, 0.2), 0 4px 14px -10px rgba(0, 0, 0, 0.5);
+  --shadow-card-hover: 0 1px 0 rgba(0, 0, 0, 0.3), 0 8px 18px -10px rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 20px 60px rgba(0, 0, 0, 0.5), 0 4px 12px rgba(0, 0, 0, 0.3);
+  --scrim: rgba(0, 0, 0, 0.55);
+  --term-bg: #0B0F13;
+
+  color-scheme: dark;
+}

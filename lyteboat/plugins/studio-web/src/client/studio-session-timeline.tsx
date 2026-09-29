@@ -6,7 +6,8 @@
  * written, and its turn (a tool call: OK or ERR); a human message, a model
  * answer, or a tool call opens to its detail. Skill activations, side model
  * calls, compaction markers, and the turn's end (its outcome) are rows that do
- * not open.
+ * not open. What a model wrote (its answers, its side calls) is marked for the
+ * AI zone's colours.
  * @module @lyteboat/studio-web/client/studio-session-timeline
  */
 
@@ -59,6 +60,11 @@ export function studioTimelineItemOpens(item: StudioTimelineItem): boolean {
 
 function studioTimelineItemImported(item: StudioTimelineItem): boolean {
   return (item.kind === 'user' || item.kind === 'assistant') && item.imported
+}
+
+/** Whether a model wrote the entry (an answer the admission did not give, a side model call): it is drawn on the AI zone's colours. */
+function studioTimelineItemByModel(item: StudioTimelineItem): boolean {
+  return (item.kind === 'assistant' && !item.answeredByAdmission) || item.kind === 'aux'
 }
 
 function studioTimelineTurns(items: readonly StudioTimelineItem[]): StudioTimelineTurn[] {
@@ -177,7 +183,7 @@ function StudioTimelineEntry({ item, open, onToggle, trace }: { item: StudioTime
   const time = formatStudioSessionTime(item.time)
   const toggle = (): void => onToggle(item.seq)
   return (
-    <li className={`tlm-item ${item.kind} ${open ? 'active' : ''} ${opens ? '' : 'tlm-static'}`}>
+    <li className={`tlm-item ${item.kind} ${open ? 'active' : ''} ${opens ? '' : 'tlm-static'} ${studioTimelineItemByModel(item) ? 'tlm-ai' : ''}`}>
       <div
         aria-expanded={opens ? open : undefined}
         className={`tlm-row ${opens ? '' : 'tlm-static'}`}
