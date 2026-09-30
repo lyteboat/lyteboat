@@ -304,7 +304,7 @@ Syncing a new dsh release, promoting a package into the kernel, and running G3 a
 
 ## Status and roadmap
 
-- Tracks dsh **0.1.7-rc.2** (`dsh.upstream.json`). The kernel is its import plus lyteboat's four registered extensions (`agent-loop-intake`, `agent-loop-pre-assemble`, `session-append-ignorable`, `session-controller-prompt-source`), and every gate above passes against it.
+- Tracks dsh **0.2.0-rc.2** (`dsh.upstream.json`). The kernel is its import plus lyteboat's four registered extensions (`agent-loop-intake`, `agent-loop-pre-assemble`, `session-append-ignorable`, `session-controller-prompt-source`), and every gate above passes against it.
 - Provides eight commands: `lyteboat try` (a one-shot task), `serve` (the `/chat` service), `eval` (eval cases), `release` (the release gate and lock), `inspect` (what an agent is made of), `web` (dsh web with lyteboat's pages), `studio` (the Studio workshop), and `config dump` (the composed plugin tree), with the capability plugins behind them, the finance agent, the distribution tooling and the 14-package kernel, and the compatibility gates G1–G6. The [CHANGELOG](CHANGELOG.md) has the full list.
 - Known limitations:
   - `lyteboat web` is dsh web with lyteboat's pages and keeps dsh's own capabilities (coding tools, sandbox, approval), so its sessions do not run the way `/chat` runs them; to debug an agent as `/chat` runs it, use `lyteboat eval` or `lyteboat try --agent`. A message sent from dsh's own composer in `lyteboat web` carries no request context; the lyteboat tab sends one that does. dsh's conversation shows a card as its marker only; the tab shows the cards as JSON.

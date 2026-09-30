@@ -376,7 +376,7 @@ describe('the agent workspace', () => {
     const studio = await studioFixture({}, { workspace: true })
     const admin = await studio.login('root', 'pw-root')
     const current = (await studio.call('GET', 'agents/ledger/skills/balance-lookup', { token: admin })).body as { file: string; sha256: string }
-    // The loader refuses the retired camel-case invocation key; the hot-fix's own rules do not name it.
+    // The skill loader refuses a camel-case invocation key; the hot-fix's own rules do not name it.
     const refused = current.file.replace('description:', 'userInvocable: false\ndescription:')
 
     const saved = await studio.call('PUT', 'agents/ledger/skills/balance-lookup', { token: admin, ifMatch: current.sha256, body: { file: refused } })

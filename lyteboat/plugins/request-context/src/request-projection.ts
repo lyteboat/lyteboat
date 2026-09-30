@@ -42,5 +42,5 @@ export const lyteboatRequestProjectionDefinition = {
     return { requests: state.requests + 1, context: request.context ?? state.context, intake: request.intake ?? null, owner: state.owner ?? request.owner ?? null }
   },
   wire: { viewSchema: lyteboatRequestStateSchema, view: (state: LyteboatRequestState) => state },
-  stateVersion: 3,
+  stateVersion: 1,
 } satisfies ProjectionDefinition<'lyteboatRequest', LyteboatRequestState>

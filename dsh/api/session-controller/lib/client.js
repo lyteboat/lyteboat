@@ -591,12 +591,12 @@ window.__ModuleLoader__.load({
 			const rendered = JSON.stringify(value) ?? String(value);
 			throw new Error(`unreachable variant${context ? ` in ${context}` : ""}: ${rendered}`);
 		}
-		/** Whether a realm-owned intrinsic prototype is backed by its native constructor. */
+		/** Whether a realm-owned intrinsic prototype has a native constructor matching this engine's representation. */
 		function hasIntrinsicConstructor(prototype, name) {
 			const constructor = Object.getOwnPropertyDescriptor(prototype, "constructor")?.value;
 			if (typeof constructor !== "function") return false;
 			try {
-				return constructor.name === name && constructor.prototype === prototype && Function.prototype.toString.call(constructor) === `function ${name}() { [native code] }`;
+				return constructor.name === name && constructor.prototype === prototype && Function.prototype.toString.call(constructor) === Function.prototype.toString.call(name === "Array" ? Array : Object);
 			} catch {
 				return false;
 			}
@@ -3349,6 +3349,7 @@ window.__ModuleLoader__.load({
 				if (!result.ok) throw new SessionForkError(result.error, opts.sessionId);
 				this.projectList();
 				const childId = result.value.sessionId;
+				opts.onCreated?.(childId);
 				if (sourceTitle !== void 0) {
 					const renamed = await this.manager.rename(childId, increasedForkTitle(sourceTitle));
 					if (!renamed.ok) throw new Error(`fork child rename failed: ${renamed.error.code}: ${renamed.error.message}`);

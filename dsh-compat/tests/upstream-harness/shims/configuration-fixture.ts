@@ -2,8 +2,8 @@
  * lyteboat adaptation: upstream's session-controller model spec imports
  * `configurationFixture` from another package's tests
  * (`packages/settings/settings/tests/configuration-fixture.ts`), which no
- * published package ships. This is that helper, copied from
- * deepseek-ai/deepseek-harness @ dsh-v0.1.7-rc.2 (477b4f42), MIT, with one
+ * published package ships. This is that helper.
+ * Adapted from deepseek-ai/deepseek-harness @ dsh-v0.2.0-rc.2 (639ed015), MIT, with one
  * change: the settings plugin comes from the published `@deepseek-ai/dsh-settings`
  * instead of that package's `../src/index.ts`.
  */

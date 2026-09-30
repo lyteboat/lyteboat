@@ -4,7 +4,7 @@ lyteboat is a distribution of [DeepSeek Harness](https://github.com/deepseek-ai/
 
 ## 1. Scope
 
-For the dsh release pinned in `dsh.upstream.json` (`0.1.7-rc.2`), lyteboat promises that a plugin written against that release observes the same **protocol, interface, and behavior** from lyteboat's kernel as from the official packages, except where §4 lists an addition. Packages outside the kernel are installed from npm at the pinned version, unchanged; lyteboat's promise about them is only that it does not patch them.
+For the dsh release pinned in `dsh.upstream.json` (`0.2.0-rc.2`), lyteboat promises that a plugin written against that release observes the same **protocol, interface, and behavior** from lyteboat's kernel as from the official packages, except where §4 lists an addition. Packages outside the kernel are installed from npm at the pinned version, unchanged; lyteboat's promise about them is only that it does not patch them.
 
 ## 2. Stable surface
 

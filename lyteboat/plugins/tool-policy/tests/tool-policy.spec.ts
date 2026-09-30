@@ -166,7 +166,7 @@ describe('visibility', () => {
   })
 })
 
-describe('tool updates (dsh 0.1.7-rc.2)', () => {
+describe('tool updates', () => {
   async function activateOnSecondTurn(adapter: MockAdapter, id: string): Promise<Agent> {
     const ctx = await harness(adapter)
     ctx.toolPolicy.register(echo('always_tool'), { visibility: 'always' })

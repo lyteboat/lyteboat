@@ -302,7 +302,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 
 ## 状态与路线图
 
-- 跟踪 dsh **0.1.7-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的四个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`），上面所有闸门都对它通过。
+- 跟踪 dsh **0.2.0-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的四个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`），上面所有闸门都对它通过。
 - 提供八个命令：`lyteboat try`（一次性任务）、`serve`（`/chat` 服务）、`eval`（评测用例）、`release`（发布闸门与发布锁）、`inspect`（agent 由什么组成）、`web`（dsh web 加轻舟的页面）、`studio`（Studio 工作台）、`config dump`（组合后的插件树），以及它们背后的能力插件、金融智能体、发行版工具与 14 包内核、兼容性闸门 G1–G6。完整清单见 [CHANGELOG](CHANGELOG.md)。
 - 已知限制：
   - `lyteboat web` 是 dsh web 加轻舟的页面，保留 dsh 自己的能力（编码工具、沙箱、审批），会话不按 `/chat` 的方式跑；要按 `/chat` 的样子调试 agent，用 `lyteboat eval` 或 `lyteboat try --agent`。`lyteboat web` 里经 dsh 自己的输入框发的消息不带请求上下文，要带就用 lyteboat 页签发；dsh 的对话里卡片只显示标记，卡片内容在页签里以 JSON 显示。

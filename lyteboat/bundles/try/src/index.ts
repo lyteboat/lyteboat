@@ -9,7 +9,7 @@
  * exits.
  *
  * Modeled on deepseek-ai/deepseek-harness packages/bundle/headless/src/index.ts
- * @ dsh-v0.1.7-rc.2 (477b4f42), MIT — see THIRD_PARTY_NOTICES.md. Differences:
+ * @ dsh-v0.2.0-rc.2 (639ed015), MIT — see THIRD_PARTY_NOTICES.md. Differences:
  * the agent composition (the selected agent, declared to the preset registry by
  * `@lyteboat/agent-catalog`, joined through `agentPresets.mount` in the setup window;
  * without `--agent` no preset, and a session that ran under one is refused), a

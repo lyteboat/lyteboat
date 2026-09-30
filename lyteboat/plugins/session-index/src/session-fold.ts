@@ -61,6 +61,31 @@ function snippetOf(text: string): string {
   return text.length <= SESSION_SNIPPET_CHARS ? text : `${text.slice(0, SESSION_SNIPPET_CHARS)}…`
 }
 
+/**
+ * What a person answered in a late reply to a model's question: dsh's user-questions records the reply as
+ * JSON (`{ kind: 'answer_to_pending_question', questions, answers: [{ id, selected, custom? }] }`); each
+ * answer is its selected labels and its free text, one answer per line. A text that is not that JSON is
+ * shown as stored.
+ */
+function questionReplyText(text: string): string {
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(text)
+  } catch {
+    return text
+  }
+  const answers = (parsed as { answers?: unknown } | null)?.answers
+  if (!Array.isArray(answers)) return text
+  const lines: string[] = []
+  for (const answer of answers as unknown[]) {
+    const { selected, custom } = (answer ?? {}) as { selected?: unknown; custom?: unknown }
+    if (!Array.isArray(selected) || !selected.every(label => typeof label === 'string')) return text
+    const parts: string[] = typeof custom === 'string' && custom !== '' ? [...selected, custom] : selected
+    if (parts.length > 0) lines.push(parts.join(', '))
+  }
+  return lines.join('\n')
+}
+
 /** A human message's request, when it carries one that parses; a malformed one is shown as none. */
 function requestOf(source: { kind: string }): LyteboatRequest | undefined {
   // The stored log is a file: `lyteboatRequest` rides the source only when the caller recorded a request.
@@ -200,9 +225,12 @@ class SessionFold {
       this.emit({ kind: 'skill', seq: event.seq, turn: this.turn, time: event.time, skill: source.name })
       return
     }
-    // Other kinds are context the harness injected (notices, reminders), not a person's message.
-    if (source.kind !== 'user' && source.kind !== LYTEBOAT_HISTORY_IMPORT_SOURCE) return
-    const text = textOf(content, 'text')
+    // The stored log is a file: a person's late answer to a question the model asked carries the kind
+    // dsh's user-questions declares, which this build's types do not load. Other kinds are context the
+    // harness injected (notices, reminders), not a person's message.
+    const kind: string = source.kind
+    if (kind !== 'user' && kind !== 'user-question-reply' && kind !== LYTEBOAT_HISTORY_IMPORT_SOURCE) return
+    const text = kind === 'user-question-reply' ? questionReplyText(textOf(content, 'text')) : textOf(content, 'text')
     const request = requestOf(source)
     this.items.push({
       kind: 'user', seq: event.seq, turn: this.turn, time: event.time, text,

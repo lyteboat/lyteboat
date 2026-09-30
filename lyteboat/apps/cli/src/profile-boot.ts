@@ -14,7 +14,7 @@
  * are provided to the tree through `ctx.cmdlineArgs`.
  *
  * Adapted from deepseek-ai/deepseek-harness apps/cli/src/profile-boot.ts
- * @ dsh-v0.1.7-rc.2 (477b4f42), MIT — see THIRD_PARTY_NOTICES.md. Changes:
+ * @ dsh-v0.2.0-rc.2 (639ed015), MIT — see THIRD_PARTY_NOTICES.md. Changes:
  * lyteboat's own template table replaces dsh's shipped-profile initialization,
  * `--from-default-profile` and the application-owned profile runtime are
  * dropped, a skipped bundle the profile's lyteboat template lists fails the

@@ -1,9 +1,9 @@
 # 基于 lyteboat 开发业务 agent
 
-> 适用范围：lyteboat 当前代码，跟踪 dsh `0.1.7-rc.2`，内核 14 个包（`dsh/kernel.json`）。仓库里现成的示例 agent 只有一个：刻意做到最小的金融智能体 `examples/agents/finance`（三个路由技能、三个工具、四张卡、进入循环之前的准入），文中提到的「金融智能体」都指它。
+> 适用范围：lyteboat 当前代码，跟踪 dsh `0.2.0-rc.2`，内核 14 个包（`dsh/kernel.json`）。仓库里现成的示例 agent 只有一个：刻意做到最小的金融智能体 `examples/agents/finance`（三个路由技能、三个工具、四张卡、进入循环之前的准入），文中提到的「金融智能体」都指它。
 > 读者：熟悉参考实现（Python 前身）、刚接触 dsh 的工程师。dsh / Cordis 的术语先看 §0.6，完整的架构与启动过程见 [01-architecture.md](01-architecture.md)。
 > 贯穿全文的例子是「保单查询助手」（agent id `policy-desk`），整个 agent 写成一份 `lyteboatAgentDef({…})` 声明。它不在仓库里：照本文逐字建出来之后，`pnpm run lint`、`pnpm run typecheck`、`pnpm run test` 全部通过（§2.17），文中的命令输出和日志片段都来自在构建好的二进制上用脚本模型的运行，过长处注明了裁剪，本机路径和随机的 id、摘要换成了占位符。
-> 仓库里的代码按文件加符号名引用，不写行号。路径若不加说明，都相对仓库根（仓库里还有一个同名子目录 `lyteboat/`，放 lyteboat 自己的各层包；业务 agent 不在其中，而在与它并列的 `examples/agents/` 下）。「上游」指 dsh 在 tag `dsh-v0.1.7-rc.2` 上的源码（`packages/<group>/<pkg>/src`），lyteboat 从 npm 安装的 dsh 包以它为准。引用 `CLAUDE.md` 时写它的章节名。
+> 仓库里的代码按文件加符号名引用，不写行号。路径若不加说明，都相对仓库根（仓库里还有一个同名子目录 `lyteboat/`，放 lyteboat 自己的各层包；业务 agent 不在其中，而在与它并列的 `examples/agents/` 下）。「上游」指 dsh 在 tag `dsh-v0.2.0-rc.2` 上的源码（`packages/<group>/<pkg>/src`），lyteboat 从 npm 安装的 dsh 包以它为准。引用 `CLAUDE.md` 时写它的章节名。
 
 ---
 
@@ -237,7 +237,7 @@ flowchart LR
 | `version` | 字符串，形如 `1.2.3` 或 `1.2.3-rc.1` | 作者承诺的版本；进入 agent 的身份，`/agents` 列出它；发布要求有它（§4.16） |
 | `model` | `{ provider, model, reasoningEffort? }`，都是非空字符串，未知键报错 | agent 评测和发布所用的模型。它不选模型（§4.12），只用来核对：serve 和 eval 里它和进程的默认模型不一致，agent 就不声明；发布要求有它 |
 
-按严格 schema 读：多一个键、版本不是这个形状、字段类型不对，加载就失败并指出键名，例如 `agent-catalog: <目录>/agent.yml: (the file): Unrecognized key: "color"`、`… version: must look like 1.2.3 or 1.2.3-rc.1`。原来的 `preset.yml` 已经换成它：目录里还留着 `preset.yml`，加载就失败，提示改名：`agent-catalog: <目录>/preset.yml is now agent.yml: rename it (name, description, and order stay; version and model are new)`（`agent-directory.ts` `readManifest`）。
+按严格 schema 读：多一个键、版本不是这个形状、字段类型不对，加载就失败并指出键名，例如 `agent-catalog: <目录>/agent.yml: (the file): Unrecognized key: "color"`、`… version: must look like 1.2.3 or 1.2.3-rc.1`。
 
 **`agent.release.json`（发布后才有）。** `lyteboat release` 写的发布锁，提交进仓库，交给运维（§4.16）。它和 `tests/`、`evals/` 一样不算进目录的摘要。
 
@@ -260,7 +260,7 @@ flowchart LR
 ### 1.4 `lyteboat try --agents … --agent <id> "任务"` 时发生了什么
 
 1. `try` profile 依次加载 `@deepseek-ai/dsh-base`、`@lyteboat/host`、`@lyteboat/business-base`、`@lyteboat/try` 四层（`lyteboat/apps/cli/src/templates.ts`）。profile 跳过了模板列出的任何一个 bundle，启动就失败（`lyteboat/apps/cli/src/profile-boot.ts` `checkSkippedProfileBundles`）。
-2. `@lyteboat/host` 把 dsh-base 的 `session-log-deepseek` 行配成 `enabled: false`、关掉 `session-telemetry-otel` 行，在宿主平面依次插入 `@lyteboat/distro`、`@lyteboat/tool-policy`、`@lyteboat/aux-llm`、`@lyteboat/request-context`、`@lyteboat/intake-guard`、`@lyteboat/skill-router`、`@lyteboat/a2ui`、`@lyteboat/history-import`（`lyteboat/bundles/host/cordis.patch.yml`）。同一 waterfall 上的监听顺序由注册先后决定，先注册的在外层（上游 `vendor/cordis/src/events.ts:224-243`）。skill-router 注入了 `toolPolicy`，所以晚于 tool-policy 激活、在它里面；agent 的行（`lyteboatAgentDef` 那一行，以及 `agent.cordis.yml` 里的其他行）在宿主服务都激活之后才挂载，注册得更晚，在最里层。所以声明的 `eventListeners` 里的 `lyteboat/intake` 监听在 intake-guard 里面，先于它作出判定（§2.11）。`@lyteboat/business-base` 再关掉 dsh-base 的编码工具、沙箱与审批、工作目录的 AGENTS.md、插件包清单、会话标题的旁路请求等行，系统提示不加宿主 persona 和 harness 身份段（§4.11）。
+2. `@lyteboat/host` 关掉 dsh-base 的 `session-log-deepseek` 和 `session-telemetry-otel` 两行，在宿主平面依次插入 `@lyteboat/distro`、`@lyteboat/tool-policy`、`@lyteboat/aux-llm`、`@lyteboat/request-context`、`@lyteboat/intake-guard`、`@lyteboat/skill-router`、`@lyteboat/a2ui`、`@lyteboat/history-import`（`lyteboat/bundles/host/cordis.patch.yml`）。同一 waterfall 上的监听顺序由注册先后决定，先注册的在外层（上游 `vendor/cordis/src/events.ts:224-243`）。skill-router 注入了 `toolPolicy`，所以晚于 tool-policy 激活、在它里面；agent 的行（`lyteboatAgentDef` 那一行，以及 `agent.cordis.yml` 里的其他行）在宿主服务都激活之后才挂载，注册得更晚，在最里层。所以声明的 `eventListeners` 里的 `lyteboat/intake` 监听在 intake-guard 里面，先于它作出判定（§2.11）。`@lyteboat/business-base` 再关掉 dsh-base 的编码工具、沙箱与审批、工作目录的 AGENTS.md、插件包清单、会话标题的旁路请求等行，系统提示不加宿主 persona 和 harness 身份段（§4.11）。
 3. `@lyteboat/try/startup` 解析参数。没有任务、`--agents` 目录不存在、`--agent` 和 `--agents` 只给了一个、id 找不到、`--session-id` 为空或和 `--history` 同给、`--context` 不是 JSON 对象，都按用法错误退出，找不到 id 时列出可用 id（`lyteboat/bundles/try/src/startup.ts` `LyteboatTryStartup`）。
 4. `agent-catalog` 读目录（行、清单、摘要；再 import 声明所在的模块，没有 `agent.cordis.yml` 时就是 `lib/agent.js`，读出声明的 `agentId` 和 `agentName`）、登记 preset，runner 等它就绪，取出这个 agent 的身份，把会话的工作目录定为这个 agent 的 `$LYTEBOAT_HOME/agent-workdirs/<id>`，不存在就建出来，按 `agentDefaultModel` 的当前选择创建 Agent，给了 `--session-id` 时改为从日志恢复那个会话，在 `setup` 里 `presets.mount(agentCtx, id)`（`lyteboat/bundles/try/src/index.ts` `run`）。上游 `mountPreset` 加载各行、审计、拒绝失败的行和泄漏到根 realm 的服务（`mount.ts:258-272`）；`lyteboatAgentDef` 那一行在 preset 的常驻 mount 里挂一次，检查声明、把各项交给宿主服务（§1.2、§1.3）。
 5. runner 用 `intakeGuard.submit` 提交任务（准入，再把任务连同发起者 `operator:cli`、agent 的身份、请求上下文和判定写成一条用户消息交给 Agent），等到空闲，`sessions.flush`；然后用 `a2ui.turnParts` 把这一轮排成回答加卡片打到 stdout，把 `lyteboat: session <id>` 打到 stderr；只有本轮以 `completed` 结束才退出 0（`index.ts` `run`）。
@@ -372,7 +372,7 @@ mkdir -p examples/agents/policy-desk/{src,tests,assets/sample-data,assets/skills
 | `peerDependencies` | `@lyteboat/a2ui`：它是宿主上的服务插件，工具从它取两个纯函数 `cardMarker`、`cardsPresentationMeta`，peer 表示「用宿主树里那一份」（金融智能体同样把它放在 peer）。声明用到的宿主服务不在这里写：`lyteboatAgentDef` 自己注入它们，agent 的代码只调 `host` 上的方法（§0.3） |
 | `devDependencies` | 测试 import 的包：`@lyteboat/testing`；单元测试挂到宿主上的服务所在的包（`@lyteboat/distro`、`@lyteboat/tool-policy`、`@lyteboat/aux-llm`、`@lyteboat/skill-router`、`@lyteboat/a2ui`、`@lyteboat/request-context`、`@lyteboat/intake-guard`，以及技能注册表 `@deepseek-ai/dsh-skill`）；只 import 类型的 `@deepseek-ai/cordis`（`Context`）、`@deepseek-ai/dsh-llm`（`GenerateOptions`、`StreamChunk`）、`@deepseek-ai/dsh-session`（`SessionEvent`）；外加 composite 测试要启动的 bundle（`@lyteboat/host`、`@lyteboat/business-base`、`@lyteboat/try`），以及冒烟要运行的启动器 `@lyteboat/cli`（§2.16）。`examples` 是最外层：运行时（`dependencies`、`peerDependencies`）只能依赖 `plugins` 和 `core`，`apps`、`bundles`、`tooling` 只能经 devDependencies 依赖，反过来没有任何层能依赖 `examples`（`scripts/check-layers.ts` `RUNTIME`、`DEV_ONLY`，`CLAUDE.md`「Architecture boundaries」）。测试 import 了却没列的包，`pnpm run lint` 里的 knip 会报 `Unlisted dependencies` |
 
-**这套分法是金融智能体的做法，不是 `CLAUDE.md` 的字面规则。** `CLAUDE.md`「Coding conventions」的 Tooling 一条说 dsh 和 cordis 包写成 `peerDependencies`（外加 `devDependencies`）。现有的包并不一致：金融智能体把 `dsh-tools` 放在 `dependencies`，把 `dsh-agent` 放在 peer；`@lyteboat/tool-policy` 把 `dsh-scope` 放在 `dependencies`，却把 `dsh-tools` 放在 peer（`lyteboat/plugins/tool-policy/package.json`）。两种写法 knip 和 check-layers 都接受。`scripts/upstream-pins.spec.ts` 只检查 `lyteboat/` 下的包（`scripts/upstream-pins.spec.ts`），`examples/` 下的 agent 不在它的检查范围里，所以写 dsh peer 时要自己守住这条硬约束：内核包写 `workspace:*`，非内核 dsh 包写跟踪版本的精确号 `0.1.7-rc.2`，不能写 `catalog:dsh`。原因是 dsh 启动准入从磁盘上的 manifest 读一行的 dsh peer，而 pnpm 不会解析那里的 `catalog:`（同一条，`scripts/upstream-pins.spec.ts`）。本例只依赖内核包和 lyteboat 包，没有非内核的 dsh 包；agent 自己带 dsh 工具行时（§4.11）碰得到这条。
+**这套分法是金融智能体的做法，不是 `CLAUDE.md` 的字面规则。** `CLAUDE.md`「Coding conventions」的 Tooling 一条说 dsh 和 cordis 包写成 `peerDependencies`（外加 `devDependencies`）。现有的包并不一致：金融智能体把 `dsh-tools` 放在 `dependencies`，把 `dsh-agent` 放在 peer；`@lyteboat/tool-policy` 把 `dsh-scope` 放在 `dependencies`，却把 `dsh-tools` 放在 peer（`lyteboat/plugins/tool-policy/package.json`）。两种写法 knip 和 check-layers 都接受。`scripts/upstream-pins.spec.ts` 只检查 `lyteboat/` 下的包（`scripts/upstream-pins.spec.ts`），`examples/` 下的 agent 不在它的检查范围里，所以写 dsh peer 时要自己守住这条硬约束：内核包写 `workspace:*`，非内核 dsh 包写跟踪版本的精确号 `0.2.0-rc.2`，不能写 `catalog:dsh`。原因是 dsh 启动准入从磁盘上的 manifest 读一行的 dsh peer，而 pnpm 不会解析那里的 `catalog:`（同一条，`scripts/upstream-pins.spec.ts`）。本例只依赖内核包和 lyteboat 包，没有非内核的 dsh 包；agent 自己带 dsh 工具行时（§4.11）碰得到这条。
 
 ### 2.3 `tsconfig.json`、根引用、README、重装依赖
 
@@ -2154,7 +2154,7 @@ node lyteboat/apps/cli/lib/bin.js web --agents ./examples/agents --no-open
 
 实测（web 组合测试的夹具 agent `support`，只有一行 persona；脚本模型；按 dsh web 浏览器传输的样子带登录 cookie 调端点）：`session/create` 不指定 agent，会话头的 `agentPreset` 是 `support`；页签发送时带 `{"customer":"c-1"}`，人类消息的 `source` 是 `{"kind":"user","rpcId":"<requestId>","lyteboatRequest":{"requestId":"<同一个 id>","owner":{"kind":"operator","id":"web"},"context":{"customer":"c-1"}}}`（组合测试断言的就是这个，`lyteboat/bundles/web/tests/web.composite.ts`）。这里没有 `agent`：`lyteboat web` 的 agent 目录会重新声明，而已经在跑的会话用的是它开始时挂上的代码，此刻目录的摘要说明不了它，所以 `lyteboat web` 不记 agent 的身份（§4.16）。
 
-**agent 层不同于业务模式。** dsh web 把 agent 层（`skill` 工具和技能目录、压缩、文件、shell、子 agent 等工具行）挪进它的编码 preset；`@lyteboat/web` 关掉这些 preset，在宿主上按 dsh-base 的样子把这些行放回来：shell 按平台（非 Windows 上是 `bash`，Windows 上是 `pwsh`），插件管理工具仍然关着（`cordis.patch.yml`）。少了放回这一步，finance 为 `skill` 写的声明找不到注册它的行，第一步就失败（§4.9 第一条）。`lyteboat web` 不列业务底座，所以放回来的是 dsh-base 的全套 agent 层。实测（Linux，上面那个只有 persona 的 `support`，脚本模型）：循环请求在 `lyteboat web` 下有 24 个工具，在 `lyteboat try` 下只有 `skill`。写了 `inherited: hidden` 的 agent（§2.4）在 `lyteboat web` 里仍只露出自己声明的工具，但系统 prompt、沙箱与审批的 runtime context、会话标题的旁路请求都和业务模式不同。工作区的 AGENTS.md 照 dsh web 的样子不进模型请求，插件包清单也关掉（`cordis.patch.yml`）。
+**agent 层不同于业务模式。** dsh web 把 agent 层（`skill` 工具和技能目录、压缩、文件、shell、子 agent 等工具行）挪进它的编码 preset；`@lyteboat/web` 关掉这些 preset，在宿主上按 dsh-base 的样子把这些行放回来：shell 按平台（非 Windows 上是 `bash`，Windows 上是 `pwsh`），插件管理工具仍然关着（`cordis.patch.yml`）。少了放回这一步，finance 为 `skill` 写的声明找不到注册它的行，第一步就失败（§4.9 第一条）。`lyteboat web` 不列业务底座，所以放回来的是 dsh-base 的全套 agent 层。实测（Linux，上面那个只有 persona 的 `support`，脚本模型）：循环请求在 `lyteboat web` 下有 24 个工具，在 `lyteboat try` 下只有 `skill`。写了 `inherited: hidden` 的 agent（§2.4）在 `lyteboat web` 里仍只露出自己声明的工具，但系统 prompt、沙箱与审批的 runtime context、会话标题的旁路请求都和业务模式不同。工作区的 AGENTS.md 照 dsh web 的样子不进模型请求，插件包清单也关掉（`cordis.patch.yml`）；会话日志上传的行由 `@lyteboat/host` 关掉，所以 dsh web 设置页里没有上传会话日志的开关，dsh web 只在名为 `desktop` 的 profile 里打开的两行用量统计也按名字关着。
 
 **`lyteboat web` 不做的事。**
 
@@ -2200,7 +2200,7 @@ try（经 `intakeGuard.submit` 的 `agent`）、`/chat`、eval 把身份写进�
 | `replay` | 在这个构建上回放基线：回放跑的用例正是基线录下的那些（所以每个回放的用例都查过录音的戳和模型），每一轮的 `results.jsonl` 行和基线逐字相同（基线的 CRLF 读作 LF），轮数相同，每个用例都通过 | `the agent's cases are now <ids>, but the baseline ran <ids>; record the baseline again`；`replaying the baseline, case <id> turn <n> no longer shows what the baseline recorded`；`replaying the baseline gave N turn(s); the baseline recorded M`；`the baseline fails case(s) <id>; a release needs every case to pass` |
 | `version` | 没有已有的锁用同一个版本发布过别的内容 | `<目录>/agent.release.json already releases <id> <版本> as <摘要>; raise the version in agent.yml` |
 
-通过时退出 0，stdout 是 `lyteboat release: <id> <版本> (<摘要>) released; lock: <锁>; replay: <运行目录>/report.md`，回放像普通的 `--model replay` 一样写进 `$LYTEBOAT_HOME/evals/<运行 id>/`。被拒退出 1，stderr 是 `lyteboat release: refused at <步骤>: <原因>`。用法错误或跑不起来退出 2：少了 `--agents` 或 `--agent`（`error: --agent is required`），agent 挂不上（清单不合法、还留着 `preset.yml`、声明的模型不是进程的默认模型）。同一个版本、同样的内容再发布一次照样通过，写出相同的字节。
+通过时退出 0，stdout 是 `lyteboat release: <id> <版本> (<摘要>) released; lock: <锁>; replay: <运行目录>/report.md`，回放像普通的 `--model replay` 一样写进 `$LYTEBOAT_HOME/evals/<运行 id>/`。被拒退出 1，stderr 是 `lyteboat release: refused at <步骤>: <原因>`。用法错误或跑不起来退出 2：少了 `--agents` 或 `--agent`（`error: --agent is required`），agent 挂不上（清单不合法、声明的模型不是进程的默认模型）。同一个版本、同样的内容再发布一次照样通过，写出相同的字节。
 
 **实测**（CLI 测试夹具 `echo`：一行 persona、一个用例。照 `lyteboat/apps/cli/tests/release.e2e.ts` 的做法拷到仓库外，在它上一级目录链接工作区的 `node_modules`，行才找得到包；real 运行用脚本模型；`<根>` 是拷过去的 agents 目录，摘要截短了）：
 
@@ -2231,7 +2231,7 @@ lyteboat release: refused at stamps: the baseline ran echo 0.1.0 (sha256:06d85e2
   "startedAt": "2026-09-26T05:03:42.891Z", "durationMs": 119 }
 ```
 
-接着重录基线再发布，版本还是 0.1.0，第 6 步拒绝：`refused at version: <根>/echo/agent.release.json already releases echo 0.1.0 as sha256:06d85e20…; raise the version in agent.yml`。只把版本升到 0.1.1、不重录，第 3 步拒绝：版本也在身份里，基线记的还是 0.1.0。所以改了 agent，就从第 1 步重来。金融智能体正是这样：它写成 `lyteboatAgentDef` 之后目录变了（`agent.cordis.yml` 没了，`agent.yml` 不再写 `name`，`src/`、`lib/` 也跟着变了），旧基线让 `lyteboat release --agents ./examples/agents --agent finance` 停在第 3 步；照 §4.14 用真实 key 重录基线之后，闸门又放行了（[02-distribution.md](02-distribution.md) §9.3 有输出）。
+接着重录基线再发布，版本还是 0.1.0，第 6 步拒绝：`refused at version: <根>/echo/agent.release.json already releases echo 0.1.0 as sha256:06d85e20…; raise the version in agent.yml`。只把版本升到 0.1.1、不重录，第 3 步拒绝：版本也在身份里，基线记的还是 0.1.0。所以改了 agent，就从第 1 步重来（摘要不符时的输出见 [02-distribution.md](02-distribution.md) §9.3）。
 
 **锁里有什么。** `LyteboatAgentRelease`（`lyteboat/core/contracts/src/index.ts` `lyteboatAgentReleaseSchema`）：`agent`（id、版本、摘要）、`model`、`dshBase`（这个构建的内核来自哪个 dsh 版本）、`files`（摘要背后的逐文件哈希）、`baseline`（`startedAt`，用例、轮次、检查的个数，`results.jsonl` 按 LF 读的 sha256）。键的顺序固定、两空格缩进、结尾一个换行，所以同样的发布写出同样的字节，锁的 diff 可以像代码一样审。逐字段的表见 [02-distribution.md](02-distribution.md) §9.3。
 
@@ -2498,13 +2498,12 @@ lyteboat: session session-…
 | `lyteboat: session "…" runs under agent "policy-desk"; continue it with --agent policy-desk`，退出 1（实测） | 续聊时用了别的 `--agent`，或者没给 | 用录制时的 agent |
 | `lyteboat: session "…" was recorded in "…", not "…"`，退出 1（实测） | 不带 agent 的会话在别的目录下续聊；带 `--agent` 的会话换了（或搬了）`$LYTEBOAT_HOME`，agent 的工作目录跟着变了 | 回到录制时的目录，或录制时的 home（§4.10） |
 | `error: --context file not found: <工作目录>/nosuch.json`、`error: --context is not JSON: Unexpected end of JSON input`（均实测）或 `error: --context must be a JSON object` | `--context` 的值不以 `{` 开头时被当成文件路径（`[1]` 也会被当成文件名）；内联的 JSON 写坏了；或者文件里解析出来不是对象 | 内联写 `'{"channel":"app"}'`，或者给一个装着 JSON 对象的文件（`lyteboat/bundles/try/src/startup.ts` `readContext`） |
-| 加载失败：`agent-catalog: <目录>/preset.yml is now agent.yml: rename it (name, description, and order stay; version and model are new)`（实测） | 目录里还是原来的 `preset.yml` | 改名为 `agent.yml`，三个字段照旧；要发布再加 `version`、`model`（§1.3） |
 | 加载失败：`agent-catalog: <目录>/agent.yml: (the file): Unrecognized key: "color"`，或 `… version: Invalid input: expected string, received number`（均实测，后者是 `version: 1.0`，YAML 把它读成数），或 `… version: must look like 1.2.3 or 1.2.3-rc.1` | 清单多了键、版本不是字符串或不是这个形状 | 只用 `name`、`description`、`order`、`version`、`model` 五个键；版本写成 `1.2.3` 或 `1.2.3-rc.1`，数字形状的版本要加引号（§1.3） |
 | serve 退出 1、eval 退出 2：`<id>: agent.yml declares model deepseek-official/deepseek-flash, but this process runs deepseek-official/deepseek-pro; run it with that default model (the agent-default-model row) or change agent.yml`（实测） | serve 和 eval 要求 agent 声明的模型就是进程的默认模型；try 和 `lyteboat web` 不查 | 用 profile patch 或 `--patch` 把 `agent-default-model` 行改成声明的模型，或者改 `agent.yml`（改了就要重录基线，§4.16） |
 | 加载失败：`agent-catalog: <路径> is a symbolic link; an agent's digest covers regular files only` | agent 目录里（排除项之外）有符号链接，摘要不跟随链接 | 换成普通文件；`node_modules/` 和以点开头的条目里的链接不受影响（§4.16） |
 | `lyteboat release: refused at <步骤>: <原因>`，退出 1（实测） | 发布闸门的某一步不过；最常见的是 `stamps`：录完基线之后又改了 agent 目录或版本 | 照 §4.16 的表处理；改了 agent 就升版本、重录基线、再发布 |
 | `serve --release` 退出 1：`<id>: the directory differs from its release 1.0.0 (sha256:…): changed agent.yml`，或 `agent.yml declares version 1.0.0, but its release pins 1.0.1`（均实测） | 发布之后 agent 目录变了（包括重新构建出不同的 `lib/`），或者清单的版本和锁的不一样 | 服务锁记下的那份内容；要上新内容就重新发布（§4.16） |
-| `serve --release` 退出 1：`error: --release <锁> was released on dsh 0.1.6, but this build runs dsh 0.1.7-rc.2; release the agent again with this build`（实测，改了锁的 `dshBase`） | 锁是在别的内核版本的构建上发布的 | 用发布它的那个构建去 serve，或在这个构建上重新发布（[02-distribution.md](02-distribution.md) §9.3） |
+| `serve --release` 退出 1：`error: --release <锁> was released on dsh 0.1.6, but this build runs dsh 0.2.0-rc.2; release the agent again with this build`（实测，改了锁的 `dshBase`） | 锁是在别的内核版本的构建上发布的 | 用发布它的那个构建去 serve，或在这个构建上重新发布（[02-distribution.md](02-distribution.md) §9.3） |
 | `lyteboat studio` 退出 1：`error: this Studio has no accounts to sign in with; make the first one with: lyteboat studio account add <username> --role admin < password-file`（实测） | 账户模式下 `$LYTEBOAT_HOME/studio/` 里一个账户都没有，或者这次用了别的 `LYTEBOAT_HOME` | 在同一个 home 下 `lyteboat studio account add <用户名> --role admin < <口令文件>`，或者挂在授权网关后面用 `--gateway-secret-env`（§4.17） |
 | Studio 看板的性能视图是空的，运行中的消息是 0 | 运行指标只有 serve 写，try 和 eval 不写；或者 Studio 和 serve 用的不是同一个 `LYTEBOAT_HOME` | 用同一个 home 起 serve 和 Studio，经 `/chat` 发消息（§4.17） |
 | Studio 里起评测运行被拒（409） | 这个 agent 已经有一个运行在跑，或者全局已经有两个；或者这个 Studio 不是 `lyteboat` 启动器起的，没有可以起 `lyteboat eval` 的 bin | 等它跑完或点 Stop；用 `lyteboat studio` 起 Studio（§4.17） |
@@ -2614,7 +2613,7 @@ export interface LyteboatStepPayload {
 | `lyteboatActiveSkill` | 折叠状态 `{ active, loading }`，对外的视图是 `string \| null` | `ctx.skillRouter.activeOf(agent)` |
 | `lyteboatRequest` | `{ requests, context, intake, owner }`：带请求的人类消息数、会话当前的请求上下文、最近一次的准入判定（没有时为 `null`）、第一个请求记下的发起者 `{ kind: 'user' \| 'operator' \| 'system', id }`（没有时为 `null`） | `ctx.requestContext.contextOf(agent)` 读 `context` |
 
-`lyteboatState`、`lyteboatCards`、`lyteboatActiveSkill` 的 `stateVersion` 是 1，`lyteboatRequest` 是 3。声明的 `host` 上没有 `sessionProjections`；agent 要直接读投影，就写自己的一行（一个默认导出的类，放在 `agent.cordis.yml` 里 `./lib/agent.js` 之后，§4.11），在这一行里用 `ctx.sessionProjections`，要补齐四处。宿主插件 `@lyteboat/request-context` 用的是同一套写法，下面各条附上它对应的文件。四处都在一份 policy-desk 的拷贝上实测过（一个在 `agent/request` 里读 `lyteboatState` 的行）：
+四个投影的 `stateVersion` 都是 1。声明的 `host` 上没有 `sessionProjections`；agent 要直接读投影，就写自己的一行（一个默认导出的类，放在 `agent.cordis.yml` 里 `./lib/agent.js` 之后，§4.11），在这一行里用 `ctx.sessionProjections`，要补齐四处。宿主插件 `@lyteboat/request-context` 用的是同一套写法，下面各条附上它对应的文件。四处都在一份 policy-desk 的拷贝上实测过（一个在 `agent/request` 里读 `lyteboatState` 的行）：
 
 1. 行的 `static inject` 加 `'sessionProjections'`（`lyteboat/plugins/request-context/src/index.ts`）。
 2. `src` 里加 `import type {} from '@deepseek-ai/dsh-session-projection'`，把服务的类型声明合并进 `Context`。少了这一处，`tsc -b` 报 `error TS2339: Property 'sessionProjections' does not exist on type 'Context'.`。

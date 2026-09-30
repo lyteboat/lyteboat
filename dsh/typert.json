@@ -1,7 +1,7 @@
 {
   "$comment": "Written by `pnpm run dist:overlay <checkout> typert --write`: the digest of each kernel package's src/ that its lib/typert.* files were regenerated from (scripts/dist/typert.ts).",
   "packages": {
-    "@deepseek-ai/dsh-api-session-controller": "cc6804a43eede2ad1110ed2e87c6a50b501359b9228c874de0d8c6f4a399cc4b",
+    "@deepseek-ai/dsh-api-session-controller": "d5d2f795d526f43aaf6eccafcd382c7b2a43552e59b6ab842d95804a0103609a",
     "@deepseek-ai/dsh-llm": "0b3c4174413c771d0433f5596a4b389b79817cad699e85455a4b2a5cb76873b4"
   }
 }

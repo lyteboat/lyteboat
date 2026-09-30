@@ -3,13 +3,13 @@
 > 本文把参考实现的能力逐项对到 lyteboat 的代码上：lyteboat 有没有这项能力、在哪个包哪个文件；只有一部分的，缺什么。然后写下决定能力怎样落进 lyteboat 的设计规则，以及接下来引入能力的顺序。
 >
 > **基线**
-> - lyteboat：本仓库的代码。内核是 dsh 0.1.7-rc.2（tag `dsh-v0.1.7-rc.2`，`dsh.upstream.json`）的 14 个包，带四项登记过的扩展。
+> - lyteboat：本仓库的代码。内核是 dsh 0.2.0-rc.2（tag `dsh-v0.2.0-rc.2`，`dsh.upstream.json`）的 14 个包，带四项登记过的扩展。
 > - 参考实现：它的 master 分支。
 >
 > **路径约定**
 > - 不带前缀的路径从 lyteboat 仓库根算起，例如 `lyteboat/plugins/tool-policy/src/state.ts`；内核包引用 lyteboat 里的源码路径，例如 `dsh/core/agent-loop/src/agent.ts`。
 > - `ref:` 指参考实现的 Python 包根目录，例如 `ref:core/runtime/base_agent.py`；`ref 仓库:` 指参考实现的仓库根。参考实现只按文件路径引用。
-> - `dsh:` 指 dsh 0.1.7-rc.2 上游 monorepo 的根，例如 `dsh:packages/preset/agent-preset-registry/README.md`。
+> - `dsh:` 指 dsh 0.2.0-rc.2 上游 monorepo 的根，例如 `dsh:packages/preset/agent-preset-registry/README.md`。
 > - `CLAUDE.md` 按节标题和规则名引用，例如 `CLAUDE.md`「Architecture boundaries」的 "Outside the kernel first"。
 >
 > **数据说明**
@@ -74,7 +74,7 @@
 | 8 个 hook | 类型化事件，派发模式分 waterfall、serial、emit | 派发模式属于公开契约：`agent/pre-step` 是 waterfall，`agent/turn-stopping` 是 serial（`dsh/core/agent/src/runtime-types.ts`）；hook 与事件的对应见 4.1 |
 | BaseAgent 的子类 | 一个 `lyteboatAgentDef({…})`（`@lyteboat/agent-def`），编译成 agent 目录的一行；dsh 那边是 preset：一行 dsh-agent-preset 声明，加上它的子行 | 注册表不扫描目录；lyteboat 的 agent 目录由 `@lyteboat/agent-catalog`（在 try、serve、eval、inspect、web 和 studio 组合里）声明成 preset |
 | Plugin、Lifecycle | Cordis 插件；组合里的一行 | 依赖用 `inject` 声明，不靠列表顺序 |
-| Protocol 加工厂插槽 | capability seam，由 Definition、Provider、Consumer 三个角色组成 | 缺任何一个角色都不算完整的 seam（`dsh:AGENTS.md:138`） |
+| Protocol 加工厂插槽 | capability seam，由 Definition、Provider、Consumer 三个角色组成 | 缺任何一个角色都不算完整的 seam（`dsh:AGENTS.md:140`） |
 | `app.py` 组合根 | profile 加 bundle patch | 组合就是数据 |
 
 ### 1.3 兼容承诺（`dsh-compat/README.md`）
@@ -103,7 +103,7 @@
    - 事件信封由 `Session.append` 在内部拼装，插件碰不到 `ignorable` 标记：所以有 `session-append-ignorable`。
    - session-controller 的 `prompt` 在自己的校验、附件准入和去重之后才构造用户消息，source 由它自己写；另开一条写入路径就丢了这三样：所以有 `session-controller-prompt-source`。
 
-   上游文件里的钩子保持几行，逻辑放在 `src/lyteboat/`（`CLAUDE.md`「Architecture boundaries」的 "The kernel changes only by classified commits"）；每项扩展登记退出条件，上游提供替代能力后在下一次同步里退役。这样做是因为内核的每一行差量都要长期携带：dsh 不接受外部 PR（`dsh:CONTRIBUTING.md:9`），而扩展所在的文件是上游改得最勤的：在 dsh-0.1.7-rc.2 的 checkout 上执行 `git log --since=2026-08-01`，`packages/core/agent-loop/src/agent.ts` 有 82 个提交（不算合并提交 58 个），`packages/core/session/src/index.ts` 有 69 个（不算合并提交 56 个）。
+   上游文件里的钩子保持几行，逻辑放在 `src/lyteboat/`（`CLAUDE.md`「Architecture boundaries」的 "The kernel changes only by classified commits"）；每项扩展登记退出条件，上游提供替代能力后在下一次同步里退役。这样做是因为内核的每一行差量都要长期携带：dsh 不接受外部 PR（`dsh:CONTRIBUTING.md:9`），而扩展所在的文件是上游改得最勤的：在 dsh-0.2.0-rc.2 的 checkout 上执行 `git log --since=2026-08-01`，`packages/core/agent-loop/src/agent.ts` 有 83 个提交（不算合并提交 59 个），`packages/core/session/src/index.ts` 有 70 个（不算合并提交 57 个）。
 
    其余内核包不改，理由如下：
 
@@ -123,7 +123,7 @@
 
 ### 2.2 事实放在 dsh 的信封上
 
-**规则。** 进入模型请求的一切都能从会话日志重建（`dsh:AGENTS.md:136`，`CLAUDE.md`「Architecture boundaries」的 "Model-visible ⟺ logged"）。dsh 的持久层读日志时，遇到既不在编译进来的目录里、又没标可忽略的事件类型，整份会话拒读（`dsh/session/session-persistence/src/storage-contract.ts` `validateStoredEvents`）。所以 lyteboat 记录的事实放在 dsh 已有的信封里，唯一的自有记录标成可忽略，任何 dsh 读者都能打开 lyteboat 写的会话：
+**规则。** 进入模型请求的一切都能从会话日志重建（`dsh:AGENTS.md:138`，`CLAUDE.md`「Architecture boundaries」的 "Model-visible ⟺ logged"）。dsh 的持久层读日志时，遇到既不在编译进来的目录里、又没标可忽略的事件类型，整份会话拒读（`dsh/session/session-persistence/src/storage-contract.ts` `validateStoredEvents`）。所以 lyteboat 记录的事实放在 dsh 已有的信封里，唯一的自有记录标成可忽略，任何 dsh 读者都能打开 lyteboat 写的会话：
 
 | 事实 | 信封 | 谁写 | 谁读回 |
 |---|---|---|---|
@@ -143,11 +143,11 @@
 **投影的规则**（`CLAUDE.md`「Architecture boundaries」的 "Projections return the same reference when nothing changed" 和 "Projections fold appended nodes only"）：只折叠 `surfaceOp === 'append'` 的节点，压缩或替换带着原来的 meta，再折一次会把旧的增量或旧卡片重放一遍；不相干的事件返回同一个引用；lyteboat 信封不合 contracts 的 schema 时抛错并指出 seq（`lyteboat/plugins/tool-policy/src/state.ts` `lyteboatStateProjectionDefinition.apply`、`lyteboat/plugins/a2ui/src/cards-projection.ts` `preparedCardsOf`、`lyteboat/plugins/request-context/src/request-projection.ts` `lyteboatRequestProjectionDefinition`）。`lyteboatState`、`lyteboatCards`、`lyteboatActiveSkill` 的 `stateVersion` 是 1，`lyteboatRequest` 是 3。
 
 **`lyteboat-request` 这个来源的设计：**
-- **kind 是 `'user'`。** `MessageSourceMap` 的键 `'lyteboat-request'` 只是声明合并时的名字，运行时靠 kind 区分来源。dsh 代表人类输入的来源都用 kind `'user'`：tool-skill 只把 `source.kind === 'user'` 的消息当人类输入扫描（`dsh:packages/skill/tool-skill/src/index.ts:171`），goal 的授权判断也一样（`dsh:packages/goal/tool-goal/src/authority.ts:83`）。lyteboat 的字段都收在 `lyteboatRequest` 下面，不用 `rpcId` 这个名字，否则 session-controller 的 `hasPromptRequest`（`'rpcId' in source`，`dsh:packages/api/session-controller/src/commands.ts:602-614`）会把它当成 user-rpc。
+- **kind 是 `'user'`。** `MessageSourceMap` 的键 `'lyteboat-request'` 只是声明合并时的名字，运行时靠 kind 区分来源。dsh 里人直接输入的消息用 kind `'user'`：tool-skill 只把 `source.kind === 'user'` 的消息当人类输入扫描（`dsh:packages/skill/tool-skill/src/index.ts:171`），goal 的授权判断也一样（`dsh:packages/goal/tool-goal/src/authority.ts:83`）。人在 `ask_user_question` 超时之后才给的回答是另一个 kind `'user-question-reply'`（`dsh:packages/interaction/user-questions/src/index.ts:186-194`），这两处都不把它当人类输入；lyteboat 的请求来自人直接发的消息，所以用 `'user'`。lyteboat 的字段都收在 `lyteboatRequest` 下面，不用 `rpcId` 这个名字，否则 session-controller 的 `hasPromptRequest`（`'rpcId' in source`，`dsh:packages/api/session-controller/src/commands.ts:602-614`）会把它当成 user-rpc。
 - **当数据读，用 schema 校验。** `lyteboatRequestOf(source)`（`lyteboat/plugins/request-context/src/request-projection.ts`）先看 kind 是不是 `'user'`，再把 `lyteboatRequest` 字段取出来用 `lyteboatRequestSchema` 校验，不合 schema 就抛错；不用 `'lyteboatRequest' in source` 这类能力探测（`CLAUDE.md`「Coding conventions」的 "No capability probing"）。插件之间只能 `import type`，a2ui 用同样的读法取判定里的卡片（`cardsOfRequest`，`lyteboat/plugins/a2ui/src/cards-projection.ts`）。
 - **上下文只落日志，不给模型看。** 调用方给的上下文原样记在 `context` 上，工具经 `ctx.requestContext.contextOf(agent)` 读取；凭证不放进上下文（`lyteboat/plugins/request-context/src/index.ts` 的模块注释）。实跑：金融智能体几次运行的所有请求体（准入分类、路由、主循环）里都没有 `lyteboatRequest` 字段，也没有上下文里的客户名。
 
-### 2.3 工具集变化按 dsh 0.1.7-rc.2 的工具更新走
+### 2.3 工具集变化按 dsh 0.2.0-rc.2 的工具更新走
 
 - tool-policy 在每次 `lyteboat/pre-assemble` 之后重算 agent 的 `restrict`，被拒的名单变了才重发（`reconcile`，`lyteboat/plugins/tool-policy/src/index.ts`）。技能切换就是一次工具集变化。
 - 内核把两次请求之间的工具集变化记成一条 `developer/message`：source 是 `tool-registry`，内容是 `tool-addition`、`tool-removal`，`headerSeq` 指向变化后的那条 `request/header`。
@@ -156,16 +156,16 @@
 
 ### 2.4 沿用 dsh 的做法
 
-1. **模型可见 ⟺ 可从日志重建**（`dsh:AGENTS.md:136`）。见 2.2。
+1. **模型可见 ⟺ 可从日志重建**（`dsh:AGENTS.md:138`）。见 2.2。
 2. **读取时 fail-closed。** 未登记又没标可忽略的事件类型，整份会话拒读（`dsh/session/session-persistence/src/storage-contract.ts` `validateStoredEvents`）。可忽略只用于纯信息记录（`SessionEvent.ignorable`，`dsh/core/session/src/types.ts`）。上游的决策笔记保留了这个字段，否决了「外部事件一律可忽略」和「按挂载的组合登记事件名」两种做法，并写明只有替代机制完成切换之后才能删它（`dsh:.agents/notes/implemented/architecture/2026-08-30-retain-ignorable-external-session-events.md`「Decision」）。
-3. **加插件，不改循环**（`dsh:AGENTS.md:137`）。见 2.1 第 3 条。
-4. **能力 seam 的三个角色要齐全**（`dsh:AGENTS.md:138`）。
-5. **登记本身就是 effect**，`register()` 返回 disposer（`dsh:AGENTS.md:131`，`CLAUDE.md`「Architecture boundaries」的 "Registrations are effects"）。per-agent 状态放在 `WeakMap<Agent, …>` 里。
+3. **加插件，不改循环**（`dsh:AGENTS.md:139`）。见 2.1 第 3 条。
+4. **能力 seam 的三个角色要齐全**（`dsh:AGENTS.md:140`）。
+5. **登记本身就是 effect**，`register()` 返回 disposer（`dsh:AGENTS.md:133`，`CLAUDE.md`「Architecture boundaries」的 "Registrations are effects"）。per-agent 状态放在 `WeakMap<Agent, …>` 里。
 6. **组合就是数据。** agent 是一行 preset 声明，注册表不扫描目录（`dsh:.agents/notes/implemented/architecture/2026-09-18-declarative-agent-presets.md`）。
-7. **waterfall 的监听者必须调用 `next()`**（`dsh:AGENTS.md:135`）。在 `next()` 前做还是后做要想清楚：skill-router 在 `lyteboat/pre-assemble` 上先路由再 `next()`，tool-policy 在 `next()` 之后重算限制；intake-guard 在 `lyteboat/intake` 上 `next()` 之后才判定，所以后登记的门先做决定。
+7. **waterfall 的监听者必须调用 `next()`**（`dsh:AGENTS.md:137`）。在 `next()` 前做还是后做要想清楚：skill-router 在 `lyteboat/pre-assemble` 上先路由再 `next()`，tool-policy 在 `next()` 之后重算限制；intake-guard 在 `lyteboat/intake` 上 `next()` 之后才判定，所以后登记的门先做决定。
 8. **`agent/turn-stopping` 按 serial 派发。** 监听者用 steer 放进收件箱的输入决定本轮是否继续（`dsh/core/agent/src/runtime-types.ts`）。
-9. **显式优于隐式**（`dsh:AGENTS.md:140`）；**插件里不硬编码可调参数**（141）；**配置错误大声失败**（142）。
-10. **尽量用有人维护的依赖**（`dsh:AGENTS.md:139`）。OpenAI 兼容适配器建在 pi-ai 库上，而不是手写协议（6.3）。
+9. **显式优于隐式**（`dsh:AGENTS.md:142`）；**插件里不硬编码可调参数**（143）；**配置错误大声失败**（144）。
+10. **尽量用有人维护的依赖**（`dsh:AGENTS.md:141`）。OpenAI 兼容适配器建在 pi-ai 库上，而不是手写协议（6.3）。
 11. **失败按错误码路由，不解析错误文本。** 适配器一次调用只试一次，重试在 step 边界由 llm-retry 做，并写进日志。
 12. **在做决定的操作处执行约束**，监听顺序、提示过滤都不算执行（`dsh:packages/AGENTS.md:14`）；**状态只在提交点发布**（15）；**上限作用在完整结果上**（16）。提示预算因此由各内容生产方执行，不靠一个排在最后的全局截断。
 13. **旁路模型调用也留痕。** dsh 的先例是 `session/title-llm-request`，请求发出前就写日志。lyteboat 的 aux-llm 在调用结束后追加一条可忽略的 `lyteboat/aux-llm-call`，带回答或失败原因和耗时；调用方自己中止时什么也不记。
@@ -200,7 +200,7 @@
 | tool | `dsh/core/tools` | dsh-base 的 `tools` 行 | 有，用 dsh |
 | skill | `dsh/skill/skill` | dsh-base 的 `skill`、`skill-filesystem`、`tool-skill` 行；agent 的 `lyteboatAgentDef` 挂自己的技能目录（`skillDirs`，缺省是 `assets/skills`） | 有，用 dsh |
 | session | `dsh/core/session` 与持久化 seam | dsh-base 的 `session-persistence-jsonl` 行 | 有，只有 JSONL |
-| memory | dsh 0.1.7-rc.2 的 `packages/` 下没有记忆分组 | lyteboat 自有 seam | 无（6.3） |
+| memory | dsh 0.2.0-rc.2 的 `packages/` 下没有记忆分组 | lyteboat 自有 seam | 无（6.3） |
 
 规则：
 - **seam 一直在，策略可以关。** 参考实现的记忆由 `ENABLE_MEMORY` 控制，默认关（`ref 仓库:.env-sample`）；lyteboat 让记忆 seam 在每个 profile 里都挂着，由 agent 决定开不开记忆策略，这样各 profile 的启动行为一致。
@@ -465,9 +465,9 @@
 
 **参考实现。** 每个 (agent, user) 有一份按标题组织的 MEMORY.md（`ref:plugins/memory/manager.py`）。会话开始时冻结一份截断后的快照，注入 `<memory_context>`，并声明它不是当前用户输入（`ref:plugins/memory/prompts.py`）。每轮结束后用一次模型调用抽取要写回的内容，另外定期做 dream 整理。资产诊断 agent 的「外部资产」小节由诊断工具在代码里独占读写；它的模块注释写明，会话末的抽取轮虽然被告知不要动这个标题，模型仍会去「整理」它（加空格、改单位、换全角括号），读取时只好放宽正则。
 
-**dsh。** dsh 0.1.7-rc.2 的 `packages/` 下没有记忆分组。最接近的是 agent-instructions：它把用户级和项目级的 AGENTS.md 类文件作为带来源的 user/message 注入，被压缩遮蔽后重新注入（`dsh:packages/context/agent-instructions/README.md`「Summary」）；这是人写的静态说明，不会自己学习。session-query 能检索历史会话，dsh-base 默认不打开它的全文检索。
+**dsh。** dsh 0.2.0-rc.2 的 `packages/` 下没有记忆分组。最接近的是 agent-instructions：它把用户级和项目级的 AGENTS.md 类文件作为带来源的 user/message 注入，被压缩遮蔽后重新注入（`dsh:packages/context/agent-instructions/README.md`「Summary」）；这是人写的静态说明，不会自己学习。session-query 能检索历史会话，dsh-base 默认不打开它的全文检索。
 
-**社区插件。** npm 上有多个 dsh 记忆插件。G5 金丝雀之一 `@zzerx/dsh-plugin-memory` 0.3.1（`dsh-compat/tests/canaries/canaries.yml`）在 lyteboat 内核上原样可用，但它按「全局」和「项目（以工作区目录为键）」两个作用域存记忆（它的 README「能做什么」），面向编码助手，不按业务用户分区，也没有多实例存储；它发布自己的服务，没有可以挂 provider 的公共 seam。
+**社区插件。** npm 上有多个 dsh 记忆插件。G5 金丝雀之一 `@zzerx/dsh-plugin-memory` 0.4.2（`dsh-compat/tests/canaries/canaries.yml`）在 lyteboat 内核上原样可用，但它按「全局」和「项目（以工作区目录为键）」两个作用域存记忆（它的 README「能做什么」），面向编码助手，不按业务用户分区，也没有多实例存储；它发布自己的服务，没有可以挂 provider 的公共 seam。
 
 **lyteboat。** 没有记忆。做法见 6.3；合适的社区插件可以包成 lyteboat 记忆 seam 的一个 provider。
 

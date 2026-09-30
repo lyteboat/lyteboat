@@ -99,6 +99,14 @@
 - id: plugin-package-inventory-deepseek
   disabled: true
 
+# dsh web's Desktop analytics rows turn on in any profile named `desktop`; no
+# lyteboat profile ships usage off the machine, so they stay off by name as well.
+- id: desktop-product-telemetry
+  disabled: true
+
+- id: product-analytics
+  disabled: true
+
 - id: agent-preset-registry
   inject: [lyteboatWebStartup]
   config:
