@@ -111,13 +111,23 @@ describe('foldSession', () => {
   it('shows a person\'s late answer to a question as their message, in the counts and the search', () => {
     const log = new SessionLogBuilder(1_000)
       .turnStart().stepStart().user('帮我查一下', request('r1')).stepStart().assistant('要查哪个账户？').turnEnd()
-      .turnStart().stepStart().questionReply('储蓄账户', 'call-1').stepStart().assistant('好的').turnEnd()
+      .turnStart().stepStart().questionReply('call-1', [{ selected: ['储蓄账户'] }]).stepStart().assistant('好的').turnEnd()
 
     const { summary, items, search } = foldSession(log.header('s1', '/w'), 0, log.events)
 
     expect(items.filter(item => item.kind === 'user').map(item => item.kind === 'user' && item.text)).toEqual(['帮我查一下', '储蓄账户'])
     expect(summary).toMatchObject({ messageCount: 4, lastUserMessage: '储蓄账户' })
     expect(search.questions).toEqual(['帮我查一下', '储蓄账户'])
+  })
+
+  it('shows each answer of a late reply on its own line with its free text, and a reply that is not dsh\'s JSON as stored', () => {
+    const log = new SessionLogBuilder(1_000)
+      .turnStart().stepStart().questionReply('call-1', [{ selected: ['储蓄账户', '信用卡'] }, { selected: [], custom: '上个月' }, { selected: [] }]).turnEnd()
+      .turnStart().stepStart().questionReply('call-2', '{"answers":"none"}').turnEnd()
+
+    const { items } = foldSession(log.header('s1', '/w'), 0, log.events)
+
+    expect(items.filter(item => item.kind === 'user').map(item => item.kind === 'user' && item.text)).toEqual(['储蓄账户, 信用卡\n上个月', '{"answers":"none"}'])
   })
 
   it('cuts the first and latest human message to 80 characters, and shows a malformed request as none', () => {

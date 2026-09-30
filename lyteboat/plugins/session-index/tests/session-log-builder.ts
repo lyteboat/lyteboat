@@ -51,10 +51,16 @@ export class SessionLogBuilder {
   }
 
   /** A person's late answer to a question the model asked, as dsh's user-questions appends it. */
-  questionReply(value: string, callId: string): this {
+  /** A late reply to `ask_user_question`: answers are written as dsh's user-questions writes them, a string as is. */
+  questionReply(callId: string, reply: string | readonly { selected: string[]; custom?: string }[]): this {
     // dsh's user-questions declares this source kind; the types this package loads do not.
     const source = { kind: 'user-question-reply', callId: ToolCallId(callId), outcome: 'answered' } as unknown as UserMessage['source']
-    return this.push({ type: 'user/message', data: createUserMessage({ content: text(value), source }), surfaceOp: 'append' })
+    const body = typeof reply === 'string' ? reply : JSON.stringify({
+      kind: 'answer_to_pending_question', tool: 'ask_user_question', callId,
+      questions: reply.map((_, index) => ({ id: `q${String(index + 1)}`, question: `question ${String(index + 1)}` })),
+      answers: reply.map((answer, index) => ({ id: `q${String(index + 1)}`, ...answer })),
+    })
+    return this.push({ type: 'user/message', data: createUserMessage({ content: text(body), source }), surfaceOp: 'append' })
   }
 
   imported(value: string): this {
