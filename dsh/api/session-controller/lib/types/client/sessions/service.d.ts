@@ -198,6 +198,7 @@ export declare class ClientSessions implements ISessions {
         sessionId: SessionId;
         atSeq?: number;
         increaseTitle?: boolean;
+        onCreated?: (childId: SessionId) => void;
     }): Promise<SessionId>;
     /**
      * Borrow an already-retained Agent-scoped Context.

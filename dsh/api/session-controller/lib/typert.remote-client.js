@@ -147,6 +147,36 @@ const _deepseek_ai_dsh_api_session_controller_session_control_result$schema = ()
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
 }), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly()).readonly(),
 })).readonly().readonly(),
 }).readonly(),
@@ -319,6 +349,36 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
 }), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly()).readonly(),
 }).readonly(),
   'assistantStream': z.object({
@@ -481,6 +541,36 @@ const _deepseek_ai_dsh_api_session_controller_session_list_result$schema = () =>
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
 }), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema()))])).readonly()).readonly(),
 }).readonly().optional(),
 })).readonly(),
@@ -658,6 +748,36 @@ const _deepseek_ai_dsh_api_session_controller_session_projections_result$schema 
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
 }), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly()).readonly(),
 })]))
 let _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema$value

@@ -348,6 +348,7 @@ export class ClientSessions {
             throw new SessionForkError(result.error, opts.sessionId);
         this.projectList();
         const childId = result.value.sessionId;
+        opts.onCreated?.(childId);
         if (sourceTitle !== undefined) {
             const renamed = await this.manager.rename(childId, increasedForkTitle(sourceTitle));
             if (!renamed.ok)
