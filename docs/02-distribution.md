@@ -170,7 +170,7 @@ $ xargs -a $SCRATCH/kernel-links.txt -n1 readlink -f | grep -vc "^$PWD/dsh/"
 
 这些链接没有一个落在 `dsh/` 之外。
 
-**运行时装进来的插件也一样。** G5 用 `dsh plugin --profile headless add` 把 23 个社区插件分别装进官方树和 lyteboat 树的 headless profile；`dsh-compat/tests/canaries/g5.spec.ts` 的 `kernelCopiesInProfile` 列出 profile 自己的 store 里的内核包副本，并断言结果为空。上游文档说的是同一条解析规则："peers present in the running dsh's runtime resolution use the installation's copy"（`up:docs/user/develop/basic/publish.md:103`，上下文是本地路径链接进来的插件）。
+**运行时装进来的插件也一样。** G5 用 `dsh plugin --profile headless add` 把 24 个社区插件分别装进官方树和 lyteboat 树的 headless profile；`dsh-compat/tests/canaries/g5.spec.ts` 的 `kernelCopiesInProfile` 列出 profile 自己的 store 里的内核包副本，并断言结果为空。上游文档说的是同一条解析规则："peers present in the running dsh's runtime resolution use the installation's copy"（`up:docs/user/develop/basic/publish.md:103`，上下文是本地路径链接进来的插件）。
 
 ### 1.4 三种插件怎么用上 lyteboat 的内核
 
@@ -771,7 +771,7 @@ typert vs dsh 0.2.0-rc.2: @deepseek-ai/dsh-llm, @deepseek-ai/dsh-api-session-con
 
 为什么必须先在官方版本上跑通？金丝雀要证明的是"官方上能跑的，lyteboat 上也能跑"。在官方上就坏的插件，对 lyteboat 说明不了任何问题（`dsh-compat/README.md`「Canaries」）。
 
-每类取了几个、为什么，写在 `canaries.yml` 的文件头；类别有 persistence-files、appends、prompt、tools-pre-execute、llm、session-host、projections、tools、step。
+不足 3 个的类别各取了几个、为什么，写在 `canaries.yml` 的文件头；类别有 persistence-files、appends、prompt、tools-pre-execute、llm、session-host、projections、tools、step。
 
 **断言**（`dsh-compat/tests/canaries/g5.spec.ts`）：
 

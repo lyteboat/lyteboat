@@ -15,7 +15,9 @@
 # (fewer where a category has fewer clean ones).
 #
 # The list is validated on dsh 0.2.0-rc.2 (versions chosen 2026-09-30): G5 runs every canary on the official release
-# as well, and each one runs clean there.
+# as well, and each one runs clean there. Two categories have fewer than three: step has one (five of
+# its six candidates fail on the official release itself), and projections two (two fail on the
+# official release, and two have no version whose dsh peers admit it).
 #
 # bundle: true installs as a profile layer; false would add a row instead (every canary
 # is a bundle).
@@ -40,6 +42,7 @@ canaries:
   - { name: '@morlay/session-rdb', version: 0.1.3, bundle: true, risk: projections }
   - { name: dsh-loom, version: 1.3.0, bundle: true, risk: tools }
   - { name: '@evaldock/dsh-top100-plugin', version: 1.3.14, bundle: true, risk: tools }
+  - { name: '@zseven-w/dsh-computer', version: 0.1.0-rc.2, bundle: true, risk: tools }
   - { name: '@hanphone/dsh-a2a', version: 0.3.3, bundle: true, risk: session-host }
   - { name: dsh-reminder, version: 0.1.4, bundle: true, risk: session-host }
   - { name: dsh-specline, version: 0.1.0, bundle: true, risk: session-host }
