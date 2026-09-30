@@ -131,7 +131,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 
 **机制三：公开提升**（`pnpm-workspace.yaml`）。`publicHoistPattern` 把 `@deepseek-ai/*` 和 `@lyteboat/*` 提升到根 `node_modules`，原因有两个：
 
-- agent 目录（`lyteboat try`、`serve`、`eval`、`inspect`、`web`、`studio` 的 `--agents`）里的行用裸包名，从 agent 目录向上查找；
+- agent 目录（`lyteboat try`、`serve`、`eval`、`inspect`、`studio` 的 `--agents`）里的行用裸包名，从 agent 目录向上查找；
 - 组合测试从仓库根解析行。
 
 pnpm 的隔离布局下，只有提升到根的包才能被这两种查找找到。所有包都被机制二钉在同一个版本，所以提升不会产生版本冲突。
@@ -486,7 +486,7 @@ G1 stale registration: <extension> lists <key>, which does not differ from upstr
 | `agent-loop-intake` | `@deepseek-ai/dsh-agent-loop` · `event` | `lyteboat/intake` waterfall：收件箱认领之后、装配提示词之前派发；`reply` 在一步之内、不发模型请求地回答认领的消息（助手消息的 source provider 是 `lyteboat`）。会话的第一个请求在任何路由上都开新的请求序列 | 上游派发一个装配之前、能不发请求就回答一步的 waterfall（`agent/pre-step` 在装配之后，做不到） | `dsh/core/agent-loop/tests/lyteboat/intake.spec.ts` | `@lyteboat/intake-guard` |
 | `agent-loop-pre-assemble` | `@deepseek-ai/dsh-agent-loop` · `event` | `lyteboat/pre-assemble` waterfall：`lyteboat/intake` 放行之后、装配提示词之前派发，所以技能路由和工具激活能影响同一步的请求 | 上游在 `systemPrompt.assemble` 之前派发一个还能改这一步提示词与工具集的事件 | `dsh/core/agent-loop/tests/lyteboat/pre-assemble.spec.ts` | `@lyteboat/tool-policy`、`@lyteboat/skill-router` |
 | `session-append-ignorable` | `@deepseek-ai/dsh-session` · `api-option` | `Session.append(type, data, { ignorable: true })` 给本构建不认识的非 surface 类型写 `ignorable: true`，读者不认识这个类型就跳过它，而不是拒绝整份日志；本构建认识的类型（含 surface 类型）要求标记一律拒绝 | 上游给 `Session.append`（或别的写入口）一个设置 `SessionEvent.ignorable` 的办法 | `dsh/core/session/tests/lyteboat/append-ignorable.spec.ts`、`dsh/session/session-persistence/tests/lyteboat/reopen-ignorable.spec.ts` | `@lyteboat/aux-llm`（`lyteboat/aux-llm-call` 记录） |
-| `session-controller-prompt-source` | `@deepseek-ai/dsh-api-session-controller` · `api-option` | `SessionPromptRequest.sourceFields`：`prompt` 把调用方的字段并进它追加的用户消息的 source，与控制器自己写的 `kind`、`rpcId`、`clientTimeZone` 并列；设置这三个字段的请求以 `gateway/bad-request` 拒绝，消息不到 agent。Typert 的 Host face 和 Remote client 认这个字段 | 上游让 prompt 能把调用方的字段带到用户消息的 source 上 | `dsh/api/session-controller/tests/lyteboat/prompt-source.host.spec.ts` | `@lyteboat/request-context` 的 `sourceFields()`（`/chat`、`lyteboat eval` 和 `lyteboat web` 的页签经它送请求） |
+| `session-controller-prompt-source` | `@deepseek-ai/dsh-api-session-controller` · `api-option` | `SessionPromptRequest.sourceFields`：`prompt` 把调用方的字段并进它追加的用户消息的 source，与控制器自己写的 `kind`、`rpcId`、`clientTimeZone` 并列；设置这三个字段的请求以 `gateway/bad-request` 拒绝，消息不到 agent。Typert 的 Host face 和 Remote client 认这个字段 | 上游让 prompt 能把调用方的字段带到用户消息的 source 上 | `dsh/api/session-controller/tests/lyteboat/prompt-source.host.spec.ts` | `@lyteboat/request-context` 的 `sourceFields()`（`/chat` 和 `lyteboat eval` 经它送请求） |
 
 ### 4.4 `lyteboatDistro`：把登记表带到运行时
 
@@ -495,7 +495,7 @@ G1 stale registration: <extension> lists <key>, which does not differ from upstr
 - **服务。** `@lyteboat/distro` 发布 `ctx.lyteboatDistro`，提供 `dsh`、`extensions`、`has(id)`（`lyteboat/plugins/distro/src/index.ts` `LyteboatDistroService`）。
 - **挂载位置。** host bundle 把 `lyteboat-distro` 行放在 lyteboat 所有服务行的第一个（`lyteboat/bundles/host/cordis.patch.yml`）。
 - **防过期。** `pnpm run lint` 带 `--check` 跑一次生成器，产物过期就失败（`package.json`）。
-- **谁 inject 它。** lyteboat 里用到 `agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable` 的插件都 inject 它：`@lyteboat/tool-policy`、`@lyteboat/skill-router`、`@lyteboat/intake-guard`、`@lyteboat/aux-llm`（各自 `src/index.ts` 的 `static inject`）。放到官方 dsh 上，它们与第三方插件一样停在等待状态。`@lyteboat/chat-api` 经 `sessionController.prompt` 的 `sourceFields` 用 `session-controller-prompt-source`，没有 inject 它；它只挂在 lyteboat 的 serve 组合里（`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService.inject`）。`@lyteboat/eval-runner` 也一样，只挂在 eval 组合里（`lyteboat/plugins/eval-runner/src/index.ts` `EvalRunnerService.inject`）；`@lyteboat/web-pages` 也一样，只挂在 web 组合里（`lyteboat/plugins/web-pages/src/index.ts` `WebPagesService.inject`）。
+- **谁 inject 它。** lyteboat 里用到 `agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable` 的插件都 inject 它：`@lyteboat/tool-policy`、`@lyteboat/skill-router`、`@lyteboat/intake-guard`、`@lyteboat/aux-llm`（各自 `src/index.ts` 的 `static inject`）。放到官方 dsh 上，它们与第三方插件一样停在等待状态。`@lyteboat/chat-api` 经 `sessionController.prompt` 的 `sourceFields` 用 `session-controller-prompt-source`，没有 inject 它；它只挂在 lyteboat 的 serve 组合里（`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService.inject`）。`@lyteboat/eval-runner` 也一样，只挂在 eval 组合里（`lyteboat/plugins/eval-runner/src/index.ts` `EvalRunnerService.inject`）。
 
 **例子：按第三方写法的插件。** 仓库里的 fixture `lyteboat/bundles/try/tests/fixtures/plugins/distro-aware.mjs`：
 
@@ -622,13 +622,7 @@ CI 用默认的浅克隆（`.github/workflows/ci.yml`），浅克隆里找不到
 
 第一个这样的内核包是 `@deepseek-ai/dsh-api-session-controller`。
 
-**lyteboat 自己的浏览器面不走这条路。** lyteboat 的包也可以在清单里声明 `dsh.client`（目前只有 `@lyteboat/web-pages`），但它的浏览器面由 lyteboat 编写、由 lyteboat 构建（`CLAUDE.md`「Repository layout」）：
-
-1. 源码在 `src/client/`（TSX），不在包的 `tsconfig.json` 里。另一份 `tsconfig.client.json` 照 dsh 编译自己客户端包的方式（DOM、React JSX、不带 Node 类型）编译到 `lib/client-tsc/`；根 `tsconfig.json` 引用它，`tsc -b` 一起编（`tsconfig.json`）。`tsconfig.tests.json` 排除 `lyteboat/plugins/*/src/client/**`，这部分的类型检查归那份配置（`tsconfig.tests.json`）；knip 对插件也收 `src/**/*.tsx`（`knip.jsonc`）。
-2. `pnpm run build` 的最后一步 `scripts/dist/bundle-clients.ts` 找出 `lyteboat/*/*` 和 `examples/*/*` 下声明了 `dsh.client` 的包（`lyteboatClientPackages`），用 tsdown 把 `lib/client-tsc/client/index.js` 打成 `lib/client.js`：一个 CommonJS 工厂，套在 dsh web 模块加载器的信封 `window.__ModuleLoader__.load({ id, factory })` 里；dsh web 的 9 个平台模块（`react`、`react-dom`、`@deepseek-ai/cordis`、`dsh-client-ui-primitives`、`dsh-client-ui-slots` 等）留给页面提供，其余打进包里（`DSH_WEB_PLATFORM_MODULES`、`bundleClient`）。包的 `./client` 导出的 `default` 就是这个文件，`types` 是 `lib/client-tsc/client/index.d.ts`（`lyteboat/plugins/web-pages/package.json`）。
-3. 平台模块表是 `@deepseek-ai/dsh-client-web` 里 `PLATFORM_MODULES` 的一份拷贝：那个包的入口是页面外壳，在 Node 里加载不了。`scripts/dist/bundle-clients.spec.ts` 拿它和安装的声明文件对照，并断言声明了 `dsh.client` 的只有 `@lyteboat/web-pages`。
-
-`@lyteboat/studio-web` 不是 dsh web 里的一个面，不声明 `dsh.client`：它的 `src/client/` 是一个独立的 React 单页应用，`tsconfig.client.json` 只做类型检查（`pnpm run typecheck` 的最后一步，`package.json`），`pnpm run build` 的最后一步 `scripts/dist/build-studio-web.ts` 用 Vite 把它打到 `lib/web/`（`package.json`），由这个包自己的 Node 面在 `/studio` 下提供（`CLAUDE.md`「Repository layout」）。
+**lyteboat 自己的浏览器面不走这条路。** lyteboat 的包不声明 `dsh.client`，也不在 dsh web 里加页面。有浏览器端的只有 `@lyteboat/studio-web`：它的 `src/client/` 是一个独立的 React 单页应用，`tsconfig.client.json` 只做类型检查（`pnpm run typecheck` 的最后一步，`package.json`），`pnpm run build` 的最后一步 `scripts/dist/build-studio-web.ts` 用 Vite 把它打到 `lib/web/`（`package.json`），由这个包自己的 Node 面在 `/studio` 下提供（`CLAUDE.md`「Repository layout」）。
 
 ---
 
@@ -960,7 +954,7 @@ workspace:*    admitted
 | `catalogs.dsh` | 非内核的 dsh 包，全部 `0.2.0-rc.2` | devDependencies 与依赖写 `catalog:dsh` |
 | `catalogs.cordis` | cordis、cordis-plugin-include/loader/timer、cosmokit | peer 与 devDependencies 写 `catalog:cordis` |
 
-`catalogs.dsh` 里的 `dsh-client-ui-layout`、`-primitives`、`-renderer`、`-session`、`-sidebar`、`-sidebar-right`、`-slots` 七项只有 `@lyteboat/web-pages` 的 devDependencies 引用：它的浏览器面编译时要这些包的类型，运行时 `primitives` 和 `slots` 由 dsh web 的页面提供（§5.4），其余几项只 `import type`。`react`（`^18.2.0`）和 `@types/react`（`~18.3.1`）不进默认 catalog，`@lyteboat/studio-web` 和这个包写同样的字面范围（`CLAUDE.md`「Coding conventions」的 **Tooling**；`lyteboat/plugins/studio-web/package.json`，`lyteboat/plugins/web-pages/package.json`）。浏览器面要用的 dsh 客户端插件写在清单的 `dsh.client.inject` 里；它唯一的非内核 dsh peer `dsh-client-connection` 照 §8.2 写精确版本。
+`react`（`^18.2.0`）和 `@types/react`（`~18.3.1`）只有 `@lyteboat/studio-web` 用，不进默认 catalog，直接写在它的清单里（`lyteboat/plugins/studio-web/package.json`）。
 
 catalog 只管工作区包自己写的依赖；npm 包之间的传递依赖由 `.pnpmfile.cjs` 钉（`pnpm-workspace.yaml` 的注释）。`dsh.upstream.json` 另外列了 `cordis-plugin-group`：没有工作区包直接依赖它，它经传递依赖进来，由 `.pnpmfile.cjs` 钉住。
 
@@ -990,7 +984,7 @@ lyteboat-next 与 lyteboat-stable 的规则见 [dsh-compat/COMPAT.md §7](../dsh
 
 ### 9.3 业务 agent 的发布锁：`lyteboat release` 与 `lyteboat serve --release`
 
-上面两条通道说的是 lyteboat 自己的版本。业务 agent 有自己的版本和发布物：agent 目录里的清单 `agent.yml` 声明 `version` 和 `model`；`lyteboat release` 让 agent 过发布闸门，通过就在 agent 目录写下发布锁 `agent.release.json`；运维用 `lyteboat serve --release <锁>` 服务它。作者这一侧的步骤和闸门的每一步见 [03-agent-development.md](03-agent-development.md) §4.16，这里只写运维要知道的：锁里有什么、serve 查什么、锁管不到什么。
+上面两条通道说的是 lyteboat 自己的版本。业务 agent 有自己的版本和发布物：agent 目录里的清单 `agent.yml` 声明 `version` 和 `model`；`lyteboat release` 让 agent 过发布闸门，通过就在 agent 目录写下发布锁 `agent.release.json`；运维用 `lyteboat serve --release <锁>` 服务它。作者这一侧的步骤和闸门的每一步见 [03-agent-development.md](03-agent-development.md) §4.15，这里只写运维要知道的：锁里有什么、serve 查什么、锁管不到什么。
 
 **锁里有什么**（`LyteboatAgentRelease`，`lyteboat/core/contracts/src/index.ts` `lyteboatAgentReleaseSchema`，schema 严格，未知键报错）。键的顺序固定、两空格缩进、结尾一个换行，同一个 agent 再发布一次写出相同的字节（`lyteboat/plugins/eval-runner/src/eval-release.ts` `releaseAgent`）：
 
@@ -1042,7 +1036,7 @@ lyteboat release: finance 1.0.0 (sha256:97d6bed7…) released; lock: <仓库>/ex
 | 请求内容 | 回放不比较请求本身（提示词、工具列表）：它证明的是同一个模型的回答经过今天的代码，显示出同样的 skill、工具、卡片、结局和正文 |
 | 摘要之外的东西 | 任何深度以点开头的条目（文件和目录，例如 `lib/.gen/` 里的代码）、环境变量、agent 自己的 `node_modules`；还有 agent 目录以外的代码：行名是指向目录外的相对路径（如 `../_shared/extra.mjs`），或代码里有跳出目录的相对 import，这部分代码不在摘要里，改了也照常启动。共享代码请放进 lyteboat 插件或 agent 自己的依赖 |
 
-重新构建出不同的 `lib/`（比如换了 TypeScript 版本）会改变摘要，serve 就拒绝这个锁；这时和改了 agent 一样处理：升 `agent.yml` 的版本，在新构建上重录基线，再发布（闸门拒绝同一个版本换内容，见 [03-agent-development.md](03-agent-development.md) §4.16）。
+重新构建出不同的 `lib/`（比如换了 TypeScript 版本）会改变摘要，serve 就拒绝这个锁；这时和改了 agent 一样处理：升 `agent.yml` 的版本，在新构建上重录基线，再发布（闸门拒绝同一个版本换内容，见 [03-agent-development.md](03-agent-development.md) §4.15）。
 
 ---
 
