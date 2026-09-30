@@ -44,11 +44,18 @@ describe('lyteboat config dump (built bin)', () => {
     }
   })
 
-  it('keeps the session log off the provider in the web profile, with no Settings switch that turns it on', async () => {
+  it('mounts no session-log upload in either profile, so no settings form can turn it on', async () => {
+    for (const profile of ['try', 'web']) {
+      const result = await runLyteboat(['config', 'dump', '--profile', profile], { env: { LYTEBOAT_HOME: home } })
+      expect(result.code, result.stderr).toBe(0)
+      expect(dumpedRow(result.stdout, 'session-log-deepseek')).toMatch(/^ {2}disabled: true$/mu)
+    }
+  })
+
+  it('keeps dsh web\'s Desktop telemetry rows off in the web profile, whatever the profile is named', async () => {
     const result = await runLyteboat(['config', 'dump', '--profile', 'web'], { env: { LYTEBOAT_HOME: home } })
     expect(result.code, result.stderr).toBe(0)
-    expect(dumpedRow(result.stdout, 'session-log-deepseek')).toMatch(/^ {4}enabled: false$/mu)
-    expect(dumpedRow(result.stdout, 'ui-settings-session-log')).toMatch(/^ {2}disabled: true$/mu)
+    for (const id of ['desktop-product-telemetry', 'product-analytics']) expect(dumpedRow(result.stdout, id)).toMatch(/^ {2}disabled: true$/mu)
   })
 
   it('prints the version pair', async () => {

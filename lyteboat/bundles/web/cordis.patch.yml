@@ -99,10 +99,12 @@
 - id: plugin-package-inventory-deepseek
   disabled: true
 
-# dsh web's Settings switch for session-log upload writes session-log-deepseek's
-# `enabled` into the profile, over @lyteboat/host's `enabled: false`; lyteboat
-# sends the provider the model request only, so the switch is not offered.
-- id: ui-settings-session-log
+# dsh web's Desktop analytics rows turn on in any profile named `desktop`; no
+# lyteboat profile ships usage off the machine, so they stay off by name as well.
+- id: desktop-product-telemetry
+  disabled: true
+
+- id: product-analytics
   disabled: true
 
 - id: agent-preset-registry
