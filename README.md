@@ -106,7 +106,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 | `lyteboat studio [选项]` | 启动 Studio 工作台（profile `studio`）：只查看 agent，不建也不续会话；用自己的账户与角色（admin、editor、viewer）或经授权网关登录；页面在 `/studio/`（登录、agent 雷达、Users、System，agent 工作台的概览、技能、工具、会话，看板，以及在独立窗口 `/studio/evals` 里的评测），API 在 `/api/studio`；`lyteboat studio account add \| set-password \| remove \| list` 管账户，口令从标准输入读；`lyteboat studio --help` |
 | `lyteboat config dump [选项]` | 打印组合后的插件树并退出；`--default` 只看 bundle 层 |
 
-八个命令都接受：
+七个命令都接受：
 
 | 选项 | 作用 |
 |---|---|
@@ -223,9 +223,9 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 
 ```
 dsh/                  内核：dsh/kernel.json 列出的 14 个 dsh 包，沿用 @deepseek-ai/* 包名
-lyteboat/             轻舟自己的 29 个包，每层一个目录
+lyteboat/             轻舟自己的 28 个包，每层一个目录
   apps/               进程：lyteboat 启动器
-  bundles/            组合：每个 profile 都带的 host，业务模式、Studio 与 inspect 共用的 business-base，lyteboat try、serve、eval、web、studio、inspect 各自的 bundle
+  bundles/            组合：每个 profile 都带的 host，业务模式、Studio 与 inspect 共用的 business-base，lyteboat try、serve、eval、studio、inspect 各自的 bundle
   plugins/            能力插件
   core/               声明
   tooling/            测试支撑
@@ -242,7 +242,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 |---|---|---|
 | `lyteboat/apps/cli` | `@lyteboat/cli` | `lyteboat` 启动器：profile 模板、patch 叠加、启动（改编自 dsh 的 CLI） |
 | `lyteboat/bundles/host` | `@lyteboat/host` | 每个 profile 都带的宿主 bundle：发行版标记与各能力插件的服务行 |
-| `lyteboat/bundles/business-base` | `@lyteboat/business-base` | 业务模式的底座，try、serve、eval、studio、inspect 五个 profile 都带（web 不带），只有一个 patch：关掉编码工具和只为它们服务的行，关掉沙箱、审批与权限，关掉工作区 AGENTS.md、本机包清单、插件管理、会话标题的旁路请求；不挂宿主的默认技能目录，不加宿主的 persona 和 harness 身份段 |
+| `lyteboat/bundles/business-base` | `@lyteboat/business-base` | 业务模式的底座，try、serve、eval、studio、inspect 五个 profile 都带，只有一个 patch：关掉编码工具和只为它们服务的行，关掉沙箱、审批与权限，关掉工作区 AGENTS.md、本机包清单、插件管理、会话标题的旁路请求；不挂宿主的默认技能目录，不加宿主的 persona 和 harness 身份段 |
 | `lyteboat/bundles/try` | `@lyteboat/try` | `lyteboat try` 背后的一次性 bundle：任务、`--agent`、`--agents`、`--history`、`--session-id`、`--context`；请求进循环前先准入，输出按轮组合卡片 |
 | `lyteboat/bundles/eval` | `@lyteboat/eval` | `lyteboat eval` 背后的 bundle：只声明选中的 agent，挂上 session-controller（不带 Web 界面）和 eval-runner，跑完按结果退出 |
 | `lyteboat/bundles/serve` | `@lyteboat/serve` | `lyteboat serve` 背后的服务 bundle：声明 `--agents` 里的全部 agent，挂上 dsh 的 session-controller（不带 Web 界面）、`/chat` 和运行指标记录器 |
@@ -293,7 +293,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 - **`overrides`。** 每个内核包名都指向 `dsh/` 下的工作区副本，轻舟自己的包和依赖它的每个 npm 包都一样，所以依赖图里每个内核包只有一份，就是轻舟的。`rolldown` 固定在上游 lockfile 解析出的版本，内核打包才能和 npm 发布物逐字节相同。
 - **`.pnpmfile.cjs`。** 发布的 dsh 包之间用 `^` 范围互相依赖，不钉的话会漂到比所跟踪 tag 更新的预发布版本。它不碰内核包名：它在 overrides 之后运行，会把 overrides 撤掉。
 - **dsh peer 写精确版本。** 轻舟的包对非内核 dsh 包的 peer 写所跟踪版本的精确版本号，不写 `catalog:dsh`：dsh 启动时从磁盘上的清单读插件行的 dsh peer，pnpm 不会解析那里的 `catalog:`，对不上的行会被禁用。`scripts/upstream-pins.spec.ts` 保证它们等于 `dsh.upstream.json`。
-- **`minimumReleaseAgeExclude`。** pnpm 11 拒绝安装发布不满一天的包；新钉的 dsh 版本按精确版本列在这里，发布满一天后可以删掉。
+- **`minimumReleaseAgeExclude`（需要时才有）。** pnpm 11 拒绝安装发布不满一天的包；新钉的 dsh 版本发布不满一天时，按精确版本列进这个键，满一天后整块删掉。
 - **`allowBuilds`。** pnpm 11 默认拦截安装脚本；在 Linux/macOS 上只需要放行 node-pty 的 chmod。
 
 ## 状态与路线图

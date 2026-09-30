@@ -622,7 +622,7 @@ CI 用默认的浅克隆（`.github/workflows/ci.yml`），浅克隆里找不到
 
 第一个这样的内核包是 `@deepseek-ai/dsh-api-session-controller`。
 
-**lyteboat 自己的浏览器面不走这条路。** lyteboat 的包不声明 `dsh.client`，也不在 dsh web 里加页面。有浏览器端的只有 `@lyteboat/studio-web`：它的 `src/client/` 是一个独立的 React 单页应用，`tsconfig.client.json` 只做类型检查（`pnpm run typecheck` 的最后一步，`package.json`），`pnpm run build` 的最后一步 `scripts/dist/build-studio-web.ts` 用 Vite 把它打到 `lib/web/`（`package.json`），由这个包自己的 Node 面在 `/studio` 下提供（`CLAUDE.md`「Repository layout」）。
+**lyteboat 自己的浏览器面不走这条路。** lyteboat 的包不声明 `dsh.client`。有浏览器端的只有 `@lyteboat/studio-web`：它的 `src/client/` 是一个独立的 React 单页应用，`tsconfig.client.json` 只做类型检查（`pnpm run typecheck` 的最后一步，`package.json`），`pnpm run build` 的最后一步 `scripts/dist/build-studio-web.ts` 用 Vite 把它打到 `lib/web/`（`package.json`），由这个包自己的 Node 面在 `/studio` 下提供（`CLAUDE.md`「Repository layout」）。
 
 ---
 
@@ -966,7 +966,7 @@ catalog 只管工作区包自己写的依赖；npm 包之间的传递依赖由 `
 
 pnpm 11 拒绝安装发布不到一天的包。被钉的版本刚发布时，要按精确版本列进这个列表（`pnpm-workspace.yaml` 的注释："the list can go once it has aged"）。
 
-列表只有一类：锁文件里从 registry 解析的 dsh 包，全部是跟踪的版本，按精确版本列出。内核包名经 overrides 解析到工作区、不从 registry 取，不在其中。跟踪版本发布满一天后，整块删掉。
+列进去的只有一类：锁文件里从 registry 解析的 dsh 包，全部是跟踪的版本，按精确版本列出。内核包名经 overrides 解析到工作区、不从 registry 取，不列。一个版本的包是陆续发布的，等最后发布的那个也满一天，整块删掉，只留那段注释标出它的位置。
 
 安装树直接设 `minimumReleaseAge: 0`（`scripts/dist/trees.ts` `installTree`）：树装的就是 lyteboat 钉住的版本，发布多久都一样。
 

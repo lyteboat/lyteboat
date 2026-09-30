@@ -37,10 +37,10 @@ describe('parseLyteboatArgs', () => {
 
   it('ends the launcher flags at the first token it does not own', () => {
     expect(parse(['try', '-h'])).toEqual({ mode: 'profile', profile: 'try', plugins: [], patches: [], args: ['-h'] })
-    expect(parse(['studio', '--no-open', '--port', '0']))
-      .toEqual({ mode: 'profile', profile: 'studio', plugins: [], patches: [], args: ['--no-open', '--port', '0'] })
-    expect(parse(['studio', '--patch', 'w.yml', '--host', '127.0.0.1', '--patch', 'late.yml']))
-      .toEqual({ mode: 'profile', profile: 'studio', plugins: [], patches: ['w.yml'], args: ['--host', '127.0.0.1', '--patch', 'late.yml'] })
+    expect(parse(['studio', '--agents', './agents', '--port', '0']))
+      .toEqual({ mode: 'profile', profile: 'studio', plugins: [], patches: [], args: ['--agents', './agents', '--port', '0'] })
+    expect(parse(['studio', '--patch', 'st.yml', '--host', '127.0.0.1', '--patch', 'late.yml']))
+      .toEqual({ mode: 'profile', profile: 'studio', plugins: [], patches: ['st.yml'], args: ['--host', '127.0.0.1', '--patch', 'late.yml'] })
     expect(parse(['serve', '--patch', 's.yml', '--agents', './agents', '--port', '0']))
       .toEqual({ mode: 'profile', profile: 'serve', plugins: [], patches: ['s.yml'], args: ['--agents', './agents', '--port', '0'] })
     expect(parse(['eval', 'compare', 'a', 'b']))

@@ -62,7 +62,7 @@ Every plugin and bundle module default-exports one class (a `Service` subclass w
   - `lyteboat studio [options]`: `--agents <dir>` (repeatable, at least one), `--host 127.0.0.1|0.0.0.0` (the latter with `--trusted-host`), `--port <port>` (8090 by default), `--trusted-host <name>` (repeatable), `--gateway-secret-env <name>` with `--admin <user-id>` (repeatable), `--anonymous-viewer` (account mode on 127.0.0.1 only), `--trace-link <url>` (with `{trace_id}`). `lyteboat studio account add <username> --role <role> [--display-name] [--user-id] | set-password <username> | remove <username> | list` reads a password from stdin, one line, and refuses a terminal.
   - `lyteboat inspect [options]`: `--agents <dir>` (repeatable, at least one), `--agent <id>`, `--result text|json`; exit 0 mounted, 1 not mounted, 2 a usage error or an agent no root holds.
   - `lyteboat config dump [options]`: the composed plugin tree (profile `try` by default); `--default` prints the bundle layers only.
-  - All eight take `--profile <name>`, `--patch <path>` (repeatable), and `--plugin <file>` (repeatable).
+  - All seven take `--profile <name>`, `--patch <path>` (repeatable), and `--plugin <file>` (repeatable).
 
 ### Example agent
 

@@ -106,7 +106,7 @@ lyteboat studio --agents ./examples/agents                    # the Studio works
 | `lyteboat studio [options]` | Serves the Studio workshop (profile `studio`): it inspects agents and never creates or continues a session; people sign in with Studio's own accounts and roles (admin, editor, viewer) or through an authorizing gateway; its pages are at `/studio/` (sign-in, the agent radar, Users, System, an agent's workspace with Overview, Skills, Tools, and Sessions, the Dashboard, and Evals in a window of their own at `/studio/evals`) and its API at `/api/studio`; `lyteboat studio account add \| set-password \| remove \| list` manages the accounts, reading a password from stdin; `lyteboat studio --help` |
 | `lyteboat config dump [options]` | Prints the composed plugin tree and exits; `--default` shows the bundle layers only |
 
-All eight accept:
+All seven accept:
 
 | Option | What it does |
 |---|---|
@@ -225,9 +225,9 @@ The guides are written in Chinese.
 
 ```
 dsh/                  the kernel: the 14 dsh packages dsh/kernel.json lists, under their @deepseek-ai/* names
-lyteboat/             lyteboat's 29 packages, one directory per layer
+lyteboat/             lyteboat's 28 packages, one directory per layer
   apps/               processes: the lyteboat launcher
-  bundles/            compositions: host (in every profile), business-base (in the business modes, the Studio, and inspect), and one each behind lyteboat try, serve, eval, web, studio, and inspect
+  bundles/            compositions: host (in every profile), business-base (in the business modes, the Studio, and inspect), and one each behind lyteboat try, serve, eval, studio, and inspect
   plugins/            capability plugins
   core/               declarations
   tooling/            test infrastructure
@@ -244,7 +244,7 @@ Dependencies point down only: `apps` → `bundles` → `plugins` → `core`; `ex
 |---|---|---|
 | `lyteboat/apps/cli` | `@lyteboat/cli` | The `lyteboat` launcher: profile templates, patch stack, boot (adapted from dsh's CLI) |
 | `lyteboat/bundles/host` | `@lyteboat/host` | The host bundle every profile lists: the distribution marker and the capability plugins' service rows |
-| `lyteboat/bundles/business-base` | `@lyteboat/business-base` | The business modes' base, listed by the try, serve, eval, studio, and inspect profiles (not by web), one patch and nothing else: the coding tools and the rows only they use off; sandbox, approval, and permissions off; the workspace's AGENTS.md, the package inventory, the plugin manager, and the session-title side call off; no default skill roots of the host, and no host persona or harness identity |
+| `lyteboat/bundles/business-base` | `@lyteboat/business-base` | The business modes' base, listed by the try, serve, eval, studio, and inspect profiles, one patch and nothing else: the coding tools and the rows only they use off; sandbox, approval, and permissions off; the workspace's AGENTS.md, the package inventory, the plugin manager, and the session-title side call off; no default skill roots of the host, and no host persona or harness identity |
 | `lyteboat/bundles/try` | `@lyteboat/try` | The one-shot bundle behind `lyteboat try`: task, `--agent`, `--agents`, `--history`, `--session-id`, `--context`; a request is admitted before the loop, and the output composes the turn's cards |
 | `lyteboat/bundles/eval` | `@lyteboat/eval` | The bundle behind `lyteboat eval`: declares the one agent the cases talk to, mounts the session controller (without the web UI) and the eval runner, and exits with the run's result |
 | `lyteboat/bundles/serve` | `@lyteboat/serve` | The service bundle behind `lyteboat serve`: declares every agent of the `--agents` directories, mounts dsh's session controller (without the web UI), `/chat`, and the run-metrics recorder |
@@ -295,7 +295,7 @@ Syncing a new dsh release, promoting a package into the kernel, and running G3 a
 - **`overrides`.** Every kernel package name resolves to its workspace copy under `dsh/`, for lyteboat's packages and for every npm package that depends on it, so the graph holds one instance of each: lyteboat's. `rolldown` is held at the version upstream's lockfile resolves, so the kernel bundles build byte for byte as npm publishes them.
 - **`.pnpmfile.cjs`.** Published dsh packages depend on each other with caret ranges, so an unpinned install drifts to a newer prerelease than the tracked tag. It leaves the kernel names alone: it runs after the overrides and would undo them.
 - **dsh peers are exact versions.** A lyteboat package writes a non-kernel dsh peer as the tracked release's exact version, not `catalog:dsh`: dsh's startup admission reads a row's dsh peers from the manifest on disk, where pnpm never resolves `catalog:`, and disables a row whose peers it cannot match. `scripts/upstream-pins.spec.ts` keeps them equal to `dsh.upstream.json`.
-- **`minimumReleaseAgeExclude`.** pnpm 11 refuses packages younger than a day; a dsh release pinned on its first day is listed there by exact version, and the entries can go once the release has aged.
+- **`minimumReleaseAgeExclude` (only while needed).** pnpm 11 refuses packages younger than a day; a dsh release pinned on its first day is listed under this key by exact version, and the block goes once the release has aged.
 - **`allowBuilds`.** pnpm 11 blocks install scripts unless listed; only node-pty's helper chmod is needed on Linux and macOS.
 
 ## Status and roadmap

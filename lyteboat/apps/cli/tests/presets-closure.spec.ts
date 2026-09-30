@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 /**
  * Every package a shipped agent preset names must resolve from the lyteboat
- * installation: the web bundle declares its presets as agent-preset rows in
+ * installation: dsh-web-app declares its presets as agent-preset rows in
  * `presets/*.patch.yml`, and the preset registry only reports an unresolvable
  * package as a broken preset, so a missing dependency surfaces as a
  * session-creation failure, not a boot failure.
