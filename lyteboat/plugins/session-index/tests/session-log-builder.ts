@@ -6,7 +6,7 @@
  * invocations, model answers, tool calls and results with their presentation
  * meta, side model calls, and surface replacements.
  */
-import { createAssistantMessage, createToolResultMessage, createUserMessage, ToolCallId, type ContentBlock } from '@deepseek-ai/dsh-llm'
+import { createAssistantMessage, createToolResultMessage, createUserMessage, ToolCallId, type ContentBlock, type UserMessage } from '@deepseek-ai/dsh-llm'
 import { SESSION_FORMAT_VERSION, SessionId, SessionSeq, type SessionEvent, type SessionHeader, type TurnEndReason } from '@deepseek-ai/dsh-session'
 import { LYTEBOAT_ASSISTANT_PROVIDER, LYTEBOAT_HISTORY_IMPORT_SOURCE, type JsonValue, type LyteboatAuxLlmCallRecord, type LyteboatRequest } from '@lyteboat/contracts'
 
@@ -47,6 +47,13 @@ export class SessionLogBuilder {
 
   user(value: string, request?: LyteboatRequest): this {
     const source = request === undefined ? { kind: 'user' as const } : { kind: 'user' as const, lyteboatRequest: request }
+    return this.push({ type: 'user/message', data: createUserMessage({ content: text(value), source }), surfaceOp: 'append' })
+  }
+
+  /** A person's late answer to a question the model asked, as dsh's user-questions appends it. */
+  questionReply(value: string, callId: string): this {
+    // dsh's user-questions declares this source kind; the types this package loads do not.
+    const source = { kind: 'user-question-reply', callId: ToolCallId(callId), outcome: 'answered' } as unknown as UserMessage['source']
     return this.push({ type: 'user/message', data: createUserMessage({ content: text(value), source }), surfaceOp: 'append' })
   }
 

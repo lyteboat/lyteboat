@@ -200,8 +200,11 @@ class SessionFold {
       this.emit({ kind: 'skill', seq: event.seq, turn: this.turn, time: event.time, skill: source.name })
       return
     }
-    // Other kinds are context the harness injected (notices, reminders), not a person's message.
-    if (source.kind !== 'user' && source.kind !== LYTEBOAT_HISTORY_IMPORT_SOURCE) return
+    // The stored log is a file: a person's late answer to a question the model asked carries the kind
+    // dsh's user-questions declares, which this build's types do not load. Other kinds are context the
+    // harness injected (notices, reminders), not a person's message.
+    const kind: string = source.kind
+    if (kind !== 'user' && kind !== 'user-question-reply' && kind !== LYTEBOAT_HISTORY_IMPORT_SOURCE) return
     const text = textOf(content, 'text')
     const request = requestOf(source)
     this.items.push({
