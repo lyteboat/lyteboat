@@ -11,6 +11,8 @@ let JsonValueRemoteCodec$schema4$value
 const JsonValueRemoteCodec$schema4 = () => (JsonValueRemoteCodec$schema4$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]))
 let JsonValueRemoteCodec$schema5$value
 const JsonValueRemoteCodec$schema5 = () => (JsonValueRemoteCodec$schema5$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))]))
+let JsonValueRemoteCodec$schema6$value
+const JsonValueRemoteCodec$schema6 = () => (JsonValueRemoteCodec$schema6$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))]))
 let _deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_0$schema$value
 const _deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_0$schema = () => (_deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_0$schema$value ??= z.intersection(z.string(), z.unknown()))
 let _deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_1$schema$value
@@ -59,8 +61,8 @@ const _deepseek_ai_dsh_api_session_controller_session_control_result$schema = ()
   'asOfSeq': z.number().readonly(),
   'values': z.intersection(z.object({
   'inbox': z.object({
-  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
-  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
+  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))])).readonly(),
+  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))])).readonly(),
 }).optional(),
   'agentPreset': z.union([z.literal(null), z.string()]).optional(),
   'title': z.union([z.literal(null), z.string()]).optional(),
@@ -177,7 +179,7 @@ const _deepseek_ai_dsh_api_session_controller_session_control_result$schema = ()
 })).readonly(),
 })).readonly(),
 }).optional(),
-}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly()).readonly(),
+}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))])).readonly()).readonly(),
 })).readonly().readonly(),
 }).readonly(),
 }), z.intersection(z.object({
@@ -185,7 +187,7 @@ const _deepseek_ai_dsh_api_session_controller_session_control_result$schema = ()
 }), z.object({
   'sessionId': z.intersection(z.string(), z.unknown()).readonly(),
   'key': z.string().readonly(),
-  'value': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))]).readonly(),
+  'value': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))]).readonly(),
   'seq': z.number().readonly(),
 }))]))
 let _deepseek_ai_dsh_api_session_controller_session_create_parameter_0$schema$value
@@ -225,10 +227,10 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'type': z.string().readonly(),
   'seq': z.number().readonly(),
   'time': z.number().readonly(),
-  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
+  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly(),
   'ignorable': z.literal(true).readonly().optional(),
-  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
-  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
+  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
+  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
 }).readonly(),
 }), z.object({
   'type': z.literal("snapshot").readonly(),
@@ -250,10 +252,10 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'type': z.string().readonly(),
   'seq': z.number().readonly(),
   'time': z.number().readonly(),
-  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
+  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly(),
   'ignorable': z.literal(true).readonly().optional(),
-  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
-  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
+  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
+  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
 }).readonly(),
 })).readonly(),
   'hasMore': z.boolean().readonly(),
@@ -261,8 +263,8 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'asOfSeq': z.number().readonly(),
   'values': z.intersection(z.object({
   'inbox': z.object({
-  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly(),
-  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly(),
+  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
+  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
 }).optional(),
   'agentPreset': z.union([z.literal(null), z.string()]).optional(),
   'title': z.union([z.literal(null), z.string()]).optional(),
@@ -379,7 +381,7 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
 })).readonly(),
 })).readonly(),
 }).optional(),
-}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly()).readonly(),
+}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly()).readonly(),
 }).readonly(),
   'assistantStream': z.object({
   'revision': z.number().readonly(),
@@ -389,7 +391,7 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'turn': z.number().readonly(),
   'step': z.number().readonly(),
   'nextIndex': z.number().readonly(),
-  'stream': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly(),
+  'stream': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
 }).readonly().optional(),
 }).readonly().optional(),
 }), z.object({
@@ -407,7 +409,7 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'revision': z.number().readonly(),
   'index': z.number().readonly(),
   'time': z.number().readonly(),
-  'chunk': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
+  'chunk': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly(),
 }), z.object({
   'type': z.literal("end").readonly(),
   'attemptId': z.intersection(z.string(), z.unknown()).readonly(),
@@ -643,10 +645,10 @@ const _deepseek_ai_dsh_api_session_controller_session_page_result$schema = () =>
   'type': z.string().readonly(),
   'seq': z.number().readonly(),
   'time': z.number().readonly(),
-  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))]).readonly(),
+  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
   'ignorable': z.literal(true).readonly().optional(),
-  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))]).readonly().optional(),
-  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))]).readonly().optional(),
+  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
+  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
 }).readonly(),
 })).readonly(),
   'hasMore': z.boolean().readonly(),
@@ -660,8 +662,8 @@ const _deepseek_ai_dsh_api_session_controller_session_projections_result$schema 
   'asOfSeq': z.number().readonly(),
   'values': z.intersection(z.object({
   'inbox': z.object({
-  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
-  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
+  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
+  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
 }).optional(),
   'agentPreset': z.union([z.literal(null), z.string()]).optional(),
   'title': z.union([z.literal(null), z.string()]).optional(),
@@ -778,7 +780,7 @@ const _deepseek_ai_dsh_api_session_controller_session_projections_result$schema 
 })).readonly(),
 })).readonly(),
 }).optional(),
-}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly()).readonly(),
+}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly()).readonly(),
 })]))
 let _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema$value
 const _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema = () => (_deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema$value ??= z.object({
@@ -798,6 +800,7 @@ const _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema 
   'receiptId': z.intersection(z.string(), z.unknown()).readonly(),
 })])).readonly(),
   'clientTimeZone': z.string().readonly().optional(),
+  'sourceFields': z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))])).readonly().readonly().optional(),
 }))
 let _deepseek_ai_dsh_api_session_controller_session_prompt_result$schema$value
 const _deepseek_ai_dsh_api_session_controller_session_prompt_result$schema = () => (_deepseek_ai_dsh_api_session_controller_session_prompt_result$schema$value ??= z.object({
@@ -1869,6 +1872,10 @@ export const TYPERT = {
             "declaration": "export interface LlmFailure {\n    readonly message: string;\n    readonly code: string;\n    readonly status?: number;\n    readonly providerRetryAfterMs?: number;\n    readonly requestId?: ProviderRequestId;\n    readonly offloadImages?: number;\n}"
           },
           {
+            "name": "LyteboatAppendOptions",
+            "declaration": "export interface LyteboatAppendOptions {\n    readonly ignorable: true;\n}"
+          },
+          {
             "name": "Message",
             "declaration": "export type Message = MessageRoleMap[keyof MessageRoleMap];"
           },
@@ -2054,7 +2061,7 @@ export const TYPERT = {
           },
           {
             "name": "Session",
-            "declaration": "export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    readonly firstLifecycleSeq: SessionLogOffset;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent<T>] : []): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    toolHistory(): ToolHistory;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionEvent): Message | null;\n}"
+            "declaration": "export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    readonly firstLifecycleSeq: SessionLogOffset;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent<T>] : [opts?: LyteboatAppendOptions]): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    toolHistory(): ToolHistory;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionEvent): Message | null;\n}"
           },
           {
             "name": "SessionActivity",
@@ -2234,7 +2241,7 @@ export const TYPERT = {
           },
           {
             "name": "SessionPromptRequest",
-            "declaration": "export interface SessionPromptRequest {\n    readonly requestId: SessionRequestId;\n    readonly sessionId: SessionId;\n    readonly mode: 'queue' | 'steer';\n    readonly content: readonly PromptContentPart[];\n    readonly clientTimeZone?: string;\n}"
+            "declaration": "export interface SessionPromptRequest {\n    readonly requestId: SessionRequestId;\n    readonly sessionId: SessionId;\n    readonly mode: 'queue' | 'steer';\n    readonly content: readonly PromptContentPart[];\n    readonly clientTimeZone?: string;\n    readonly sourceFields?: { readonly [key: string]: JsonValue; };\n}"
           },
           {
             "name": "SessionPromptValue",
@@ -2752,6 +2759,10 @@ export const TYPERT = {
             "declaration": "export interface LlmFailure {\n    readonly message: string;\n    readonly code: string;\n    readonly status?: number;\n    readonly providerRetryAfterMs?: number;\n    readonly requestId?: ProviderRequestId;\n    readonly offloadImages?: number;\n}"
           },
           {
+            "name": "LyteboatAppendOptions",
+            "declaration": "export interface LyteboatAppendOptions {\n    readonly ignorable: true;\n}"
+          },
+          {
             "name": "Message",
             "declaration": "export type Message = MessageRoleMap[keyof MessageRoleMap];"
           },
@@ -2873,7 +2884,7 @@ export const TYPERT = {
           },
           {
             "name": "Session",
-            "declaration": "export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    readonly firstLifecycleSeq: SessionLogOffset;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent<T>] : []): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    toolHistory(): ToolHistory;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionEvent): Message | null;\n}"
+            "declaration": "export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    readonly firstLifecycleSeq: SessionLogOffset;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent<T>] : [opts?: LyteboatAppendOptions]): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    toolHistory(): ToolHistory;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionEvent): Message | null;\n}"
           },
           {
             "name": "SessionEvent",
