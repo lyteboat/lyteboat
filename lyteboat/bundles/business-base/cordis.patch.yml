@@ -4,8 +4,7 @@
 # composition declares: an agent that needs a dsh tool lists the tool's row
 # in its agent.cordis.yml, where it runs in the agent's standing scope; the
 # services behind a tool (web) stay on the host, since an agent row never
-# publishes a service. `lyteboat web` does not list this bundle: dsh web
-# keeps dsh's own capabilities.
+# publishes a service.
 
 # The coding tools, and the services only they use.
 - id: tool-bash

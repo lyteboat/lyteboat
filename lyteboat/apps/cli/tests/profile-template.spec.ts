@@ -1,7 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { initProfile, resolveProfileDir } from '@deepseek-ai/dsh-app-boot'
-import { LYTEBOAT_EVAL_BUNDLES, LYTEBOAT_TRY_BUNDLES, LYTEBOAT_SERVE_BUNDLES, LYTEBOAT_STUDIO_BUNDLES, LYTEBOAT_WEB_BUNDLES } from '@lyteboat/testing/composition'
+import { LYTEBOAT_EVAL_BUNDLES, LYTEBOAT_TRY_BUNDLES, LYTEBOAT_SERVE_BUNDLES, LYTEBOAT_STUDIO_BUNDLES } from '@lyteboat/testing/composition'
 import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { checkSkippedProfileBundles, ensureProfileInitialized } from '../src/profile-boot.ts'
@@ -16,10 +16,6 @@ describe('lyteboat profile templates', () => {
     const manifest = JSON.parse(readFileSync(join(resolveProfileDir('try', dir), 'package.json'), 'utf8')) as { dsh: { profile: { bundles: string[] } } }
     // The layers the composition tests boot as the try profile.
     expect(manifest.dsh.profile.bundles).toEqual(LYTEBOAT_TRY_BUNDLES)
-  })
-
-  test('a web profile lists the layers the web composition tests boot', () => {
-    expect(LYTEBOAT_PROFILE_TEMPLATES['web']?.bundles).toEqual(LYTEBOAT_WEB_BUNDLES)
   })
 
   test('a serve profile lists the layers the serve composition tests boot', () => {

@@ -18,9 +18,6 @@ export const LYTEBOAT_PROFILE_TEMPLATES: Readonly<Record<string, LyteboatProfile
   try: {
     bundles: ['@deepseek-ai/dsh-base', '@lyteboat/host', '@lyteboat/business-base', '@lyteboat/try'],
   },
-  web: {
-    bundles: ['@deepseek-ai/dsh-base', '@lyteboat/host', '@deepseek-ai/dsh-web-app', '@lyteboat/web'],
-  },
   serve: {
     bundles: ['@deepseek-ai/dsh-base', '@lyteboat/host', '@lyteboat/business-base', '@lyteboat/serve'],
   },
@@ -37,9 +34,6 @@ export const LYTEBOAT_PROFILE_TEMPLATES: Readonly<Record<string, LyteboatProfile
 
 /** The profile `lyteboat try` boots when `--profile` is absent. */
 export const DEFAULT_TRY_PROFILE = 'try'
-
-/** The profile `lyteboat web` boots when `--profile` is absent. */
-export const DEFAULT_WEB_PROFILE = 'web'
 
 /** The profile `lyteboat serve` boots when `--profile` is absent. */
 export const DEFAULT_SERVE_PROFILE = 'serve'

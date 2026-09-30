@@ -84,12 +84,6 @@
       "path": "./lyteboat/plugins/eval-runner"
     },
     {
-      "path": "./lyteboat/plugins/web-pages"
-    },
-    {
-      "path": "./lyteboat/plugins/web-pages/tsconfig.client.json"
-    },
-    {
       "path": "./lyteboat/plugins/agent-inspector"
     },
     {
@@ -118,9 +112,6 @@
     },
     {
       "path": "./lyteboat/bundles/inspect"
-    },
-    {
-      "path": "./lyteboat/bundles/web"
     },
     {
       "path": "./lyteboat/bundles/studio"
