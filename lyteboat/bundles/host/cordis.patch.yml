@@ -7,9 +7,8 @@
 # dsh-base's session-log-deepseek row attaches each session's canonical log
 # (`dsh_session_log`) to every official DeepSeek request; lyteboat sends the
 # provider the model request only. The row is off rather than configured off:
-# its `enabled` is a live setting, so where the settings service runs (lyteboat
-# web) a settings write would turn the upload back on, from the session's start.
-# Nothing injects the row.
+# its `enabled` is a live setting, and a settings write would turn the upload
+# back on, from the session's start. Nothing injects the row.
 - id: session-log-deepseek
   disabled: true
 

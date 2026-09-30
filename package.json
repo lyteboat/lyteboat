@@ -9,7 +9,7 @@
     "node": "^22.19.0 || >=24.0.0"
   },
   "scripts": {
-    "build": "tsc -b && node --import tsx scripts/dist/bundle-kernel.ts && node --import tsx scripts/dist/bundle-clients.ts && node --import tsx scripts/dist/build-studio-web.ts",
+    "build": "tsc -b && node --import tsx scripts/dist/bundle-kernel.ts && node --import tsx scripts/dist/build-studio-web.ts",
     "typecheck": "tsc -b && tsc -p tsconfig.tests.json && tsc -p lyteboat/plugins/studio-web/tsconfig.client.json",
     "lint": "oxlint . && knip --include unlisted,unresolved,exports,types --no-progress && node --import tsx scripts/check-layers.ts && node --import tsx scripts/dist/gen-distro-manifest.ts --check && node --import tsx scripts/check-sensitive.ts",
     "test": "pnpm run build && pnpm run contract:check && vitest run --project source --project dsh --project composite",

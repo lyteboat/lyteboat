@@ -1,6 +1,0 @@
-- id: persona
-  name: '@deepseek-ai/dsh-persona'
-  config:
-    prefix: >-
-      You are WEB-SUPPORT, a test agent powered by the {{model}} model.
-    suffix: Your working directory is {{cwd}}.

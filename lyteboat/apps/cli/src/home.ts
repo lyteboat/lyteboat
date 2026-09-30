@@ -4,9 +4,8 @@
  * exports it as `DSH_HOME` before any dsh module loads (bin.ts imports this
  * module first and dynamic-imports the rest). It exports `<home>/.agents` as
  * `DSH_AGENTS_HOME` too, the shared agent configuration root dsh's skill
- * filesystem otherwise reads from `~/.agents` (only where the host's default
- * skill roots are on: lyteboat web); not the home itself, whose `skills/` would then
- * be both roots. Both overrides are unconditional: a user's own homes never
+ * filesystem otherwise reads from `~/.agents` where its default roots are on;
+ * not the home itself, whose `skills/` would then be both roots. Both overrides are unconditional: a user's own homes never
  * receive lyteboat data or lend it their skills.
  * @module @lyteboat/cli/home
  */
