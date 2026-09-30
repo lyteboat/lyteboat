@@ -6,7 +6,7 @@
  * runner rows inject that service and read it from lazy config.
  *
  * Modeled on deepseek-ai/deepseek-harness packages/bundle/headless/src/startup.ts
- * @ dsh-v0.1.7-rc.2 (477b4f42), MIT — see THIRD_PARTY_NOTICES.md. Differences:
+ * @ dsh-v0.2.0-rc.2 (639ed015), MIT — see THIRD_PARTY_NOTICES.md. Differences:
  * the agent, agent-root, history, and context flags, resolved and checked
  * here; no stdin task, and `--result json` prints the turn as one object
  * where dsh-headless's `--json` streams events.
