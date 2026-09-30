@@ -99,6 +99,12 @@
 - id: plugin-package-inventory-deepseek
   disabled: true
 
+# dsh web's Settings switch for session-log upload writes session-log-deepseek's
+# `enabled` into the profile, over @lyteboat/host's `enabled: false`; lyteboat
+# sends the provider the model request only, so the switch is not offered.
+- id: ui-settings-session-log
+  disabled: true
+
 - id: agent-preset-registry
   inject: [lyteboatWebStartup]
   config:
