@@ -295,8 +295,8 @@ describe('lyteboat serve startup (in process)', () => {
     expect(result.stderr).toContain('beta: agent.yml declares model deepseek-official/deepseek-pro, but this process runs deepseek-official/deepseek-flash')
   })
 
-  it('refuses a chat-api config key it does not have, such as the retired workspace', async () => {
-    const run = scratch.run('retired')
+  it('refuses a chat-api config key it does not have', async () => {
+    const run = scratch.run('unknown-key')
     const target = { cwd: run.workspace, home: run.home, env: { DSH_TELEMETRY_DISABLED: '1' } }
 
     const result = await bootComposition({ bundles: LYTEBOAT_SERVE_BUNDLES, args: ['--agents', AGENTS, '--port', '0'], patches: [{ id: 'chat-api', config: { auth: 'none', workspace: run.workspace } }], ...target })

@@ -107,7 +107,7 @@ export class ChatApiService extends Service {
 
   constructor(ctx: Context, private readonly config: Config) {
     super(ctx, 'chatApi')
-    // schemastery passes unknown keys through; a misspelt or retired one (`workspace`) must not be ignored.
+    // schemastery passes unknown keys through; a misspelt one must not be ignored.
     const unknown = Object.keys(config).filter(key => !CHAT_API_CONFIG_KEYS.has(key))
     if (unknown.length > 0) {
       throw new Error(`chat-api: unknown config key${unknown.length > 1 ? 's' : ''} ${unknown.map(key => JSON.stringify(key)).join(', ')}; allowed: ${[...CHAT_API_CONFIG_KEYS].join(', ')}`)

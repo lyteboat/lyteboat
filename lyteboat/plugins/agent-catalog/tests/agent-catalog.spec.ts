@@ -147,10 +147,6 @@ describe('the agent catalog', () => {
       expect(plain.agentCatalog.get('beta')?.identity.id).toBe('beta')
       expect(withEffort.agentCatalog.failures()[0]?.reason).toContain('declares model deepseek-official/deepseek-flash (reasoningEffort high), but this process runs deepseek-official/deepseek-flash;')
     })
-
-    it('fails an agent that still has preset.yml, naming the rename', async () => {
-      expect(await failureOf({ 'preset.yml': 'name: Beta\n' })).toBe(`agent-catalog: ${join(roots[0] ?? '', 'beta', 'preset.yml')} is now agent.yml: rename it (name, description, and order stay; version and model are new)`)
-    })
   })
 
   describe('an agent pinned by a release', () => {

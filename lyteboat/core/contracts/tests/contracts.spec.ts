@@ -16,7 +16,7 @@ describe('@lyteboat/contracts', () => {
     const lock = {
       agent: { id: 'finance', version: '1.0.0', digest: `sha256:${'a'.repeat(64)}` },
       model: { provider: 'deepseek-official', model: 'deepseek-flash' },
-      dshBase: '0.1.7-rc.2',
+      dshBase: '0.2.0-rc.2',
       files: { 'agent.yml': 'b'.repeat(64) },
       baseline: { startedAt: '2026-09-26T00:00:00.000Z', cases: 6, turns: 7, checks: 30, results: `sha256:${'c'.repeat(64)}` },
     }

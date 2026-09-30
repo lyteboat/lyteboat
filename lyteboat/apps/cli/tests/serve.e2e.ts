@@ -48,7 +48,7 @@ describe('lyteboat serve (built bin, scripted model)', () => {
 
   it('exits 1 when a row the service needs fails, instead of waiting with nothing to serve', async () => {
     const { home, workspace } = scratch.run('broken-row')
-    const patch = join(workspace, 'retired.patch.yml')
+    const patch = join(workspace, 'unknown-key.patch.yml')
     writeFileSync(patch, '- id: chat-api\n  config:\n    auth: none\n    workspace: /tmp\n')
 
     const result = await runLyteboat(['serve', '--patch', patch, '--agents', AGENTS, '--port', '0'], { cwd: workspace, env: { LYTEBOAT_HOME: home, DSH_TELEMETRY_DISABLED: '1' } })

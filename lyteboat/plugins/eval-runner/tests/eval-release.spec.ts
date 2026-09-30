@@ -62,16 +62,16 @@ describe('releaseAgent', () => {
   it('writes the lock with its keys in a fixed order, and the same bytes when released again', async () => {
     const agent = agentWithBaseline()
 
-    const first = await releaseAgent(agent, '0.1.7-rc.2', replaying())
+    const first = await releaseAgent(agent, '0.2.0-rc.2', replaying())
     const bytes = readFileSync(join(agent.dir, 'agent.release.json'), 'utf8')
-    const again = await releaseAgent(agent, '0.1.7-rc.2', replaying())
+    const again = await releaseAgent(agent, '0.2.0-rc.2', replaying())
 
     expect(first).toMatchObject({ released: true, file: join(agent.dir, 'agent.release.json') })
     expect(Object.keys(JSON.parse(bytes) as object)).toEqual(['agent', 'model', 'dshBase', 'files', 'baseline'])
     expect(JSON.parse(bytes)).toEqual({
       agent: IDENTITY,
       model: MODEL,
-      dshBase: '0.1.7-rc.2',
+      dshBase: '0.2.0-rc.2',
       files: agent.files,
       baseline: { startedAt: RECORD.startedAt, cases: 1, turns: 1, checks: 1, results: expect.stringMatching(/^sha256:[0-9a-f]{64}$/u) as string },
     })
@@ -88,8 +88,8 @@ describe('releaseAgent', () => {
       writeFileSync(file, readFileSync(file, 'utf8').replaceAll('\n', '\r\n'))
     }
 
-    await releaseAgent(lf, '0.1.7-rc.2', replaying())
-    const outcome = await releaseAgent(crlf, '0.1.7-rc.2', replaying())
+    await releaseAgent(lf, '0.2.0-rc.2', replaying())
+    const outcome = await releaseAgent(crlf, '0.2.0-rc.2', replaying())
 
     expect(outcome.released).toBe(true)
     expect(readFileSync(join(crlf.dir, 'agent.release.json'), 'utf8')).toBe(readFileSync(join(lf.dir, 'agent.release.json'), 'utf8'))

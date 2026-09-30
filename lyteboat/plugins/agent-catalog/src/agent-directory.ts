@@ -43,9 +43,6 @@ const AGENT_SOURCE_MODULE = 'src/agent.ts'
 /** The files any one of which makes a directory an agent. */
 const AGENT_MARKER_FILES = [AGENT_COMPOSITION_FILE, AGENT_MANIFEST_FILE, AGENT_ENTRY_MODULE, AGENT_SOURCE_MODULE]
 
-/** The display-metadata file the manifest replaced; its presence is a stale directory. */
-const RETIRED_METADATA_FILE = 'preset.yml'
-
 function isAgentDirectory(root: string, name: string): boolean {
   return AGENT_MARKER_FILES.some(file => existsSync(join(root, name, file)))
 }
@@ -104,9 +101,6 @@ function readYaml(path: string, options?: LoadOptions): unknown {
 }
 
 function readManifest(dir: string): LyteboatAgentManifest {
-  if (existsSync(join(dir, RETIRED_METADATA_FILE))) {
-    throw new Error(`agent-catalog: ${join(dir, RETIRED_METADATA_FILE)} is now ${AGENT_MANIFEST_FILE}: rename it (name, description, and order stay; version and model are new)`)
-  }
   const path = join(dir, AGENT_MANIFEST_FILE)
   if (!existsSync(path)) return {}
   const parsed = lyteboatAgentManifestSchema.safeParse(readYaml(path) ?? {})
@@ -168,7 +162,7 @@ function readAgentRows(id: string, dir: string): { rows: PresetDefinition['plugi
  * @param id - the agent id.
  * @param dir - the agent directory.
  * @returns the declaration to register, with the manifest's version and model.
- * @throws when a file is unreadable or not the shape its role requires, the directory has neither rows nor a built module, or the retired `preset.yml` is still there.
+ * @throws when a file is unreadable or not the shape its role requires, or the directory has neither rows nor a built module.
  */
 export function readAgentDefinition(id: string, dir: string): AgentDirectoryDefinition {
   const { rows, agentDefSource } = readAgentRows(id, dir)
