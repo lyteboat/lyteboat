@@ -837,7 +837,7 @@
           "$declaration": "interface ISessions { }",
           "binding": "binding(id: SessionId): SessionBinding | undefined;",
           "create": "create(opts?: { workspaceId?: WorkspaceId; cwd?: string; sessionId?: SessionId; }): Promise<SessionId>;",
-          "fork": "fork(opts: { sessionId: SessionId; atSeq?: number; increaseTitle?: boolean; }): Promise<SessionId>;",
+          "fork": "fork(opts: { sessionId: SessionId; atSeq?: number; increaseTitle?: boolean; onCreated?: (childId: SessionId) => void; }): Promise<SessionId>;",
           "list": "readonly list: ObservableSnapshot<SessionListState>;",
           "refresh": "refresh(): Promise<void>;",
           "refreshProjections": "refreshProjections(sessionId: SessionId): Promise<void>;",
@@ -2708,6 +2708,12 @@
         },
         "TOOL_NOT_STARTED": "const TOOL_NOT_STARTED = \"TOOL_NOT_STARTED\";",
         "TOOL_OUTCOME_UNKNOWN": "const TOOL_OUTCOME_UNKNOWN = \"TOOL_OUTCOME_UNKNOWN\";",
+        "ToolCallRecovery": {
+          "$declaration": "class ToolCallRecovery { }",
+          "constructor": "constructor(cause?: OpenTurnCloseCause);",
+          "observe": "observe(event: SessionEvent): void;",
+          "results": "results(): SessionEvent<'tool/result'>[];"
+        },
         "ToolResultMessage": {
           "$declaration": "interface ToolResultMessage extends MessageBase { }",
           "isError": "readonly isError?: boolean;",

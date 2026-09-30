@@ -11,8 +11,6 @@ let JsonValueRemoteCodec$schema4$value
 const JsonValueRemoteCodec$schema4 = () => (JsonValueRemoteCodec$schema4$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]))
 let JsonValueRemoteCodec$schema5$value
 const JsonValueRemoteCodec$schema5 = () => (JsonValueRemoteCodec$schema5$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))]))
-let JsonValueRemoteCodec$schema6$value
-const JsonValueRemoteCodec$schema6 = () => (JsonValueRemoteCodec$schema6$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))]))
 let _deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_0$schema$value
 const _deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_0$schema = () => (_deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_0$schema$value ??= z.intersection(z.string(), z.unknown()))
 let _deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_1$schema$value
@@ -61,8 +59,8 @@ const _deepseek_ai_dsh_api_session_controller_session_control_result$schema = ()
   'asOfSeq': z.number().readonly(),
   'values': z.intersection(z.object({
   'inbox': z.object({
-  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))])).readonly(),
-  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))])).readonly(),
+  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
+  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
 }).optional(),
   'agentPreset': z.union([z.literal(null), z.string()]).optional(),
   'title': z.union([z.literal(null), z.string()]).optional(),
@@ -149,7 +147,37 @@ const _deepseek_ai_dsh_api_session_controller_session_control_result$schema = ()
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
-}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))])).readonly()).readonly(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
+}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly()).readonly(),
 })).readonly().readonly(),
 }).readonly(),
 }), z.intersection(z.object({
@@ -157,7 +185,7 @@ const _deepseek_ai_dsh_api_session_controller_session_control_result$schema = ()
 }), z.object({
   'sessionId': z.intersection(z.string(), z.unknown()).readonly(),
   'key': z.string().readonly(),
-  'value': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))]).readonly(),
+  'value': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))]).readonly(),
   'seq': z.number().readonly(),
 }))]))
 let _deepseek_ai_dsh_api_session_controller_session_create_parameter_0$schema$value
@@ -197,10 +225,10 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'type': z.string().readonly(),
   'seq': z.number().readonly(),
   'time': z.number().readonly(),
-  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly(),
+  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
   'ignorable': z.literal(true).readonly().optional(),
-  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
-  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
+  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
+  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
 }).readonly(),
 }), z.object({
   'type': z.literal("snapshot").readonly(),
@@ -222,10 +250,10 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'type': z.string().readonly(),
   'seq': z.number().readonly(),
   'time': z.number().readonly(),
-  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly(),
+  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
   'ignorable': z.literal(true).readonly().optional(),
-  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
-  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
+  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
+  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
 }).readonly(),
 })).readonly(),
   'hasMore': z.boolean().readonly(),
@@ -233,8 +261,8 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'asOfSeq': z.number().readonly(),
   'values': z.intersection(z.object({
   'inbox': z.object({
-  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
-  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
+  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly(),
+  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly(),
 }).optional(),
   'agentPreset': z.union([z.literal(null), z.string()]).optional(),
   'title': z.union([z.literal(null), z.string()]).optional(),
@@ -321,7 +349,37 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
-}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly()).readonly(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
+}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly()).readonly(),
 }).readonly(),
   'assistantStream': z.object({
   'revision': z.number().readonly(),
@@ -331,7 +389,7 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'turn': z.number().readonly(),
   'step': z.number().readonly(),
   'nextIndex': z.number().readonly(),
-  'stream': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
+  'stream': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly(),
 }).readonly().optional(),
 }).readonly().optional(),
 }), z.object({
@@ -349,7 +407,7 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'revision': z.number().readonly(),
   'index': z.number().readonly(),
   'time': z.number().readonly(),
-  'chunk': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly(),
+  'chunk': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
 }), z.object({
   'type': z.literal("end").readonly(),
   'attemptId': z.intersection(z.string(), z.unknown()).readonly(),
@@ -483,6 +541,36 @@ const _deepseek_ai_dsh_api_session_controller_session_list_result$schema = () =>
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
 }), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema()))])).readonly()).readonly(),
 }).readonly().optional(),
 })).readonly(),
@@ -555,10 +643,10 @@ const _deepseek_ai_dsh_api_session_controller_session_page_result$schema = () =>
   'type': z.string().readonly(),
   'seq': z.number().readonly(),
   'time': z.number().readonly(),
-  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
+  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))]).readonly(),
   'ignorable': z.literal(true).readonly().optional(),
-  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
-  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
+  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))]).readonly().optional(),
+  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))]).readonly().optional(),
 }).readonly(),
 })).readonly(),
   'hasMore': z.boolean().readonly(),
@@ -572,8 +660,8 @@ const _deepseek_ai_dsh_api_session_controller_session_projections_result$schema 
   'asOfSeq': z.number().readonly(),
   'values': z.intersection(z.object({
   'inbox': z.object({
-  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
-  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
+  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
+  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
 }).optional(),
   'agentPreset': z.union([z.literal(null), z.string()]).optional(),
   'title': z.union([z.literal(null), z.string()]).optional(),
@@ -660,7 +748,37 @@ const _deepseek_ai_dsh_api_session_controller_session_projections_result$schema 
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
-}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly()).readonly(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
+}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly()).readonly(),
 })]))
 let _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema$value
 const _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema = () => (_deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema$value ??= z.object({
@@ -680,7 +798,6 @@ const _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema 
   'receiptId': z.intersection(z.string(), z.unknown()).readonly(),
 })])).readonly(),
   'clientTimeZone': z.string().readonly().optional(),
-  'sourceFields': z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))])).readonly().readonly().optional(),
 }))
 let _deepseek_ai_dsh_api_session_controller_session_prompt_result$schema$value
 const _deepseek_ai_dsh_api_session_controller_session_prompt_result$schema = () => (_deepseek_ai_dsh_api_session_controller_session_prompt_result$schema$value ??= z.object({

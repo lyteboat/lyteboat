@@ -18,7 +18,7 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "catalog:cordis",
-    "@deepseek-ai/dsh-host-webserver": "0.1.7-rc.2"
+    "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.2"
   },
   "devDependencies": {
     "@lyteboat/contracts": "workspace:*",

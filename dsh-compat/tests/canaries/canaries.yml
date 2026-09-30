@@ -6,14 +6,15 @@
 # candidates per risk category (what a kernel change could break), preferring dsh peer
 # ranges that reach the tracked release line; a category with fewer than three clean
 # candidates takes the next ones of the same ranking whose dsh peers admit the release.
-# Each candidate is installed on the official release and run once, and it is clean when
+# A candidate is pinned at its sampled version when that version's dsh peers admit the
+# release, otherwise at its newest version whose peers do. Each candidate is installed on the official release and run once, and it is clean when
 # it installs, activates every row, answers, and exits. A candidate that fails on the
 # official release itself (refused at install by its peer check, or broken by the
 # release's own changes) is not a canary: that is input for compat decisions, not for
 # G5. The canaries are the clean candidates, up to three per category in ranking order
 # (fewer where a category has fewer clean ones).
 #
-# The list is validated on dsh 0.1.7-rc.2: G5 runs every canary on the official release
+# The list is validated on dsh 0.2.0-rc.2: G5 runs every canary on the official release
 # as well, and each one runs clean there.
 #
 # bundle: true installs as a profile layer; false would add a row instead (every canary
@@ -27,18 +28,18 @@ canaries:
   - { name: dsh-mermaid-comm, version: 0.2.0, bundle: true, risk: appends }
   - { name: dsh-wenmai, version: 0.8.0, bundle: true, risk: prompt }
   - { name: '@ukewea/dsh-taskboard', version: 0.7.0, bundle: true, risk: prompt }
-  - { name: '@zzerx/dsh-plugin-memory', version: 0.3.1, bundle: true, risk: prompt }
+  - { name: '@zzerx/dsh-plugin-memory', version: 0.4.2, bundle: true, risk: prompt }
   - { name: dsh-file-review-kcoder, version: 1.0.7, bundle: true, risk: tools-pre-execute }
   - { name: dsh-rate-shield, version: 0.1.0, bundle: true, risk: tools-pre-execute }
   - { name: dsh-survival-mode, version: 0.1.1, bundle: true, risk: tools-pre-execute }
   - { name: dsh-plugin-heartbeat, version: 0.4.2, bundle: true, risk: step }
   - { name: '@yadsh/dsh-kv-persist', version: 0.2.6, bundle: true, risk: llm }
   - { name: dsh-llm-gateway-compat, version: 0.4.0, bundle: true, risk: llm }
-  - { name: dsh-inhibition, version: 0.1.2, bundle: true, risk: llm }
+  - { name: '@chang416/deepsee', version: 4.0.2, bundle: true, risk: llm }
   - { name: dsh-context, version: 0.54.2, bundle: true, risk: projections }
-  - { name: '@steven-wu/dsh-cost-meter', version: 0.1.0-rc.3, bundle: true, risk: projections }
+  - { name: '@morlay/session-rdb', version: 0.1.3, bundle: true, risk: projections }
   - { name: dsh-loom, version: 1.3.0, bundle: true, risk: tools }
-  - { name: '@evaldock/dsh-top100-plugin', version: 1.3.11, bundle: true, risk: tools }
+  - { name: '@evaldock/dsh-top100-plugin', version: 1.3.14, bundle: true, risk: tools }
   - { name: '@hanphone/dsh-a2a', version: 0.3.3, bundle: true, risk: session-host }
   - { name: dsh-reminder, version: 0.1.4, bundle: true, risk: session-host }
   - { name: dsh-specline, version: 0.1.0, bundle: true, risk: session-host }

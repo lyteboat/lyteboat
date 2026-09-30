@@ -1,7 +1,7 @@
 {
-  "dsh": "0.1.7-rc.2",
-  "tag": "dsh-v0.1.7-rc.2",
-  "commit": "477b4f420553e8a52c2fbccc464d7561b239c443",
+  "dsh": "0.2.0-rc.2",
+  "tag": "dsh-v0.2.0-rc.2",
+  "commit": "639ed015397290b3745d163aafe02ffee4aa3f84",
   "repository": "https://github.com/deepseek-ai/deepseek-harness",
   "cordis": {
     "@deepseek-ai/cordis": "4.0.4",

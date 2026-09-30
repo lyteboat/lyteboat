@@ -11,8 +11,6 @@ let JsonValueRemoteCodec$schema4$value
 const JsonValueRemoteCodec$schema4 = () => (JsonValueRemoteCodec$schema4$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]))
 let JsonValueRemoteCodec$schema5$value
 const JsonValueRemoteCodec$schema5 = () => (JsonValueRemoteCodec$schema5$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))]))
-let JsonValueRemoteCodec$schema6$value
-const JsonValueRemoteCodec$schema6 = () => (JsonValueRemoteCodec$schema6$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))]))
 let _deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_0$schema$value
 const _deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_0$schema = () => (_deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_0$schema$value ??= z.intersection(z.string(), z.unknown()))
 let _deepseek_ai_dsh_api_session_controller_fileReferences_list_parameter_1$schema$value
@@ -61,8 +59,8 @@ const _deepseek_ai_dsh_api_session_controller_session_control_result$schema = ()
   'asOfSeq': z.number().readonly(),
   'values': z.intersection(z.object({
   'inbox': z.object({
-  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))])).readonly(),
-  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))])).readonly(),
+  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
+  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
 }).optional(),
   'agentPreset': z.union([z.literal(null), z.string()]).optional(),
   'title': z.union([z.literal(null), z.string()]).optional(),
@@ -149,7 +147,37 @@ const _deepseek_ai_dsh_api_session_controller_session_control_result$schema = ()
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
-}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))])).readonly()).readonly(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
+}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly()).readonly(),
 })).readonly().readonly(),
 }).readonly(),
 }), z.intersection(z.object({
@@ -157,7 +185,7 @@ const _deepseek_ai_dsh_api_session_controller_session_control_result$schema = ()
 }), z.object({
   'sessionId': z.intersection(z.string(), z.unknown()).readonly(),
   'key': z.string().readonly(),
-  'value': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6()))]).readonly(),
+  'value': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))]).readonly(),
   'seq': z.number().readonly(),
 }))]))
 let _deepseek_ai_dsh_api_session_controller_session_create_parameter_0$schema$value
@@ -197,10 +225,10 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'type': z.string().readonly(),
   'seq': z.number().readonly(),
   'time': z.number().readonly(),
-  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly(),
+  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
   'ignorable': z.literal(true).readonly().optional(),
-  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
-  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
+  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
+  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
 }).readonly(),
 }), z.object({
   'type': z.literal("snapshot").readonly(),
@@ -222,10 +250,10 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'type': z.string().readonly(),
   'seq': z.number().readonly(),
   'time': z.number().readonly(),
-  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly(),
+  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
   'ignorable': z.literal(true).readonly().optional(),
-  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
-  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly().optional(),
+  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
+  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
 }).readonly(),
 })).readonly(),
   'hasMore': z.boolean().readonly(),
@@ -233,8 +261,8 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'asOfSeq': z.number().readonly(),
   'values': z.intersection(z.object({
   'inbox': z.object({
-  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
-  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
+  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly(),
+  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly(),
 }).optional(),
   'agentPreset': z.union([z.literal(null), z.string()]).optional(),
   'title': z.union([z.literal(null), z.string()]).optional(),
@@ -321,7 +349,37 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
-}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly()).readonly(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
+}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly()).readonly(),
 }).readonly(),
   'assistantStream': z.object({
   'revision': z.number().readonly(),
@@ -331,7 +389,7 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'turn': z.number().readonly(),
   'step': z.number().readonly(),
   'nextIndex': z.number().readonly(),
-  'stream': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
+  'stream': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))])).readonly(),
 }).readonly().optional(),
 }).readonly().optional(),
 }), z.object({
@@ -349,7 +407,7 @@ const _deepseek_ai_dsh_api_session_controller_session_follow_result$schema = () 
   'revision': z.number().readonly(),
   'index': z.number().readonly(),
   'time': z.number().readonly(),
-  'chunk': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))]).readonly(),
+  'chunk': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
 }), z.object({
   'type': z.literal("end").readonly(),
   'attemptId': z.intersection(z.string(), z.unknown()).readonly(),
@@ -483,6 +541,36 @@ const _deepseek_ai_dsh_api_session_controller_session_list_result$schema = () =>
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
 }), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema()))])).readonly()).readonly(),
 }).readonly().optional(),
 })).readonly(),
@@ -555,10 +643,10 @@ const _deepseek_ai_dsh_api_session_controller_session_page_result$schema = () =>
   'type': z.string().readonly(),
   'seq': z.number().readonly(),
   'time': z.number().readonly(),
-  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly(),
+  'data': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))]).readonly(),
   'ignorable': z.literal(true).readonly().optional(),
-  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
-  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3()))]).readonly().optional(),
+  'sourceEventSeqs': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))]).readonly().optional(),
+  'surfaceOp': z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))]).readonly().optional(),
 }).readonly(),
 })).readonly(),
   'hasMore': z.boolean().readonly(),
@@ -572,8 +660,8 @@ const _deepseek_ai_dsh_api_session_controller_session_projections_result$schema 
   'asOfSeq': z.number().readonly(),
   'values': z.intersection(z.object({
   'inbox': z.object({
-  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
-  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly(),
+  'next-turn': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
+  'next-step': z.array(z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly(),
 }).optional(),
   'agentPreset': z.union([z.literal(null), z.string()]).optional(),
   'title': z.union([z.literal(null), z.string()]).optional(),
@@ -660,7 +748,37 @@ const _deepseek_ai_dsh_api_session_controller_session_projections_result$schema 
   'createdAt': z.number().readonly(),
   'updatedAt': z.number().readonly(),
 })]).optional(),
-}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5()))])).readonly()).readonly(),
+  'userQuestions': z.object({
+  'active': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'questions': z.array(z.object({
+  'id': z.string(),
+  'question': z.string(),
+  'detail': z.string().optional(),
+  'header': z.string().optional(),
+  'options': z.array(z.object({
+  'label': z.string(),
+  'description': z.string().optional(),
+})).optional(),
+  'multiSelect': z.boolean().optional(),
+  'intent': z.object({
+  'kind': z.literal("plan-review"),
+  'approve': z.string(),
+  'callId': z.intersection(z.string(), z.unknown()).optional(),
+}).optional(),
+})).readonly(),
+  'state': z.union([z.literal("open"), z.literal("continued")]).readonly(),
+})).readonly(),
+  'settled': z.array(z.object({
+  'callId': z.intersection(z.string(), z.unknown()).readonly(),
+  'answers': z.array(z.object({
+  'id': z.string(),
+  'selected': z.array(z.string()),
+  'custom': z.string().optional(),
+})).readonly(),
+})).readonly(),
+}).optional(),
+}), z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4()))])).readonly()).readonly(),
 })]))
 let _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema$value
 const _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema = () => (_deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema$value ??= z.object({
@@ -680,7 +798,6 @@ const _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema 
   'receiptId': z.intersection(z.string(), z.unknown()).readonly(),
 })])).readonly(),
   'clientTimeZone': z.string().readonly().optional(),
-  'sourceFields': z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2()))])).readonly().readonly().optional(),
 }))
 let _deepseek_ai_dsh_api_session_controller_session_prompt_result$schema$value
 const _deepseek_ai_dsh_api_session_controller_session_prompt_result$schema = () => (_deepseek_ai_dsh_api_session_controller_session_prompt_result$schema$value ??= z.object({
@@ -1500,6 +1617,22 @@ export const TYPERT = {
             "declaration": "export type ApprovalRequestId = Branded<'ApprovalRequestId'>;"
           },
           {
+            "name": "AskUserQuestionAnswerItem",
+            "declaration": "export interface AskUserQuestionAnswerItem {\n    id: string;\n    selected: string[];\n    custom?: string;\n}"
+          },
+          {
+            "name": "AskUserQuestionIntent",
+            "declaration": "export type AskUserQuestionIntent = { kind: 'plan-review'; approve: string; callId?: ToolCallId; };"
+          },
+          {
+            "name": "AskUserQuestionItem",
+            "declaration": "export interface AskUserQuestionItem {\n    id: string;\n    question: string;\n    detail?: string;\n    header?: string;\n    options?: AskUserQuestionOption[];\n    multiSelect?: boolean;\n    intent?: AskUserQuestionIntent;\n}"
+          },
+          {
+            "name": "AskUserQuestionOption",
+            "declaration": "export interface AskUserQuestionOption {\n    label: string;\n    description?: string;\n}"
+          },
+          {
             "name": "AssistantMessage",
             "declaration": "export interface AssistantMessage extends MessageBase {\n    readonly role: 'assistant';\n    readonly source: ModelMessageSource;\n}"
           },
@@ -1736,10 +1869,6 @@ export const TYPERT = {
             "declaration": "export interface LlmFailure {\n    readonly message: string;\n    readonly code: string;\n    readonly status?: number;\n    readonly providerRetryAfterMs?: number;\n    readonly requestId?: ProviderRequestId;\n    readonly offloadImages?: number;\n}"
           },
           {
-            "name": "LyteboatAppendOptions",
-            "declaration": "export interface LyteboatAppendOptions {\n    readonly ignorable: true;\n}"
-          },
-          {
             "name": "Message",
             "declaration": "export type Message = MessageRoleMap[keyof MessageRoleMap];"
           },
@@ -1781,7 +1910,7 @@ export const TYPERT = {
           },
           {
             "name": "MessageSourceMap",
-            "declaration": "export interface MessageSourceMap {\n    user: { kind: 'user'; };\n    model: ModelMessageSource;\n    tool: ToolMessageSource;\n    'system-prompt': SystemPromptMessageSource;\n    'model-selection': { kind: 'model-selection'; } & ContextFormed;\n    'user-approval': { kind: 'user-approval'; } & ContextFormed;\n    'ptc-mode': { kind: 'ptc-mode'; };\n    'tool-registry': { kind: 'tool-registry'; };\n    'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; };\n    'agent-message': AgentMessageSource;\n    'subagent-settled': SubagentSettledMessageSource;\n    'skill-invocation': SkillInvocationSource;\n    'cordis-host-runner': { kind: 'cordis-host-runner'; };\n    goal: GoalMessageSource;\n    schedule: { kind: 'schedule'; } & ContextFormed;\n    'compact-checkpoint': CompactionCheckpointSource;\n    'session-reference': SessionReferenceSource;\n}"
+            "declaration": "export interface MessageSourceMap {\n    user: { kind: 'user'; };\n    model: ModelMessageSource;\n    tool: ToolMessageSource;\n    'system-prompt': SystemPromptMessageSource;\n    'model-selection': { kind: 'model-selection'; } & ContextFormed;\n    'user-approval': { kind: 'user-approval'; } & ContextFormed;\n    'ptc-mode': { kind: 'ptc-mode'; };\n    'tool-registry': { kind: 'tool-registry'; };\n    'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; };\n    'agent-message': AgentMessageSource;\n    'subagent-settled': SubagentSettledMessageSource;\n    'skill-invocation': SkillInvocationSource;\n    'cordis-host-runner': { kind: 'cordis-host-runner'; };\n    goal: GoalMessageSource;\n    schedule: { kind: 'schedule'; } & ContextFormed;\n    'compact-checkpoint': CompactionCheckpointSource;\n    'session-reference': SessionReferenceSource;\n    'user-question-reply': { kind: 'user-question-reply'; callId: ToolCallId; outcome: 'answered'; };\n}"
           },
           {
             "name": "ModelCatalog",
@@ -1840,6 +1969,10 @@ export const TYPERT = {
             "declaration": "export type OptionalSessionSeq = SessionSeq | null;"
           },
           {
+            "name": "PendingUserQuestion",
+            "declaration": "export interface PendingUserQuestion {\n    readonly callId: ToolCallId;\n    readonly questions: readonly AskUserQuestionItem[];\n    readonly state: UserQuestionState;\n}"
+          },
+          {
             "name": "PermissionSelection",
             "declaration": "export interface PermissionSelection {\n    currentValue: string;\n}"
           },
@@ -1881,7 +2014,7 @@ export const TYPERT = {
           },
           {
             "name": "RemoteErrorDetailsMap",
-            "declaration": "export interface RemoteErrorDetailsMap {\n    'gateway/bad-request': { readonly issues?: readonly object[]; };\n    'gateway/cancelled': {};\n    'gateway/internal': {};\n    'llm/model-discovery-rejected': { readonly settingsNs: string; readonly baseURL?: string; };\n    'session/not-found': { readonly sessionId: SessionId; };\n    'workspace/not-found': { readonly workspaceId: WorkspaceId; };\n    'agent-preset/not-found': { readonly agentPreset: string; readonly available: readonly string[]; };\n    'agent-preset/invalid': { readonly agentPreset: string; readonly reason: string; };\n    'agent-preset/locked': { readonly sessionId: SessionId; readonly agentPreset: string; };\n    'job/not-found': { readonly sessionId: SessionId; readonly jobId: JobId; };\n    'session/provider-credentials-unavailable': Record<string, never>;\n    'session/provider-models-unavailable': { readonly provider: string; };\n    'session/model-unavailable': { readonly provider: string; readonly model: string; };\n    'session/conflict': { readonly sessionId: SessionId; readonly requestedCwd: string; readonly existingCwd?: string; };\n    'session/projections-unavailable': Record<string, never>;\n    'session/writer-held': { readonly sessionId: SessionId; };\n    'session/agent-busy': { readonly reason: string; };\n    'session/invalid-time-zone': { readonly value: string; };\n    'session/workspace-attach-failed': { readonly sessionId: SessionId; readonly workspaceId: string; };\n    'agent-preset/conflict': { readonly sessionId: SessionId; readonly requestedPreset: string; readonly existingPreset?: string; };\n    'session/attachment-invalid': { readonly reason: string; };\n    'session/queue-item-not-found': { readonly itemId: MessageId; };\n    'session/steer-unavailable': { readonly itemId: MessageId; };\n    'session/title-invalid': { readonly sessionId: SessionId; };\n    'session/fork-unavailable': { readonly sessionId: SessionId; };\n    'subagent/not-found': { readonly parentSessionId: SessionId; readonly childSessionId: SessionId; };\n    'subagent/catalog-diagnostic': { readonly parentSessionId: SessionId; readonly childSessionId: SessionId; readonly reason: 'corrupt' | 'unsupported' | 'unavailable'; };\n    'subagent/invalid-time-zone': { readonly value: string; };\n    'subagent/parent-unavailable': { readonly parentSessionId: SessionId; };\n    'subagent/not-resumable': { readonly childSessionId: SessionId; };\n    'subagent/unauthorized': { readonly childSessionId: SessionId; };\n    'subagent/attachment-invalid': { readonly reason: string; };\n    'subagent/delivery-unavailable': { readonly childSessionId: SessionId; };\n    'settings/rejected': { readonly ns: string; };\n    'settings/conflict': { readonly ns: string; readonly expected: number; readonly actual: number; };\n    'credential/rejected': { readonly ref: string; };\n    'terminal/unavailable': Record<string, never>;\n    'terminal/control-unavailable': { readonly reason: 'read-only' | 'not-running'; };\n    'terminal/limit-reached': { readonly limit: number; };\n    'workspace/invalid-path': { readonly path: string; };\n    'workspace/name-conflict': { readonly name: string; };\n    'workspace/session-active': { readonly sessionId: SessionId; readonly activity: readonly SessionActivity[]; };\n    'workspace/move-invalid': { readonly workspaceId: WorkspaceId; readonly sessionId: SessionId; readonly beforeSessionId?: SessionId; };\n    'directory-picker/unavailable': { readonly capability: string; };\n    'directory-picker/unreadable': { readonly path: string; };\n    'directory-picker/exists': { readonly path: string; };\n    'directory-picker/create-failed': { readonly path: string; };\n    'workspace-file/watch-unsupported': { readonly path: string; };\n    'workspace-file/not-found': { readonly path: string; };\n    'workspace-file/outside-workspace': { readonly path: string; };\n    'workspace-file/too-large': { readonly path: string; readonly limit: number; };\n    'workspace-file/not-text': { readonly path: string; };\n    'workspace-file/not-regular-file': { readonly path: string; readonly kind: 'directory' | 'symlink' | 'other'; };\n    'workspace-file/not-directory': { readonly path: string; readonly kind: 'file' | 'symlink' | 'other'; };\n    'speech/invalid-audio': { readonly reason: string; };\n    'speech/transcription-failed': { readonly reason: string; };\n    'document-render/failed': { readonly reason: OfficeToPdfErrorCode; };\n}"
+            "declaration": "export interface RemoteErrorDetailsMap {\n    'gateway/bad-request': { readonly issues?: readonly object[]; };\n    'gateway/cancelled': {};\n    'gateway/internal': {};\n    'llm/model-discovery-rejected': { readonly settingsNs: string; readonly baseURL?: string; };\n    'session/not-found': { readonly sessionId: SessionId; };\n    'workspace/not-found': { readonly workspaceId: WorkspaceId; };\n    'agent-preset/not-found': { readonly agentPreset: string; readonly available: readonly string[]; };\n    'agent-preset/invalid': { readonly agentPreset: string; readonly reason: string; };\n    'agent-preset/locked': { readonly sessionId: SessionId; readonly agentPreset: string; };\n    'job/not-found': { readonly sessionId: SessionId; readonly jobId: JobId; };\n    'session/provider-credentials-unavailable': Record<string, never>;\n    'session/provider-models-unavailable': { readonly provider: string; };\n    'session/model-unavailable': { readonly provider: string; readonly model: string; };\n    'session/conflict': { readonly sessionId: SessionId; readonly requestedCwd: string; readonly existingCwd?: string; };\n    'session/projections-unavailable': Record<string, never>;\n    'session/writer-held': { readonly sessionId: SessionId; };\n    'session/agent-busy': { readonly reason: string; };\n    'session/invalid-time-zone': { readonly value: string; };\n    'session/workspace-attach-failed': { readonly sessionId: SessionId; readonly workspaceId: string; };\n    'agent-preset/conflict': { readonly sessionId: SessionId; readonly requestedPreset: string; readonly existingPreset?: string; };\n    'session/attachment-invalid': { readonly reason: string; };\n    'session/queue-item-not-found': { readonly itemId: MessageId; };\n    'session/steer-unavailable': { readonly itemId: MessageId; };\n    'session/title-invalid': { readonly sessionId: SessionId; };\n    'session/fork-unavailable': { readonly sessionId: SessionId; };\n    'subagent/not-found': { readonly parentSessionId: SessionId; readonly childSessionId: SessionId; };\n    'subagent/catalog-diagnostic': { readonly parentSessionId: SessionId; readonly childSessionId: SessionId; readonly reason: 'corrupt' | 'unsupported' | 'unavailable'; };\n    'subagent/invalid-time-zone': { readonly value: string; };\n    'subagent/parent-unavailable': { readonly parentSessionId: SessionId; };\n    'subagent/not-resumable': { readonly childSessionId: SessionId; };\n    'subagent/unauthorized': { readonly childSessionId: SessionId; };\n    'subagent/attachment-invalid': { readonly reason: string; };\n    'subagent/delivery-unavailable': { readonly childSessionId: SessionId; };\n    'settings/rejected': { readonly ns: string; };\n    'settings/conflict': { readonly ns: string; readonly expected: number; readonly actual: number; };\n    'credential/rejected': { readonly ref: string; };\n    'terminal/unavailable': Record<string, never>;\n    'terminal/control-unavailable': { readonly reason: 'read-only' | 'not-running'; };\n    'terminal/limit-reached': { readonly limit: number; };\n    'workspace/invalid-path': { readonly path: string; };\n    'workspace/name-conflict': { readonly name: string; };\n    'workspace/session-active': { readonly sessionId: SessionId; readonly activity: readonly SessionActivity[]; };\n    'workspace/move-invalid': { readonly workspaceId: WorkspaceId; readonly sessionId: SessionId; readonly beforeSessionId?: SessionId; };\n    'directory-picker/unavailable': { readonly capability: string; };\n    'directory-picker/unreadable': { readonly path: string; };\n    'directory-picker/exists': { readonly path: string; };\n    'directory-picker/create-failed': { readonly path: string; };\n    'workspace-file/watch-unsupported': { readonly path: string; };\n    'workspace-file/not-found': { readonly path: string; };\n    'workspace-file/outside-workspace': { readonly path: string; };\n    'workspace-file/too-large': { readonly path: string; readonly limit: number; };\n    'workspace-file/not-text': { readonly path: string; };\n    'workspace-file/not-regular-file': { readonly path: string; readonly kind: 'directory' | 'symlink' | 'other'; };\n    'workspace-file/not-directory': { readonly path: string; readonly kind: 'file' | 'symlink' | 'other'; };\n    'gateway/ambiguous-endpoint': TypertGatewayFaultDetails;\n    'gateway/arguments-invalid': TypertGatewayFaultDetails;\n    'gateway/binding-invalid': TypertGatewayFaultDetails;\n    'gateway/context-failed': TypertGatewayFaultDetails;\n    'gateway/context-not-found': TypertGatewayFaultDetails;\n    'gateway/context-unavailable': TypertGatewayFaultDetails;\n    'gateway/definition-unavailable': TypertGatewayFaultDetails;\n    'gateway/input-invalid': TypertGatewayFaultDetails;\n    'gateway/invocation-unavailable': TypertGatewayFaultDetails;\n    'gateway/lookup-failed': TypertGatewayFaultDetails;\n    'gateway/lookup-not-found': TypertGatewayFaultDetails;\n    'gateway/lookup-unavailable': TypertGatewayFaultDetails;\n    'gateway/method-unavailable': TypertGatewayFaultDetails;\n    'gateway/protocol': TypertGatewayFaultDetails;\n    'gateway/provider-mismatch': TypertGatewayFaultDetails;\n    'gateway/result-invalid': TypertGatewayFaultDetails;\n    'gateway/service-unavailable': TypertGatewayFaultDetails;\n    'gateway/signature-invalid': TypertGatewayFaultDetails;\n    'gateway/uplink-overflow': TypertGatewayFaultDetails;\n    'speech/invalid-audio': { readonly reason: string; };\n    'speech/transcription-failed': { readonly reason: string; };\n    'document-render/failed': { readonly reason: OfficeToPdfErrorCode; };\n}"
           },
           {
             "name": "ReplayEnvelope",
@@ -1921,7 +2054,7 @@ export const TYPERT = {
           },
           {
             "name": "Session",
-            "declaration": "export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    readonly firstLifecycleSeq: SessionLogOffset;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent<T>] : [opts?: LyteboatAppendOptions]): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    toolHistory(): ToolHistory;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionEvent): Message | null;\n}"
+            "declaration": "export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    readonly firstLifecycleSeq: SessionLogOffset;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent<T>] : []): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    toolHistory(): ToolHistory;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionEvent): Message | null;\n}"
           },
           {
             "name": "SessionActivity",
@@ -1997,7 +2130,7 @@ export const TYPERT = {
           },
           {
             "name": "SessionEventMap",
-            "declaration": "export interface SessionEventMap {\n    'turn/start': { turn: number; };\n    'turn/end': { turn: number; reason: TurnEndReason; };\n    'step/start': { turn: number; step: number; };\n    'step/end': { turn: number; step: number; };\n    'user/message': UserMessage;\n    'developer/message': { turn: number; step: number; message: DeveloperMessage; headerSeq?: SessionSeq; };\n    'system/message': { turn: number; step: number; message: SystemMessage; };\n    'assistant/message': { turn: number; step: number; message: AssistantMessage; stream: AssistantStreamRecord[]; usage?: TokenUsage; interrupted?: true; };\n    'assistant/attempt': { turn: number; step: number; stream: AssistantStreamRecord[]; };\n    'tool/call': { turn: number; step: number; callId: ToolCallId; name: string; arguments: string; };\n    'tool/result': { turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; reason?: string; }; meta?: JsonValue; };\n    'request/header': { header: EpochHeader; reason: RequestHeaderReason; startsSeries?: true; };\n    'request/context': RequestContext;\n    'session/end-seed': { inherited?: true; };\n    'agent/inbox/spliced': { target: InboxTarget; start: number; removedCount?: number; inserted: UserMessage[]; outcome?: 'canceled'; };\n    'sandbox/mode': { mode: SandboxMode; source?: 'delegation'; };\n    'approval/asked': { id: ApprovalRequestId; toolName: string; callId?: ToolCallId; reason?: string; };\n    'approval/decided': { id: ApprovalRequestId; outcome: ApprovalOutcome; };\n    'approval/policy': { policy: ApprovalPolicy; source?: 'delegation'; };\n    'tool/ptc-dispatch-start': PtcDispatchStartEventData;\n    'tool/ptc-dispatch': PtcDispatchEventData;\n    'agent-preset/selected': { agentPreset: string; };\n    'command/run': { commandId: CommandId; name: string; args?: string; source: CommandSource; };\n    'command/done': { commandId: CommandId; kind: 'success' | 'error'; text?: string; sourceEventSeq?: import('@deepseek-ai/dsh-session/types').SessionSeq; };\n    'image/offload': { targets: ImageOffloadTarget[]; };\n    'session/title': SessionTitleEventData;\n    'todo/write': { todos: TodoItem[]; };\n    'model/selection': ModelSelection;\n    'subagent/descriptor': SubagentDescriptorData;\n    'permission/preset': { preset: string; };\n    'subagent/catalog': SubagentCatalogEvent;\n    'feedback/record': FeedbackRecord;\n    'goal/change': GoalChangeMeta;\n    'feedback/message-put': MessageFeedbackPut;\n    'feedback/message-delete': MessageFeedbackDelete;\n    'schedule/change': ScheduleChange;\n    'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; };\n    'compaction/summary': { compactionId: CompactionId; sourceCommandId?: CommandId; summary: ContentBlock[]; shadowedRange: { start: SessionSeq; end: SessionSeq; }; shadowedSeqs: SessionSeq[]; shadowedTokenCount: number; provider: string; model: string; maxTokens?: number; usage?: TokenUsage; } & ({ rawOutput: ContentBlock[]; llmStreamCall: true; } | { rawOutput?: ContentBlock[]; llmStreamCall?: never; });\n    'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; };\n    'compaction/prune': { shadowedRange: { start: SessionSeq; end: SessionSeq; }; shadowedSeqs: SessionSeq[]; shadowedTokenCount: number; };\n}"
+            "declaration": "export interface SessionEventMap {\n    'turn/start': { turn: number; };\n    'turn/end': { turn: number; reason: TurnEndReason; };\n    'step/start': { turn: number; step: number; };\n    'step/end': { turn: number; step: number; };\n    'user/message': UserMessage;\n    'developer/message': { turn: number; step: number; message: DeveloperMessage; headerSeq?: SessionSeq; };\n    'system/message': { turn: number; step: number; message: SystemMessage; };\n    'assistant/message': { turn: number; step: number; message: AssistantMessage; stream: AssistantStreamRecord[]; usage?: TokenUsage; interrupted?: true; };\n    'assistant/attempt': { turn: number; step: number; stream: AssistantStreamRecord[]; };\n    'tool/call': { turn: number; step: number; callId: ToolCallId; name: string; arguments: string; };\n    'tool/result': { turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; reason?: string; }; meta?: JsonValue; };\n    'request/header': { header: EpochHeader; reason: RequestHeaderReason; startsSeries?: true; };\n    'request/context': RequestContext;\n    'session/end-seed': { inherited?: true; };\n    'agent/inbox/spliced': { target: InboxTarget; start: number; removedCount?: number; inserted: UserMessage[]; outcome?: 'canceled'; };\n    'sandbox/mode': { mode: SandboxMode; source?: 'delegation'; };\n    'approval/asked': { id: ApprovalRequestId; toolName: string; callId?: ToolCallId; reason?: string; };\n    'approval/decided': { id: ApprovalRequestId; outcome: ApprovalOutcome; };\n    'approval/policy': { policy: ApprovalPolicy; source?: 'delegation'; };\n    'tool/ptc-dispatch-start': PtcDispatchStartEventData;\n    'tool/ptc-dispatch': PtcDispatchEventData;\n    'agent-preset/selected': { agentPreset: string; };\n    'command/run': { commandId: CommandId; name: string; args?: string; source: CommandSource; };\n    'command/done': { commandId: CommandId; kind: 'success' | 'error'; text?: string; sourceEventSeq?: import('@deepseek-ai/dsh-session/types').SessionSeq; };\n    'image/offload': { targets: ImageOffloadTarget[]; };\n    'session/title': SessionTitleEventData;\n    'todo/write': { todos: TodoItem[]; };\n    'model/selection': ModelSelection;\n    'subagent/descriptor': SubagentDescriptorData;\n    'permission/preset': { preset: string; };\n    'subagent/catalog': SubagentCatalogEvent;\n    'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; };\n    'compaction/summary': { compactionId: CompactionId; sourceCommandId?: CommandId; summary: ContentBlock[]; shadowedRange: { start: SessionSeq; end: SessionSeq; }; shadowedSeqs: SessionSeq[]; shadowedTokenCount: number; provider: string; model: string; maxTokens?: number; usage?: TokenUsage; } & ({ rawOutput: ContentBlock[]; llmStreamCall: true; } | { rawOutput?: ContentBlock[]; llmStreamCall?: never; });\n    'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; };\n    'compaction/prune': { shadowedRange: { start: SessionSeq; end: SessionSeq; }; shadowedSeqs: SessionSeq[]; shadowedTokenCount: number; };\n    'feedback/record': FeedbackRecord;\n    'goal/change': GoalChangeMeta;\n    'feedback/message-put': MessageFeedbackPut;\n    'feedback/message-delete': MessageFeedbackDelete;\n    'schedule/change': ScheduleChange;\n}"
           },
           {
             "name": "SessionEventType",
@@ -2077,7 +2210,7 @@ export const TYPERT = {
           },
           {
             "name": "SessionProjectionMap",
-            "declaration": "export interface SessionProjectionMap {\n    inbox: InboxWireState;\n    agentPreset: string | null;\n    title: string | null;\n    todos: TodoItem[] | null;\n    sessionListMetadata: SessionListMetadata;\n    imageLimits: ImageAttachmentLimits;\n    modelSelection: ModelSelectionProjection;\n    permissions: PermissionSelection;\n    subagentCatalog: SubagentCatalogEntry[];\n    subagentTiming: SubagentTimingProjection;\n    subagent: SubagentIdentityProjection | null;\n    goal: GoalProjection | null;\n}"
+            "declaration": "export interface SessionProjectionMap {\n    inbox: InboxWireState;\n    agentPreset: string | null;\n    title: string | null;\n    todos: TodoItem[] | null;\n    sessionListMetadata: SessionListMetadata;\n    imageLimits: ImageAttachmentLimits;\n    modelSelection: ModelSelectionProjection;\n    permissions: PermissionSelection;\n    subagentCatalog: SubagentCatalogEntry[];\n    subagentTiming: SubagentTimingProjection;\n    subagent: SubagentIdentityProjection | null;\n    goal: GoalProjection | null;\n    userQuestions: UserQuestionProjectionView;\n}"
           },
           {
             "name": "SessionProjectionsRequest",
@@ -2101,7 +2234,7 @@ export const TYPERT = {
           },
           {
             "name": "SessionPromptRequest",
-            "declaration": "export interface SessionPromptRequest {\n    readonly requestId: SessionRequestId;\n    readonly sessionId: SessionId;\n    readonly mode: 'queue' | 'steer';\n    readonly content: readonly PromptContentPart[];\n    readonly clientTimeZone?: string;\n    readonly sourceFields?: { readonly [key: string]: JsonValue; };\n}"
+            "declaration": "export interface SessionPromptRequest {\n    readonly requestId: SessionRequestId;\n    readonly sessionId: SessionId;\n    readonly mode: 'queue' | 'steer';\n    readonly content: readonly PromptContentPart[];\n    readonly clientTimeZone?: string;\n}"
           },
           {
             "name": "SessionPromptValue",
@@ -2198,6 +2331,10 @@ export const TYPERT = {
           {
             "name": "SessionWorkspacePathApplication",
             "declaration": "export type SessionWorkspacePathApplication = NativeFileApplication;"
+          },
+          {
+            "name": "SettledUserQuestion",
+            "declaration": "export interface SettledUserQuestion {\n    readonly callId: ToolCallId;\n    readonly answers: readonly AskUserQuestionAnswerItem[];\n}"
           },
           {
             "name": "SkillInvocationSource",
@@ -2320,8 +2457,20 @@ export const TYPERT = {
             "declaration": "export interface TurnEndReasonMap {\n    completed: { kind: 'completed'; };\n    aborted: { kind: 'aborted'; reason: TurnEndCancelCause; };\n    blocked: { kind: 'blocked'; };\n    error: { kind: 'error'; error: LlmFailure; };\n    'max-tokens': { kind: 'max-tokens'; };\n    interrupted: { kind: 'interrupted'; };\n    forked: { kind: 'forked'; };\n}"
           },
           {
+            "name": "TypertGatewayFaultDetails",
+            "declaration": "export interface TypertGatewayFaultDetails {\n    readonly endpoint: string;\n    readonly field?: string;\n}"
+          },
+          {
             "name": "UserMessage",
             "declaration": "export interface UserMessage extends MessageBase {\n    readonly role: 'user';\n}"
+          },
+          {
+            "name": "UserQuestionProjectionView",
+            "declaration": "export interface UserQuestionProjectionView {\n    readonly active: readonly PendingUserQuestion[];\n    readonly settled: readonly SettledUserQuestion[];\n}"
+          },
+          {
+            "name": "UserQuestionState",
+            "declaration": "export type UserQuestionState = 'open' | 'continued';"
           },
           {
             "name": "WorkspaceId",
@@ -2603,10 +2752,6 @@ export const TYPERT = {
             "declaration": "export interface LlmFailure {\n    readonly message: string;\n    readonly code: string;\n    readonly status?: number;\n    readonly providerRetryAfterMs?: number;\n    readonly requestId?: ProviderRequestId;\n    readonly offloadImages?: number;\n}"
           },
           {
-            "name": "LyteboatAppendOptions",
-            "declaration": "export interface LyteboatAppendOptions {\n    readonly ignorable: true;\n}"
-          },
-          {
             "name": "Message",
             "declaration": "export type Message = MessageRoleMap[keyof MessageRoleMap];"
           },
@@ -2648,7 +2793,7 @@ export const TYPERT = {
           },
           {
             "name": "MessageSourceMap",
-            "declaration": "export interface MessageSourceMap {\n    user: { kind: 'user'; };\n    model: ModelMessageSource;\n    tool: ToolMessageSource;\n    'system-prompt': SystemPromptMessageSource;\n    'model-selection': { kind: 'model-selection'; } & ContextFormed;\n    'user-approval': { kind: 'user-approval'; } & ContextFormed;\n    'ptc-mode': { kind: 'ptc-mode'; };\n    'tool-registry': { kind: 'tool-registry'; };\n    'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; };\n    'agent-message': AgentMessageSource;\n    'subagent-settled': SubagentSettledMessageSource;\n    'skill-invocation': SkillInvocationSource;\n    'cordis-host-runner': { kind: 'cordis-host-runner'; };\n    goal: GoalMessageSource;\n    schedule: { kind: 'schedule'; } & ContextFormed;\n    'compact-checkpoint': CompactionCheckpointSource;\n    'session-reference': SessionReferenceSource;\n}"
+            "declaration": "export interface MessageSourceMap {\n    user: { kind: 'user'; };\n    model: ModelMessageSource;\n    tool: ToolMessageSource;\n    'system-prompt': SystemPromptMessageSource;\n    'model-selection': { kind: 'model-selection'; } & ContextFormed;\n    'user-approval': { kind: 'user-approval'; } & ContextFormed;\n    'ptc-mode': { kind: 'ptc-mode'; };\n    'tool-registry': { kind: 'tool-registry'; };\n    'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; };\n    'agent-message': AgentMessageSource;\n    'subagent-settled': SubagentSettledMessageSource;\n    'skill-invocation': SkillInvocationSource;\n    'cordis-host-runner': { kind: 'cordis-host-runner'; };\n    goal: GoalMessageSource;\n    schedule: { kind: 'schedule'; } & ContextFormed;\n    'compact-checkpoint': CompactionCheckpointSource;\n    'session-reference': SessionReferenceSource;\n    'user-question-reply': { kind: 'user-question-reply'; callId: ToolCallId; outcome: 'answered'; };\n}"
           },
           {
             "name": "ModelMessageSource",
@@ -2728,7 +2873,7 @@ export const TYPERT = {
           },
           {
             "name": "Session",
-            "declaration": "export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    readonly firstLifecycleSeq: SessionLogOffset;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent<T>] : [opts?: LyteboatAppendOptions]): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    toolHistory(): ToolHistory;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionEvent): Message | null;\n}"
+            "declaration": "export class Session {\n    get surface(): SessionSurface;\n    readonly header: SessionHeader;\n    readonly inheritedEventCount: SessionLogOffset;\n    get id(): SessionId;\n    readonly firstLiveSeq: SessionLogOffset;\n    readonly firstLifecycleSeq: SessionLogOffset;\n    eventAt(seq: SessionSeq): SessionEvent | undefined;\n    snapshotEvents(fromSeq: SessionLogOffset = SessionLogOffset(0), toSeqExclusive: SessionLogOffset = this.seq): readonly SessionEvent[];\n    ownEvents(): readonly SessionEvent[];\n    isOwnSeq(seq: SessionSeq): boolean;\n    get seq(): SessionLogOffset;\n    append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [opts: SurfaceIntent<T>] : []): SessionEvent<T>;\n    requestHeader(): EpochHeader | undefined;\n    requestContext(): RequestContext | undefined;\n    toolHistory(): ToolHistory;\n    deriveMessages(): Message[];\n    deriveEventMessage(event: SessionEvent): Message | null;\n}"
           },
           {
             "name": "SessionEvent",
@@ -2736,7 +2881,7 @@ export const TYPERT = {
           },
           {
             "name": "SessionEventMap",
-            "declaration": "export interface SessionEventMap {\n    'turn/start': { turn: number; };\n    'turn/end': { turn: number; reason: TurnEndReason; };\n    'step/start': { turn: number; step: number; };\n    'step/end': { turn: number; step: number; };\n    'user/message': UserMessage;\n    'developer/message': { turn: number; step: number; message: DeveloperMessage; headerSeq?: SessionSeq; };\n    'system/message': { turn: number; step: number; message: SystemMessage; };\n    'assistant/message': { turn: number; step: number; message: AssistantMessage; stream: AssistantStreamRecord[]; usage?: TokenUsage; interrupted?: true; };\n    'assistant/attempt': { turn: number; step: number; stream: AssistantStreamRecord[]; };\n    'tool/call': { turn: number; step: number; callId: ToolCallId; name: string; arguments: string; };\n    'tool/result': { turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; reason?: string; }; meta?: JsonValue; };\n    'request/header': { header: EpochHeader; reason: RequestHeaderReason; startsSeries?: true; };\n    'request/context': RequestContext;\n    'session/end-seed': { inherited?: true; };\n    'agent/inbox/spliced': { target: InboxTarget; start: number; removedCount?: number; inserted: UserMessage[]; outcome?: 'canceled'; };\n    'sandbox/mode': { mode: SandboxMode; source?: 'delegation'; };\n    'approval/asked': { id: ApprovalRequestId; toolName: string; callId?: ToolCallId; reason?: string; };\n    'approval/decided': { id: ApprovalRequestId; outcome: ApprovalOutcome; };\n    'approval/policy': { policy: ApprovalPolicy; source?: 'delegation'; };\n    'tool/ptc-dispatch-start': PtcDispatchStartEventData;\n    'tool/ptc-dispatch': PtcDispatchEventData;\n    'agent-preset/selected': { agentPreset: string; };\n    'command/run': { commandId: CommandId; name: string; args?: string; source: CommandSource; };\n    'command/done': { commandId: CommandId; kind: 'success' | 'error'; text?: string; sourceEventSeq?: import('@deepseek-ai/dsh-session/types').SessionSeq; };\n    'image/offload': { targets: ImageOffloadTarget[]; };\n    'session/title': SessionTitleEventData;\n    'todo/write': { todos: TodoItem[]; };\n    'model/selection': ModelSelection;\n    'subagent/descriptor': SubagentDescriptorData;\n    'permission/preset': { preset: string; };\n    'subagent/catalog': SubagentCatalogEvent;\n    'feedback/record': FeedbackRecord;\n    'goal/change': GoalChangeMeta;\n    'feedback/message-put': MessageFeedbackPut;\n    'feedback/message-delete': MessageFeedbackDelete;\n    'schedule/change': ScheduleChange;\n    'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; };\n    'compaction/summary': { compactionId: CompactionId; sourceCommandId?: CommandId; summary: ContentBlock[]; shadowedRange: { start: SessionSeq; end: SessionSeq; }; shadowedSeqs: SessionSeq[]; shadowedTokenCount: number; provider: string; model: string; maxTokens?: number; usage?: TokenUsage; } & ({ rawOutput: ContentBlock[]; llmStreamCall: true; } | { rawOutput?: ContentBlock[]; llmStreamCall?: never; });\n    'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; };\n    'compaction/prune': { shadowedRange: { start: SessionSeq; end: SessionSeq; }; shadowedSeqs: SessionSeq[]; shadowedTokenCount: number; };\n}"
+            "declaration": "export interface SessionEventMap {\n    'turn/start': { turn: number; };\n    'turn/end': { turn: number; reason: TurnEndReason; };\n    'step/start': { turn: number; step: number; };\n    'step/end': { turn: number; step: number; };\n    'user/message': UserMessage;\n    'developer/message': { turn: number; step: number; message: DeveloperMessage; headerSeq?: SessionSeq; };\n    'system/message': { turn: number; step: number; message: SystemMessage; };\n    'assistant/message': { turn: number; step: number; message: AssistantMessage; stream: AssistantStreamRecord[]; usage?: TokenUsage; interrupted?: true; };\n    'assistant/attempt': { turn: number; step: number; stream: AssistantStreamRecord[]; };\n    'tool/call': { turn: number; step: number; callId: ToolCallId; name: string; arguments: string; };\n    'tool/result': { turn: number; step: number; message: ToolResultMessage; error?: { name: string; code: string; reason?: string; }; meta?: JsonValue; };\n    'request/header': { header: EpochHeader; reason: RequestHeaderReason; startsSeries?: true; };\n    'request/context': RequestContext;\n    'session/end-seed': { inherited?: true; };\n    'agent/inbox/spliced': { target: InboxTarget; start: number; removedCount?: number; inserted: UserMessage[]; outcome?: 'canceled'; };\n    'sandbox/mode': { mode: SandboxMode; source?: 'delegation'; };\n    'approval/asked': { id: ApprovalRequestId; toolName: string; callId?: ToolCallId; reason?: string; };\n    'approval/decided': { id: ApprovalRequestId; outcome: ApprovalOutcome; };\n    'approval/policy': { policy: ApprovalPolicy; source?: 'delegation'; };\n    'tool/ptc-dispatch-start': PtcDispatchStartEventData;\n    'tool/ptc-dispatch': PtcDispatchEventData;\n    'agent-preset/selected': { agentPreset: string; };\n    'command/run': { commandId: CommandId; name: string; args?: string; source: CommandSource; };\n    'command/done': { commandId: CommandId; kind: 'success' | 'error'; text?: string; sourceEventSeq?: import('@deepseek-ai/dsh-session/types').SessionSeq; };\n    'image/offload': { targets: ImageOffloadTarget[]; };\n    'session/title': SessionTitleEventData;\n    'todo/write': { todos: TodoItem[]; };\n    'model/selection': ModelSelection;\n    'subagent/descriptor': SubagentDescriptorData;\n    'permission/preset': { preset: string; };\n    'subagent/catalog': SubagentCatalogEvent;\n    'compaction/start': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; };\n    'compaction/summary': { compactionId: CompactionId; sourceCommandId?: CommandId; summary: ContentBlock[]; shadowedRange: { start: SessionSeq; end: SessionSeq; }; shadowedSeqs: SessionSeq[]; shadowedTokenCount: number; provider: string; model: string; maxTokens?: number; usage?: TokenUsage; } & ({ rawOutput: ContentBlock[]; llmStreamCall: true; } | { rawOutput?: ContentBlock[]; llmStreamCall?: never; });\n    'compaction/end': { compactionId: CompactionId; sourceCommandId?: CommandId; turn: number | null; error?: string; };\n    'compaction/prune': { shadowedRange: { start: SessionSeq; end: SessionSeq; }; shadowedSeqs: SessionSeq[]; shadowedTokenCount: number; };\n    'feedback/record': FeedbackRecord;\n    'goal/change': GoalChangeMeta;\n    'feedback/message-put': MessageFeedbackPut;\n    'feedback/message-delete': MessageFeedbackDelete;\n    'schedule/change': ScheduleChange;\n}"
           },
           {
             "name": "SessionEventType",

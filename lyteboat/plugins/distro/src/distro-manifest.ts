@@ -9,7 +9,7 @@
 import type { LyteboatDistroExtension } from '@lyteboat/contracts'
 
 /** The dsh release the kernel was imported from. */
-export const DSH_BASE = '0.1.7-rc.2'
+export const DSH_BASE = '0.2.0-rc.2'
 
 /** Every kernel extension this build carries. */
 export const DISTRO_EXTENSIONS: readonly LyteboatDistroExtension[] = Object.freeze([
