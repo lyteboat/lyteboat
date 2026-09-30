@@ -7,7 +7,8 @@
  * skills and their diagnostics, the pages are served at /studio, and neither
  * /chat nor dsh's session channel is served. An admin's hot-fix of a released
  * agent's skill (on a copy of it) is saved, audited, and shows the agent
- * deviating from its release. The sessions serve records from /chat are
+ * deviating from its release; an agent directory that appears under that
+ * root is served without a restart. The sessions serve records from /chat are
  * listed, searched, and shown by a Studio on the same home, which leaves them
  * as they were. An admin starts an agent's eval cases from the Studio as a
  * `lyteboat eval` process of the built launcher, replays that run, compares
@@ -189,6 +190,7 @@ describe('a skill hot-fix in lyteboat studio (in process)', () => {
   let studio: RunningComposition
   let origin: string
   let home: string
+  let agents: string
   let skillFile: string
   let released: string
 
@@ -197,7 +199,7 @@ describe('a skill hot-fix in lyteboat studio (in process)', () => {
     home = run.home
     addStudioAccounts(run.home)
     // A copy the hot-fix may rewrite; its rows resolve their packages from the repository's modules.
-    const agents = join(scratch.root, 'agents')
+    agents = join(scratch.root, 'agents')
     cpSync(join(AGENTS, 'desk'), join(agents, 'desk'), { recursive: true })
     symlinkSync(WORKSPACE_MODULES, join(scratch.root, 'node_modules'))
     skillFile = join(agents, 'desk', 'skills', 'quote-lookup', 'SKILL.md')
@@ -235,6 +237,17 @@ describe('a skill hot-fix in lyteboat studio (in process)', () => {
     expect(radar.body).toMatchObject({ agents: [{ id: 'desk', deviates: true }] })
     const audit = readJsonLines<Record<string, unknown>>(join(home, 'studio', 'audit.jsonl'))
     expect(audit.filter(line => line['action'] === 'skill.update')).toEqual([{ time: expect.any(Number), actor: 'root', action: 'skill.update', agentId: 'desk', skill: 'quote-lookup', path: join('skills', 'quote-lookup', 'SKILL.md'), before: before.sha256, after }])
+  })
+
+  it('serves an agent directory that appears under a root, without a restart', async () => {
+    const viewer = await studioLogin(origin, 'vera', 'pw-vera')
+
+    cpSync(join(AGENTS, 'helper'), join(agents, 'helper'), { recursive: true })
+
+    await vi.waitFor(async () => {
+      const radar = await studioCall(origin, 'GET', 'agents', { token: viewer })
+      expect((radar.body['agents'] as { id: string }[]).map(agent => agent.id)).toEqual(['desk', 'helper'])
+    }, { timeout: 15_000, interval: 200 })
   })
 })
 
