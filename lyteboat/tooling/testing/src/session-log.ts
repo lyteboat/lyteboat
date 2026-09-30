@@ -3,7 +3,7 @@
  * running harness: every lyteboat test that inspects a stored log, and the
  * compatibility gates' log comparisons, decode logs through this one module.
  *
- * `scanZstdFrames` is adapted from deepseek-ai/deepseek-harness
+ * `scanZstdFrames`: Adapted from deepseek-ai/deepseek-harness
  * packages/session/session-persistence-jsonl/src/zstd.ts @ dsh-v0.2.0-rc.2
  * (639ed015), MIT — see THIRD_PARTY_NOTICES.md, without its `maxFrames`
  * limit. The jsonl backend writes one Zstandard frame per flushed batch;

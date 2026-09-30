@@ -1,10 +1,10 @@
 /**
  * lyteboat adaptation: upstream's settings spec imports `liveConfig` from another
  * package's tests (`packages/settings/settings/tests/live-config.ts`), which no
- * published package ships. This is that helper, copied from
- * deepseek-ai/deepseek-harness @ dsh-v0.2.0-rc.2 (639ed015), MIT: mount a
- * plugin behind a Loader and edit its raw configuration the way profile
- * reconciliation does.
+ * published package ships. This is that helper: mount a plugin behind a Loader
+ * and edit its raw configuration the way profile reconciliation does.
+ * Adapted from deepseek-ai/deepseek-harness @ dsh-v0.2.0-rc.2 (639ed015), MIT,
+ * without the `omitsGeneratedPage` helper, which the ported specs do not use.
  */
 import { Context, resolveConfig, type Plugin } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'

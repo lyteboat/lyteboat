@@ -11,7 +11,7 @@
  * module the composition names by a relative path whose default export is a
  * definition, names the agent.
  *
- * The discovery is adapted from deepseek-ai/deepseek-harness
+ * The discovery: Adapted from deepseek-ai/deepseek-harness
  * packages/preset/agent-presets/src/discovery.ts @ dsh-v0.1.5-alpha.2
  * (b2e3b2a0), MIT — see THIRD_PARTY_NOTICES.md. Differences: a directory's id
  * must be unique across the roots; the manifest is lyteboat's and a malformed

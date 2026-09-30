@@ -45,7 +45,7 @@ packageExtensions:
       "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2"
       "@deepseek-ai/dsh-tools": "0.2.0-rc.2"
 
-# An agent directory (`lyteboat headless --agents`) names its rows by bare package name, and they
+# An agent directory (`lyteboat try --agents`) names its rows by bare package name, and they
 # resolve from the agent directory upward; the composition tests resolve rows from the
 # workspace root. Under pnpm's isolated layout both only reach the dsh and lyteboat packages
 # at the root node_modules, so every @deepseek-ai and @lyteboat package is hoisted there. All

@@ -9,8 +9,8 @@ lyteboat's changes as commits on top; `src/lyteboat/` and `tests/lyteboat/` insi
 own. Files elsewhere marked "Adapted from deepseek-ai/deepseek-harness" (or "Modeled on") in their
 header are derived from the same repository at dsh-v0.2.0-rc.2 (commit 639ed015), the tag their
 header names, except `lyteboat/plugins/agent-catalog/src/agent-directory.ts`: it is adapted from
-packages/preset/agent-presets/src/discovery.ts and metadata.ts at dsh-v0.1.5-alpha.2 (commit
-b2e3b2a0), files dsh-v0.2.0-rc.2 does not carry.
+packages/preset/agent-presets/src/discovery.ts at dsh-v0.1.5-alpha.2 (commit b2e3b2a0), a file
+dsh-v0.2.0-rc.2 does not carry.
 
 ```
 MIT License

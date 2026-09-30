@@ -140,7 +140,7 @@ export class EvalRecordsService extends Service {
     return { runId, dir, ...record === undefined ? {} : { record }, modifiedAt: Math.round(statSync(dir).mtimeMs) }
   }
 
-  /** A run's `run.json`, reread only when it changes; one the schema refuses (an older format) is none. */
+  /** A run's `run.json`, reread only when it changes; one the schema refuses (another build's, or damaged) is none. */
   private record(runId: string, file: string): EvalRunRecord | undefined {
     if (!existsSync(file)) return undefined
     const { mtimeMs, size } = statSync(file)

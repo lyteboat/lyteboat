@@ -198,6 +198,7 @@ $ xargs -a $SCRATCH/kernel-links.txt -n1 readlink -f | grep -vc "^$PWD/dsh/"
   - `tsconfig.json` 的 references 只保留内核内的包。
 - **第一个导入是整段历史的根。** 在还没有任何提交的仓库里（unborn `HEAD`）运行 `dist:import`，它写出一个没有父提交的导入提交，并提示用 `git switch -c <分支> <导入提交>` 从它开出分支。lyteboat 的一切提交都在这个根之上。
 - **之后的每个导入以上一个导入为父提交**（按 `Dist-Import` trailer 找到），不挂在任何分支上；分支用 `git merge --no-ff` 把它合进来。于是下一次同步就是一次普通的三方合并：上一个 tag、新 tag、lyteboat 的提交。
+- **导入提交的信息由工具写**：标题 `dist(import): dsh-v<版本> kernel`，trailer `Dist-Import`、`Dist-Upstream-Commit`。它的树是 tag 的，不是谁的改动，所以不带 `Co-authored-by` 等署名 trailer（`CLAUDE.md`「Unattended runs」）；要加时用 `--trailer "Key: value"`。
 
 **实现** 在 `scripts/dist/import-upstream.ts`：
 
@@ -336,7 +337,7 @@ flowchart TD
   git diff --stat $T <合并> -- $(node -p "Object.values(require('./dsh/kernel.json').packages).map(d => 'dsh/' + d + '/').join(' ')")
   ```
 
-  最后一条没有输出，说明合并自带的改动都在内核包目录之外。
+  最后一条没有输出，说明合并自带的改动都在内核包目录之外。合并时有内核文件冲突的，`merge-tree` 算出的树里这些文件带着冲突标记，所以它们总会出现在输出里；对它们另跑 `git diff --stat <合并>^2 <合并> -- <文件>`，没有输出就说明合并取的是导入的版本（同步合并只能这样解决内核冲突，lyteboat 的改动另用分类提交带上）。
 - **浅克隆**。它打印 `delta report: no Dist-Import commit in this shallow clone's history; skipped (fetch more history to report)` 后以 0 退出（`main`）。CI 的默认 checkout 就是浅克隆，所以这项检查不在 CI 里生效（§6.2）。
 
 不带 `--check` 时，`pnpm run dist:delta` 打印一份 Markdown 报告（`report`）：逐包的"上游文件里的改动（文件数、+/−）"与"lyteboat 自有模块（`src/lyteboat/`、`tests/lyteboat/`）"、按类别的提交数、最早的差量日期；逐个提交的类别、扩展、`Dist-Exit`；以及登记表。同步时看的就是 `Dist-Exit` 那一列。
@@ -604,7 +605,7 @@ stateDiagram-v2
 3. 两者都不满足时，构建抛错，提示去跑 `pnpm run dist:overlay <checkout> typert --write`。
 4. `--write` 在上游 checkout 里用 lyteboat 的源码重新生成文件，并把摘要写进 `dsh/typert.json`（`scripts/dist/overlay.ts` `typert`）。
 
-14 个内核包里发布 Typert 文件的有两个：dsh-llm 和 dsh-api-session-controller，各 4 个（`lib/typert.host.*`、`lib/typert.remote-client.*`）。lyteboat 没有改这两个包的源码，但 session-controller 的 Host face 还带着它引用的内核类型：扩展 `session-append-ignorable` 放宽了 `Session.append`，上游生成器从 lyteboat 源码生成的 `lib/typert.host.js` 因此与发布的不同。晋升后用 `--write` 重新生成，以 `Dist-Change: build` 提交，`dsh/typert.json` 记下两个包的摘要。
+14 个内核包里发布 Typert 文件的有两个：dsh-llm 和 dsh-api-session-controller，各 4 个（`lib/typert.host.*`、`lib/typert.remote-client.*`）。dsh-llm 的源码和导入的一样，它的 Typert 文件就是发布的那份。session-controller 不一样：它的源码带着扩展 `session-controller-prompt-source` 的钩子（`commands.ts`、`types.ts`、`src/lyteboat/prompt-source.ts`），Host face 还引用扩展 `session-append-ignorable` 放宽了的 `Session.append`，所以上游生成器从 lyteboat 源码生成的 `lib/typert.host.js` 和 `lib/typert.remote-client.js` 都与发布的不同。晋升之后，以及每次导入换掉了这两个文件的同步之后，都用 `--write` 重新生成，以 `Dist-Change: build` 单独提交（§7 第 6、10 步），`dsh/typert.json` 记下两个包的摘要。
 
 第 2 条的摘要只算包自己的 `src/`：别的内核包改了它引用的类型，构建察觉不到，只有 `dist:overlay … typert` 能发现。
 
@@ -865,7 +866,7 @@ node lyteboat/apps/cli/lib/bin.js config dump --profile try > $SCRATCH/dump.yml 
    - `catalogs.dsh` / `catalogs.cordis`：上游删掉的包，换成 dsh 自己的 bundle 组合用的继任者；保证 `lyteboat/apps/cli` 的依赖闭包是 dsh `apps/cli` 的超集；
    - `minimumReleaseAgeExclude`：新版本（以及它新依赖的包）发布不到一天时，按精确版本列进去（§8.5）；
    - 重新生成 distro manifest：`node --import tsx scripts/dist/gen-distro-manifest.ts`，`DSH_BASE` 随 `dsh.upstream.json` 变。
-6. **重装并跑检查。** lockfile 还指向跟踪版本，而新列表已经不再豁免它，所以这一次重新解析的安装要加 `--config.minimum-release-age=0`；然后再做一次干净的 `--frozen-lockfile` 安装，证明提交进仓库的设置本身够用：
+6. **重装并跑检查。** lockfile 还指向跟踪版本，而新列表已经不再豁免它，所以这一次重新解析的安装要加 `--config.minimum-release-age=0`；然后再做一次干净的 `--frozen-lockfile` 安装，证明提交进仓库的设置本身够用。导入换掉了 session-controller 的 Typert 文件时（§5.3），合并取的是导入的版本，完整克隆的构建会停在 `checkTypert`：先跑 `pnpm run dist:overlay <checkout> typert --write` 重新生成（第 5 步改完版本钉之后 checkout 才满足它的前提），再跑检查。重新生成的文件不进合并提交，第 10 步单独提交：
 
    ```sh
    rm -rf node_modules lyteboat/*/*/node_modules dsh/*/*/node_modules && pnpm install --config.minimum-release-age=0
@@ -879,7 +880,7 @@ node lyteboat/apps/cli/lib/bin.js config dump --profile try > $SCRATCH/dump.yml 
    - 金丝雀：跟踪版本变了就按 §6.7 重选；在官方新版本上坏了的替换掉；
    - `COMPAT.md` 里写着跟踪版本的地方、README、`CLAUDE.md` 的 Stack 一行、本文；
    - 从 dsh 改编来的文件保留 `Adapted from deepseek-ai/deepseek-harness` 文件头，`THIRD_PARTY_NOTICES.md` 按这个文件头列出它们。
-10. **验证准入，提交。** 用构建好的 launcher 跑 `node lyteboat/apps/cli/lib/bin.js config dump --profile try 2> $SCRATCH/dump.err`，`dump.err` 里不能有 `disabling profile plugin` 或 `skipping profile bundle`（§8.2）。stdout 里本来就有一批 `disabled: true`：dsh-base 的 `tool-plugin-manager`、`skill-badge`、`tool-ralph`，`@lyteboat/try` 关掉的 `hmr`，`@lyteboat/host` 关掉的 `session-telemetry-otel`，以及 `@lyteboat/business-base` 关掉的行；它们是配置，与准入无关。然后提交合并，标题 `dist(sync): track dsh-v<新版本>`，正文列出每道闸门的数字。合并提交不受 `delta-report --check` 检查，用 §3.3 的 `git merge-tree` 办法确认合并没有夹带内核包目录下的改动。
+10. **验证准入，提交。** 用构建好的 launcher 跑 `node lyteboat/apps/cli/lib/bin.js config dump --profile try 2> $SCRATCH/dump.err`，`dump.err` 里不能有 `disabling profile plugin` 或 `skipping profile bundle`（§8.2）。stdout 里本来就有一批 `disabled: true`：dsh-base 的 `tool-plugin-manager`、`skill-badge`、`tool-ralph`，`@lyteboat/try` 关掉的 `hmr`，`@lyteboat/host` 关掉的 `session-telemetry-otel`，以及 `@lyteboat/business-base` 关掉的行；它们是配置，与准入无关。然后提交合并，标题 `dist(sync): track dsh-v<新版本>`，正文列出每道闸门的数字。合并提交不受 `delta-report --check` 检查，用 §3.3 的 `git merge-tree` 办法确认合并没有夹带内核包目录下的改动。第 6 步重新生成的 Typert 文件和 `dsh/typert.json` 紧接着以 `Dist-Change: build` 单独提交；在合并提交和它之间，完整克隆的构建会停在 Typert 校验上。
 
 ---
 
@@ -1008,7 +1009,7 @@ $ node lyteboat/apps/cli/lib/bin.js release --agents ./examples/agents --agent f
 lyteboat release: finance 1.0.0 (sha256:97d6bed7…) released; lock: <仓库>/examples/agents/finance/agent.release.json; replay: <LYTEBOAT_HOME>/evals/<运行>/report.md
 ```
 
-退出码 0，这一行写在 stdout。拒绝时退出 1，stderr 是 `lyteboat release: refused at <步骤>: <原因>`，不写锁（`lyteboat/bundles/eval/src/index.ts`）：finance 写成一个 `lyteboatAgentDef` 之后目录变了（`agent.cordis.yml` 没了，`src/` 多了 `finance-persona.ts`，`agent.yml` 不再写 `name`），摘要从 `sha256:184e1e45…` 变成 `sha256:97d6bed7…`，旧基线在 stamps 这一步被拒：`refused at stamps: the baseline ran finance 1.0.0 (sha256:184e1e45…), but the agent is now finance 1.0.0 (sha256:97d6bed7…); record the baseline again`；用真实 key 重录基线之后才又放行（[03-agent-development.md](03-agent-development.md) §4.14）。锁的 `files` 是摘要覆盖的每一个文件（`agent.yml`、`package.json`、`tsconfig.json`、`assets/`、`src/`，以及构建出的 `lib/`；有 `agent.cordis.yml` 的 agent 还有它），finance 现在是 98 个，其中 `lib/` 下 60 个；`baseline` 记下基线的开始时间，用例、轮次、检查的个数（6、7、30）和 `results.jsonl` 的哈希。摘要随本机构建出的 `lib/` 而定。示例 agent 不提交锁。
+退出码 0，这一行写在 stdout。拒绝时退出 1，stderr 是 `lyteboat release: refused at <步骤>: <原因>`，不写锁（`lyteboat/bundles/eval/src/index.ts`）：录完基线之后 agent 目录又改过（源码、清单或构建出的 `lib/`），摘要就不再是基线记下的那个，在 stamps 这一步被拒，例如 `refused at stamps: the baseline ran finance 1.0.0 (sha256:<基线的摘要>…), but the agent is now finance 1.0.0 (sha256:<现在的摘要>…); record the baseline again`；照 [03-agent-development.md](03-agent-development.md) §4.14 重录基线之后放行。锁的 `files` 是摘要覆盖的每一个文件（`agent.yml`、`package.json`、`tsconfig.json`、`assets/`、`src/`，以及构建出的 `lib/`；有 `agent.cordis.yml` 的 agent 还有它），finance 现在是 98 个，其中 `lib/` 下 60 个；`baseline` 记下基线的开始时间，用例、轮次、检查的个数（6、7、30）和 `results.jsonl` 的哈希。摘要随本机构建出的 `lib/` 而定。示例 agent 不提交锁。
 
 **serve 查什么**（`lyteboat/bundles/serve/src/startup.ts` `readReleaseLock`、`LyteboatServeStartup`，`lyteboat/plugins/agent-catalog/src/index.ts` `AgentCatalogService.declareAll`、`AgentCatalogService.pinProblem`、`AgentCatalogService.modelProblem`），按先后：
 
