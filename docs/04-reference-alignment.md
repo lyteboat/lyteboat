@@ -103,7 +103,7 @@
    - 事件信封由 `Session.append` 在内部拼装，插件碰不到 `ignorable` 标记：所以有 `session-append-ignorable`。
    - session-controller 的 `prompt` 在自己的校验、附件准入和去重之后才构造用户消息，source 由它自己写；另开一条写入路径就丢了这三样：所以有 `session-controller-prompt-source`。
 
-   上游文件里的钩子保持几行，逻辑放在 `src/lyteboat/`（`CLAUDE.md`「Architecture boundaries」的 "The kernel changes only by classified commits"）；每项扩展登记退出条件，上游提供替代能力后在下一次同步里退役。这样做是因为内核的每一行差量都要长期携带：dsh 不接受外部 PR（`dsh:CONTRIBUTING.md:9`），而扩展所在的文件是上游改得最勤的：在 dsh-0.2.0-rc.2 的 checkout 上执行 `git log --since=2026-08-01`，`packages/core/agent-loop/src/agent.ts` 有 82 个提交（不算合并提交 58 个），`packages/core/session/src/index.ts` 有 69 个（不算合并提交 56 个）。
+   上游文件里的钩子保持几行，逻辑放在 `src/lyteboat/`（`CLAUDE.md`「Architecture boundaries」的 "The kernel changes only by classified commits"）；每项扩展登记退出条件，上游提供替代能力后在下一次同步里退役。这样做是因为内核的每一行差量都要长期携带：dsh 不接受外部 PR（`dsh:CONTRIBUTING.md:9`），而扩展所在的文件是上游改得最勤的：在 dsh-0.2.0-rc.2 的 checkout 上执行 `git log --since=2026-08-01`，`packages/core/agent-loop/src/agent.ts` 有 83 个提交（不算合并提交 59 个），`packages/core/session/src/index.ts` 有 70 个（不算合并提交 57 个）。
 
    其余内核包不改，理由如下：
 
@@ -164,7 +164,7 @@
 6. **组合就是数据。** agent 是一行 preset 声明，注册表不扫描目录（`dsh:.agents/notes/implemented/architecture/2026-09-18-declarative-agent-presets.md`）。
 7. **waterfall 的监听者必须调用 `next()`**（`dsh:AGENTS.md:137`）。在 `next()` 前做还是后做要想清楚：skill-router 在 `lyteboat/pre-assemble` 上先路由再 `next()`，tool-policy 在 `next()` 之后重算限制；intake-guard 在 `lyteboat/intake` 上 `next()` 之后才判定，所以后登记的门先做决定。
 8. **`agent/turn-stopping` 按 serial 派发。** 监听者用 steer 放进收件箱的输入决定本轮是否继续（`dsh/core/agent/src/runtime-types.ts`）。
-9. **显式优于隐式**（`dsh:AGENTS.md:142`）；**插件里不硬编码可调参数**（141）；**配置错误大声失败**（142）。
+9. **显式优于隐式**（`dsh:AGENTS.md:142`）；**插件里不硬编码可调参数**（143）；**配置错误大声失败**（144）。
 10. **尽量用有人维护的依赖**（`dsh:AGENTS.md:141`）。OpenAI 兼容适配器建在 pi-ai 库上，而不是手写协议（6.3）。
 11. **失败按错误码路由，不解析错误文本。** 适配器一次调用只试一次，重试在 step 边界由 llm-retry 做，并写进日志。
 12. **在做决定的操作处执行约束**，监听顺序、提示过滤都不算执行（`dsh:packages/AGENTS.md:14`）；**状态只在提交点发布**（15）；**上限作用在完整结果上**（16）。提示预算因此由各内容生产方执行，不靠一个排在最后的全局截断。

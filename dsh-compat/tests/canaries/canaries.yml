@@ -14,7 +14,7 @@
 # G5. The canaries are the clean candidates, up to three per category in ranking order
 # (fewer where a category has fewer clean ones).
 #
-# The list is validated on dsh 0.2.0-rc.2: G5 runs every canary on the official release
+# The list is validated on dsh 0.2.0-rc.2 (versions chosen 2026-09-30): G5 runs every canary on the official release
 # as well, and each one runs clean there.
 #
 # bundle: true installs as a profile layer; false would add a row instead (every canary

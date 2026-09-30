@@ -767,7 +767,7 @@ typert vs dsh 0.2.0-rc.2: @deepseek-ai/dsh-llm, @deepseek-ai/dsh-api-session-con
 
 1. 从社区插件样本出发，每个风险类别取若干宿主侧候选，优先 peer 范围够得着跟踪版本的。
 2. 每个候选先在**官方**版本上安装并跑一次。只有装上、所有行激活、回答、自己退出的才合格；在官方版本上本身就坏的（被 peer 检查拒装，或败在 dsh 自己的变化上）不当金丝雀，它们是 compat 决策的输入。
-3. 从合格的里面按排序每类最多取 3 个，锁定版本。
+3. 从合格的里面按排序每类最多取 3 个，锁定版本：样本里的版本，它的 dsh peer 接纳跟踪版本时就用它；否则用这个插件接纳跟踪版本的最新版本。
 
 为什么必须先在官方版本上跑通？金丝雀要证明的是"官方上能跑的，lyteboat 上也能跑"。在官方上就坏的插件，对 lyteboat 说明不了任何问题（`dsh-compat/README.md`「Canaries」）。
 
@@ -782,7 +782,7 @@ typert vs dsh 0.2.0-rc.2: @deepseek-ai/dsh-llm, @deepseek-ai/dsh-api-session-con
 **维护规则**（`dsh-compat/README.md`「Canaries」）：
 
 - 跟踪版本变了就重选；
-- 同步后在官方新版本上开始失败的金丝雀要替换：按同一排序往后取，找不到干净候选时这一类就少一个，并在文件头注释里写明；
+- 同步后在官方新版本上开始失败的金丝雀：先按第 3 条的版本规则换成同一插件的新版本；没有这样的版本，就按同一排序往后取，找不到干净候选时这一类就少一个，并在文件头注释里写明；
 - 只在 lyteboat 上失败的，就是 G5 失败，要修 lyteboat，不能换掉金丝雀。
 
 ### 6.8 G6：会话往返
@@ -971,11 +971,7 @@ catalog 只管工作区包自己写的依赖；npm 包之间的传递依赖由 `
 
 pnpm 11 拒绝安装发布不到一天的包。被钉的版本刚发布时，要按精确版本列进这个列表（`pnpm-workspace.yaml` 的注释："the list can go once it has aged"）。
 
-列表里有三类：
-
-- 从 npm 解析的 dsh 包，全部是跟踪的版本。跟踪版本发布一天之后才进工作区的包（例如 session-controller 的几个 devDependencies、`@lyteboat/eval-runner` 依赖的 dsh-llm-replay）不需要列。
-- 内核包名。这些名字经 overrides 解析到工作区、不从 registry 取，这些条目不起作用。
-- `@deepseek-ai/libreoffice-kit*`：跟踪版本依赖的一族平台包。
+列表只有一类：锁文件里从 registry 解析的 dsh 包，全部是跟踪的版本，按精确版本列出。内核包名经 overrides 解析到工作区、不从 registry 取，不在其中。跟踪版本发布满一天后，整块删掉。
 
 安装树直接设 `minimumReleaseAge: 0`（`scripts/dist/trees.ts` `installTree`）：树装的就是 lyteboat 钉住的版本，发布多久都一样。
 
