@@ -108,7 +108,7 @@
       "path": "./lyteboat/plugins/studio-web"
     },
     {
-      "path": "./lyteboat/bundles/try"
+      "path": "./lyteboat/bundles/headless"
     },
     {
       "path": "./lyteboat/bundles/serve"

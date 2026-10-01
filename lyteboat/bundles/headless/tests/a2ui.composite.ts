@@ -5,7 +5,7 @@ import { createLyteboatScratch } from '@lyteboat/testing/scratch'
 import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
 import { reopenRefusal } from '@lyteboat/testing/session-reopen'
 import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest } from '@lyteboat/testing/scripted-model'
-import { FIXTURES, tryComposition } from './support/try-composition.ts'
+import { FIXTURES, headlessComposition } from './support/headless-composition.ts'
 
 /** Card fidelity against the reference implementation is plugins/a2ui's job; this fixture only proves the rows are wired. */
 const PLUGIN = pluginFileRow(join(FIXTURES, 'plugins', 'a2ui', 'plugin.mjs'))
@@ -13,7 +13,7 @@ const ANSWER = 'A2UI-OK'
 
 type LogRecord = { type: string; data?: Record<string, unknown> }
 
-describe('@lyteboat/a2ui in the try composition (in process, scripted model)', () => {
+describe('@lyteboat/a2ui in the business one-shot composition (in process, scripted model)', () => {
   const scratch = createLyteboatScratch('a2ui')
 
   afterAll(() => {
@@ -29,7 +29,7 @@ describe('@lyteboat/a2ui in the try composition (in process, scripted model)', (
     }), { apiKey: 'mock-key' })
     try {
       const { home, workspace } = scratch.run('card')
-      const result = await tryComposition(['show my profile'], { cwd: workspace, home, env: scriptedModelEnv(model) }, [PLUGIN])
+      const result = await headlessComposition(['show my profile'], { cwd: workspace, home, env: scriptedModelEnv(model) }, [PLUGIN])
       expect(result.code, result.stderr).toBe(0)
       expect(result.stdout).toContain(ANSWER)
       const loop = model.loopRequests()
@@ -58,7 +58,7 @@ describe('@lyteboat/a2ui in the try composition (in process, scripted model)', (
     const model = await startScriptedModel(withTitle(() => ({ toolCall: { name: 'render_a2ui', arguments: { template: 'finish' }, id: 'call-finish' } })), { apiKey: 'mock-key' })
     try {
       const { home, workspace } = scratch.run('terminal')
-      const result = await tryComposition(['wrap up'], { cwd: workspace, home, env: scriptedModelEnv(model) }, [PLUGIN])
+      const result = await headlessComposition(['wrap up'], { cwd: workspace, home, env: scriptedModelEnv(model) }, [PLUGIN])
       expect(result.code, result.stderr).toBe(0)
       expect(model.loopRequests()).toHaveLength(1)
       const records = readSessionLog(findSessionLogs(home)[0] ?? '') as unknown as LogRecord[]

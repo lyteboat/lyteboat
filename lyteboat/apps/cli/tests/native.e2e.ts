@@ -8,7 +8,7 @@ import { scriptedModelEnv } from '@lyteboat/testing/scripted-model'
 import { runLyteboat, startLyteboat } from './support/lyteboat-process.ts'
 
 const SUCCESS_TEXT = 'NATIVE-HEADLESS-OK'
-const TRY_AGENTS = fileURLToPath(new URL('../../../bundles/try/tests/fixtures/agents', import.meta.url))
+const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
 
 /** A skill in the shared agent configuration root (`DSH_AGENTS_HOME/skills`), as a person's own `~/.agents` would hold it. */
 const STRAY_SKILL = 'shared-root-probe'
@@ -53,16 +53,19 @@ describe('the native base: dsh\'s own apps on lyteboat\'s kernel (built bin, moc
     }
   })
 
-  it('a business agent does not read the shared skill root a native agent reads', async () => {
+  it('a business agent reads neither the shared skill root nor dsh-headless\'s coding persona that a native run gets', async () => {
     const { home, workspace } = scratch.run('business')
     const before = mock.requests.length
 
-    const result = await runLyteboat(['try', '--agents', TRY_AGENTS, '--agent', 'minimal', 'say hello'], { cwd: workspace, env: { LYTEBOAT_HOME: home, DSH_AGENTS_HOME: agentsHome, ...scriptedModelEnv(mock) } })
+    const result = await runLyteboat(['headless', '--agents', AGENTS, '--agent', 'echo', 'say hello'], { cwd: workspace, env: { LYTEBOAT_HOME: home, DSH_AGENTS_HOME: agentsHome, ...scriptedModelEnv(mock) } })
 
     expect(result.code, result.stderr).toBe(0)
     const sent = mock.requests.slice(before)
     expect(sent.length).toBeGreaterThan(0)
-    for (const request of sent) expect(JSON.stringify(request)).not.toContain(STRAY_SKILL)
+    for (const request of sent) {
+      expect(JSON.stringify(request)).not.toContain(STRAY_SKILL)
+      expect(JSON.stringify(request)).not.toContain('You are a coding agent')
+    }
   })
 
   it('lyteboat web serves dsh\'s web app and accepts its sign-in token', async () => {

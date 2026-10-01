@@ -10,7 +10,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { pluginFileRow, printedSessionId } from '@lyteboat/testing/composition'
 import { createLyteboatScratch } from '@lyteboat/testing/scratch'
 import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
-import { FIXTURES, tryComposition, type RunTarget } from './support/try-composition.ts'
+import { FIXTURES, headlessComposition, type RunTarget } from './support/headless-composition.ts'
 import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
 
 const ADMISSION = pluginFileRow(join(FIXTURES, 'plugins', 'admission.mjs'))
@@ -23,7 +23,7 @@ function humanSources(home: string): unknown[] {
   return records.filter(record => record.type === 'user/message').map(record => record.data?.['source']).filter(source => (source as { kind?: unknown }).kind === 'user')
 }
 
-describe('lyteboat try --context and admission (in process, scripted model)', () => {
+describe('lyteboat headless --context and admission (in process, scripted model)', () => {
   const scratch = createLyteboatScratch('request')
   let model: ScriptedModel
 
@@ -46,12 +46,12 @@ describe('lyteboat try --context and admission (in process, scripted model)', ()
     const file = join(target.cwd, 'context.json')
     writeFileSync(file, JSON.stringify({ customer: 'c-2' }))
 
-    const first = await tryComposition(['--context', '{"customer":"c-1","channel":"app"}', 'hello'], target)
+    const first = await headlessComposition(['--context', '{"customer":"c-1","channel":"app"}', 'hello'], target)
     expect(first.code, first.stderr).toBe(0)
     const id = printedSessionId(first.stderr)
-    const second = await tryComposition(['--session-id', id, 'again'], target)
+    const second = await headlessComposition(['--session-id', id, 'again'], target)
     expect(second.code, second.stderr).toBe(0)
-    const third = await tryComposition(['--session-id', id, '--context', file, 'and again'], target)
+    const third = await headlessComposition(['--session-id', id, '--context', file, 'and again'], target)
     expect(third.code, third.stderr).toBe(0)
 
     expect(humanSources(target.home)).toEqual([
@@ -63,10 +63,10 @@ describe('lyteboat try --context and admission (in process, scripted model)', ()
 
   it('refuses a context that is not a JSON object', async () => {
     const target = fresh('bad-context')
-    const result = await tryComposition(['--context', '[1, 2]', 'hello'], target)
+    const result = await headlessComposition(['--context', '[1, 2]', 'hello'], target)
     expect(result.code).not.toBe(0)
     expect(result.stderr).toContain('--context file not found')
-    const inline = await tryComposition(['--context', '{"broken"', 'hello'], target)
+    const inline = await headlessComposition(['--context', '{"broken"', 'hello'], target)
     expect(inline.code).not.toBe(0)
     expect(inline.stderr).toContain('--context is not JSON')
   })
@@ -74,7 +74,7 @@ describe('lyteboat try --context and admission (in process, scripted model)', ()
   it('admits before the loop: a reply verdict and its card are recorded on the request, and printed without a model request', async () => {
     const target = fresh('admission')
     const before = model.requests.length
-    const result = await tryComposition(['--context', '{"channel":"本渠道"}', '帮我炒股'], target, [ADMISSION])
+    const result = await headlessComposition(['--context', '{"channel":"本渠道"}', '帮我炒股'], target, [ADMISSION])
     expect(result.code, result.stderr).toBe(0)
     expect(model.requests.slice(before).filter(request => request.purpose === 'loop')).toEqual([])
     expect(result.stdout).toBe('[card scope]\n抱歉，本渠道不提供股票买卖建议。\n')
@@ -90,7 +90,7 @@ describe('lyteboat try --context and admission (in process, scripted model)', ()
 
   it('records a pass verdict and lets the model answer', async () => {
     const target = fresh('admitted')
-    const result = await tryComposition(['看看我的资产'], target, [ADMISSION])
+    const result = await headlessComposition(['看看我的资产'], target, [ADMISSION])
     expect(result.code, result.stderr).toBe(0)
     expect(result.stdout).toBe('REQUEST-OK\n')
     expect(humanSources(target.home)).toEqual([{ kind: 'user', lyteboatRequest: { owner: { kind: 'operator', id: 'cli' }, intake: { by: 'example-admission', decision: 'pass' } } }])

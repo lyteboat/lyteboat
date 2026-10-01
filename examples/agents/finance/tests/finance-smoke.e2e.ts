@@ -25,7 +25,7 @@ function script(request: RecordedRequest) {
   return offered && !request.calledTools.includes('asset_overview') ? { toolCall: { name: 'asset_overview', arguments: {}, id: 'call-overview' } } : { text: 'FINANCE-SMOKE-OK' }
 }
 
-describe('lyteboat try --agents ./examples/agents --agent finance (built bin, scripted model)', () => {
+describe('lyteboat headless --agents ./examples/agents --agent finance (built bin, scripted model)', () => {
   const scratch = createLyteboatScratch('finance-smoke')
   let model: ScriptedModel
 
@@ -40,7 +40,7 @@ describe('lyteboat try --agents ./examples/agents --agent finance (built bin, sc
 
   it('routes, calls the overview tool, renders its card, and answers', async () => {
     const { home, workspace } = scratch.run('smoke')
-    const result = await runLyteboat(['try', '--agents', AGENTS, '--agent', 'finance', '--context', '{"customer":"young-idle-cash"}', '看看我的资产'], {
+    const result = await runLyteboat(['headless', '--agents', AGENTS, '--agent', 'finance', '--context', '{"customer":"young-idle-cash"}', '看看我的资产'], {
       cwd: workspace,
       env: { LYTEBOAT_HOME: home, ...scriptedModelEnv(model) },
     })

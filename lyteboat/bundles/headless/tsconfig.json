@@ -10,6 +10,8 @@
   "references": [
     { "path": "../../../dsh/core/agent" },
     { "path": "../../../dsh/core/session" },
+    { "path": "../../../dsh/session/session-projection" },
+    { "path": "../../../dsh/bundle/headless" },
     { "path": "../../core/contracts" },
     { "path": "../../plugins/a2ui" },
     { "path": "../../plugins/agent-catalog" },

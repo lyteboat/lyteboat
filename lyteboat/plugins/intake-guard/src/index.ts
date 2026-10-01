@@ -1,6 +1,6 @@
 /**
  * @lyteboat/intake-guard — admission ahead of the loop. An agent registers an
- * admission function in its own scope. The caller (`lyteboat try`, later a
+ * admission function in its own scope. The caller (`lyteboat headless --agent`, later a
  * server) submits each request through `ctx.intakeGuard.submit`, which admits
  * it and follows it up as the human message that records its request id,
  * context, and verdict (`@lyteboat/request-context`), where the log keeps the

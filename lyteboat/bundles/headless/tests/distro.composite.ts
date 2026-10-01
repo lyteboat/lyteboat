@@ -7,12 +7,12 @@ import { scriptedModelEnv } from '@lyteboat/testing/scripted-model'
 import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
 import { reopenRefusal } from '@lyteboat/testing/session-reopen'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { FIXTURES, tryComposition } from './support/try-composition.ts'
+import { FIXTURES, headlessComposition } from './support/headless-composition.ts'
 
 const PLUGIN = pluginFileRow(join(FIXTURES, 'plugins', 'distro-aware.mjs'))
 const { dsh: DSH_BASE } = JSON.parse(readFileSync(new URL('../../../../dsh.upstream.json', import.meta.url), 'utf8')) as { dsh: string }
 
-describe('@lyteboat/distro in the try composition (in process, mock model)', () => {
+describe('@lyteboat/distro in the business one-shot composition (in process, mock model)', () => {
   const scratch = createLyteboatScratch('distro')
   let mock: MockLlmServer
 
@@ -27,7 +27,7 @@ describe('@lyteboat/distro in the try composition (in process, mock model)', () 
 
   it('serves a plugin that injects lyteboatDistro and answers through the intake extension', async () => {
     const { home, workspace } = scratch.run('intake')
-    const result = await tryComposition(['which lyteboat is this'], {
+    const result = await headlessComposition(['which lyteboat is this'], {
       cwd: workspace,
       home,
       env: scriptedModelEnv(mock),

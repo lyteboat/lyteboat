@@ -1,5 +1,6 @@
 /**
- * The rows that run a lyteboat mode (`lyteboat try`, `serve`, `eval`, `studio`, `inspect`). dsh's
+ * The rows that run a lyteboat mode (the business one-shot's `lyteboat-headless`,
+ * `serve`, `eval`, `studio`, `inspect`). dsh's
  * startup audit fails startup when one of dsh's own runners does not activate
  * (its headless runner, its web server), but it knows none of lyteboat's, so a
  * mode runner left waiting on a service a failed row never provided would keep

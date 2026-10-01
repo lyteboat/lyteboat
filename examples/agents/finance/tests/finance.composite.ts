@@ -1,5 +1,5 @@
 /**
- * The finance agent in the try composition (in process, scripted DeepSeek
+ * The finance agent in the business one-shot composition (in process, scripted DeepSeek
  * Messages server): each request names its customer in `--context` and is
  * admitted before the loop (the unauthorized card and the service scope
  * answer without the model); the persona is the whole system prompt, the
@@ -11,7 +11,7 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { LYTEBOAT_TRY_BUNDLES, bootComposition, printedSessionId } from '@lyteboat/testing/composition'
+import { LYTEBOAT_HEADLESS_AGENT_BUNDLES, bootComposition, printedSessionId } from '@lyteboat/testing/composition'
 import { createLyteboatScratch } from '@lyteboat/testing/scratch'
 import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
 import { reopenRefusal } from '@lyteboat/testing/session-reopen'
@@ -20,7 +20,7 @@ import { AGENTS, FINANCE_TOOLS, blockText, financeScript, isIntake, isLoop, last
 
 type LogRecord = { type: string; ignorable?: true; data?: Record<string, unknown> }
 
-describe('finance agent in the try composition (in process, scripted model)', () => {
+describe('finance agent in the business one-shot composition (in process, scripted model)', () => {
   const scratch = createLyteboatScratch('finance')
   let model: ScriptedModel
 
@@ -37,7 +37,7 @@ describe('finance agent in the try composition (in process, scripted model)', ()
     const { home, workspace } = scratch.run(label)
     const before = model.requests.length
     const result = await bootComposition({
-      bundles: LYTEBOAT_TRY_BUNDLES,
+      bundles: LYTEBOAT_HEADLESS_AGENT_BUNDLES,
       args: ['--agents', AGENTS, '--agent', 'finance', ...customer === undefined ? [] : ['--context', JSON.stringify({ customer })], ...extra, task],
       cwd: workspace,
       home,
@@ -138,7 +138,7 @@ describe('finance agent in the try composition (in process, scripted model)', ()
   it('--session-id continues in a new process: the diagnosis turn keeps the customer and sees the overview it already gave', async () => {
     const { home, workspace } = scratch.run('continue')
     const boot = (args: string[]) => bootComposition({
-      bundles: LYTEBOAT_TRY_BUNDLES,
+      bundles: LYTEBOAT_HEADLESS_AGENT_BUNDLES,
       args: ['--agents', AGENTS, '--agent', 'finance', ...args],
       cwd: workspace,
       home,

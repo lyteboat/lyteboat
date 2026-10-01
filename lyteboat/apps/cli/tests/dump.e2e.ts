@@ -1,7 +1,7 @@
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { LYTEBOAT_TRY_BUNDLES } from '@lyteboat/testing/composition'
+import { LYTEBOAT_HEADLESS_AGENT_BUNDLES } from '@lyteboat/testing/composition'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { LYTEBOAT_PROFILE_TEMPLATES } from '../src/templates.ts'
 import { runLyteboat } from './support/lyteboat-process.ts'
@@ -26,15 +26,25 @@ describe('lyteboat config dump (built bin)', () => {
     rmSync(home, { recursive: true, force: true })
   })
 
-  it('initializes the try profile from lyteboat\'s template and prints its composition', async () => {
-    const result = await runLyteboat(['config', 'dump', '--profile', 'try'], { env: { LYTEBOAT_HOME: home } })
+  it('initializes the headless-agent profile from lyteboat\'s template and prints its composition', async () => {
+    const result = await runLyteboat(['config', 'dump', '--profile', 'headless-agent'], { env: { LYTEBOAT_HOME: home } })
     expect(result.code, result.stderr).toBe(0)
     expect(result.stdout).toContain('@deepseek-ai/dsh-base')
+    expect(result.stdout).toContain('@deepseek-ai/dsh-headless')
     expect(result.stdout).toContain('@lyteboat/base')
-    expect(result.stdout).toContain('@lyteboat/try')
+    expect(result.stdout).toContain('@lyteboat/headless')
     expect(result.stdout).toContain('id: agent-loop')
-    const manifest = JSON.parse(readFileSync(join(home, 'profiles', 'try', 'package.json'), 'utf8')) as { dsh: { profile: { bundles: string[] } } }
-    expect(manifest.dsh.profile).toEqual({ bundles: LYTEBOAT_TRY_BUNDLES })
+    const manifest = JSON.parse(readFileSync(join(home, 'profiles', 'headless-agent', 'package.json'), 'utf8')) as { dsh: { profile: { bundles: string[] } } }
+    expect(manifest.dsh.profile).toEqual({ bundles: LYTEBOAT_HEADLESS_AGENT_BUNDLES })
+  })
+
+  it('runs dsh\'s one-shot runner in the business one-shot with lyteboat\'s startup and no persona of dsh\'s coding agent', async () => {
+    const result = await runLyteboat(['config', 'dump', '--profile', 'headless-agent'], { env: { LYTEBOAT_HOME: home } })
+    expect(result.code, result.stderr).toBe(0)
+    expect(dumpedRow(result.stdout, 'headless-startup')).toMatch(/^ {2}disabled: true$/mu)
+    expect(dumpedRow(result.stdout, 'headless-runner')).not.toMatch(/^ {2}disabled: true$/mu)
+    expect(dumpedRow(result.stdout, 'system-prompt')).toMatch(/^ {4}personaPrefix: ''$/mu)
+    expect(dumpedRow(result.stdout, 'system-prompt')).toMatch(/^ {4}personaSuffix: ''$/mu)
   })
 
   it('starts no row that sends a session off the machine, in any lyteboat profile, without DSH_TELEMETRY_DISABLED', async () => {

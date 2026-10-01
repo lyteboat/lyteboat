@@ -1,7 +1,7 @@
 /**
  * The JSON the lyteboat launcher prints for scripts and for the Studio, which
  * reads another process's output: `lyteboat inspect --result json` (what an
- * agent is made of, once mounted) and `lyteboat try --result json` (one turn).
+ * agent is made of, once mounted) and `lyteboat headless --agent <id> --result json` (one turn).
  * Types, the rule ids of a skill's deterministic checks, the row ids of the
  * mode runners the launcher checks, and the zod schemas a reader validates that
  * output with; no other runtime behavior.
@@ -18,7 +18,7 @@ import type { StudioSkillRouting, StudioTool } from './studio.ts'
  * launcher (and the composition harness, which mirrors it) fails a startup that
  * leaves an enabled one inactive.
  */
-export const LYTEBOAT_MODE_RUNNER_IDS = ['lyteboat-try', 'lyteboat-serve', 'lyteboat-eval', 'lyteboat-studio', 'lyteboat-inspect'] as const
+export const LYTEBOAT_MODE_RUNNER_IDS = ['lyteboat-headless', 'lyteboat-serve', 'lyteboat-eval', 'lyteboat-studio', 'lyteboat-inspect'] as const
 
 /**
  * A skill's deterministic checks: its lyteboat metadata parses; every tool it
@@ -89,8 +89,8 @@ export type LyteboatInspectUnmounted = {
 /** What `lyteboat inspect --result json` prints. */
 export type LyteboatInspectResult = LyteboatInspectMounted | LyteboatInspectUnmounted
 
-/** What `lyteboat try --result json` prints: the one turn it ran. */
-export type LyteboatTryResult = {
+/** What `lyteboat headless --agent <id> --result json` prints: the one turn it ran. */
+export type LyteboatHeadlessResult = {
   sessionId: string
   outcome: LyteboatTurnOutcome
   /** The reply's text, cards as their `[card <area>]` lines. */
@@ -158,8 +158,8 @@ export const lyteboatInspectResultSchema: z.ZodType<LyteboatInspectResult> = z.d
   }),
 ])
 
-/** The schema of {@link LyteboatTryResult}. */
-export const lyteboatTryResultSchema: z.ZodType<LyteboatTryResult> = z.strictObject({
+/** The schema of {@link LyteboatHeadlessResult}. */
+export const lyteboatHeadlessResultSchema: z.ZodType<LyteboatHeadlessResult> = z.strictObject({
   sessionId: z.string().min(1),
   outcome: z.enum(LYTEBOAT_TURN_OUTCOMES),
   text: z.string(),

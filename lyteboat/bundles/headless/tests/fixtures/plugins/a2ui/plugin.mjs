@@ -1,7 +1,7 @@
 // A2UI composition fixture: `query_profile` folds a small profile into the session
 // state through the tool policy's delta, and render_a2ui renders a card from that
 // state. `finish` is a terminal card. Card fidelity against the reference lives in
-// plugins/a2ui's own tests; this fixture proves the rows are wired in @lyteboat/try.
+// plugins/a2ui's own tests; this fixture proves the rows are wired in the business one-shot (@lyteboat/headless).
 import { fileURLToPath } from 'node:url'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 

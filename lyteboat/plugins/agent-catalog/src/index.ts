@@ -8,7 +8,7 @@
  * that fail to read or mount, using the registry's own diagnostics. It answers
  * only which agents there are and where each one works (its working directory,
  * the `cwd` its sessions are recorded under); driving them is the caller's
- * (`lyteboat try`, `/chat`, and eval). Before an agent's code runs,
+ * (`lyteboat headless --agent`, `/chat`, and eval). Before an agent's code runs,
  * its directory's digest is checked against its release pin, when a release
  * lock pins it, and its declared model against this process's, when enforced.
  *

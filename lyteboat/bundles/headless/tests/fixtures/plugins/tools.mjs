@@ -1,7 +1,7 @@
 // Two lyteboat tools over `ctx.toolPolicy`. `lookup_assets` is always visible and
 // folds its result into the session state; `rebalance` stays hidden until the
 // user talks about rebalancing. The tool-policy composition test inserts it the
-// way `lyteboat try --plugin <this file>` would.
+// way `lyteboat headless --plugin <this file>` would in the business one-shot.
 import { defineTool } from '@deepseek-ai/dsh-tools'
 
 export const name = 'example-tools'

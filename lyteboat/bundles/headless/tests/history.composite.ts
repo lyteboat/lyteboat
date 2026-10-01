@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createLyteboatScratch } from '@lyteboat/testing/scratch'
 import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
 import { reopenRefusal } from '@lyteboat/testing/session-reopen'
-import { FIXTURES, tryComposition } from './support/try-composition.ts'
+import { FIXTURES, headlessComposition } from './support/headless-composition.ts'
 import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
 
 const HISTORY = join(FIXTURES, 'history', 'rounds.json')
@@ -11,7 +11,7 @@ const ANSWER = 'HISTORY-OK'
 
 type LogRecord = { type: string; data?: Record<string, unknown>; isSeeded?: boolean }
 
-describe('lyteboat try --history (in process, scripted model)', () => {
+describe('lyteboat headless --history (in process, scripted model)', () => {
   const scratch = createLyteboatScratch('history')
   let model: ScriptedModel
 
@@ -27,7 +27,7 @@ describe('lyteboat try --history (in process, scripted model)', () => {
   it('seeds the session from the file: two complete rounds, the task as turn 3, the rounds in the first request', async () => {
     const { home, workspace } = scratch.run('seed')
     const before = model.requests.length
-    const result = await tryComposition(['--history', HISTORY, '继续刚才的话题'], { cwd: workspace, home, env: scriptedModelEnv(model) })
+    const result = await headlessComposition(['--history', HISTORY, '继续刚才的话题'], { cwd: workspace, home, env: scriptedModelEnv(model) })
     expect(result.code, result.stderr).toBe(0)
     expect(result.stdout).toContain(ANSWER)
     expect(result.stderr).toContain('imported 2 history round(s) from rounds.json')
@@ -60,7 +60,7 @@ describe('lyteboat try --history (in process, scripted model)', () => {
 
   it('rejects a missing history file as a usage error', async () => {
     const { home, workspace } = scratch.run('missing')
-    const result = await tryComposition(['--history', join(workspace, 'nope.json'), 'hi'], { cwd: workspace, home, env: scriptedModelEnv(model) })
+    const result = await headlessComposition(['--history', join(workspace, 'nope.json'), 'hi'], { cwd: workspace, home, env: scriptedModelEnv(model) })
     expect(result.code).not.toBe(0)
     expect(result.stderr).toContain('--history file not found')
   })

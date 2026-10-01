@@ -4,18 +4,22 @@ import { fileURLToPath } from 'node:url'
 import { startMockLlmServer, type MockLlmServer } from '@deepseek-ai/dsh-llm-mock-server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { lyteboatTryResultSchema } from '@lyteboat/contracts/cli'
+import { lyteboatHeadlessResultSchema } from '@lyteboat/contracts/cli'
 import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
 import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
 import { runLyteboat } from './support/lyteboat-process.ts'
 
 const SUCCESS_TEXT = 'LYTEBOAT-RUN-SMOKE-OK'
 const ANNOUNCE_PLUGIN = fileURLToPath(new URL('./fixtures/plugins/announce.mjs', import.meta.url))
+const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
 
-/** A --patch overlay the smoke proves applied: the persona it sets reaches the model. */
-const PERSONA_OVERLAY = '- id: system-prompt\n  config:\n    personaPrefix: LYTEBOAT-PATCHED-PERSONA\n    includeHarnessIdentity: false\n'
+/** dsh's harness identity, which the business base leaves out of the prompt. */
+const HARNESS_IDENTITY = 'You are an AI agent powered by DeepSeek Harness.'
 
-describe('lyteboat try (built bin, mock model)', () => {
+/** A --patch overlay the smoke proves applied: it brings the harness identity back into the request. */
+const IDENTITY_OVERLAY = '- id: system-prompt\n  config:\n    includeHarnessIdentity: true\n'
+
+describe('lyteboat headless --agent (built bin, mock model)', () => {
   const scratch = createLyteboatScratch('run-smoke')
   let mock: MockLlmServer
 
@@ -29,7 +33,7 @@ describe('lyteboat try (built bin, mock model)', () => {
       toolArguments: '{}',
       successText: SUCCESS_TEXT,
     })
-    writeFileSync(join(scratch.root, 'persona.patch.yml'), PERSONA_OVERLAY)
+    writeFileSync(join(scratch.root, 'identity.patch.yml'), IDENTITY_OVERLAY)
   })
 
   afterAll(async () => {
@@ -40,7 +44,7 @@ describe('lyteboat try (built bin, mock model)', () => {
   it('answers one task through the real tool path and persists the turn when a --plugin file and a --patch join the tree', async () => {
     const { home, workspace } = scratch.run('smoke')
     const result = await runLyteboat(
-      ['try', '--plugin', ANNOUNCE_PLUGIN, '--patch', join(scratch.root, 'persona.patch.yml'), 'check the status and report'],
+      ['headless', '--plugin', ANNOUNCE_PLUGIN, '--patch', join(scratch.root, 'identity.patch.yml'), '--agents', AGENTS, '--agent', 'echo', 'check the status and report'],
       { cwd: workspace, env: { LYTEBOAT_HOME: home, ...scriptedModelEnv(mock) } },
     )
     expect(result.code, result.stderr).toBe(0)
@@ -72,18 +76,18 @@ describe('lyteboat try (built bin, mock model)', () => {
     const turnEnd = records.at(-1) as { data: { reason: { kind: string } } }
     expect(turnEnd.data.reason.kind).toBe('completed')
 
-    // Two model requests reached the mock: the tool-call step and the final answer; the patched persona is in them.
+    // Two model requests reached the mock: the tool-call step and the final answer, under the agent's persona and the patched identity.
     expect(mock.requests).toHaveLength(2)
-    expect(JSON.stringify(mock.requests[0])).toContain('LYTEBOAT-PATCHED-PERSONA')
+    expect(JSON.stringify(mock.requests[0])).toContain('You are SERVE-SMOKE')
+    expect(JSON.stringify(mock.requests[0])).toContain(HARNESS_IDENTITY)
 
     // The profile's plugins resolved through the installation's runtime resolution; nothing is linked into the profiles tree.
     expect(existsSync(join(home, 'profiles', 'node_modules'))).toBe(false)
   })
 })
 
-describe('lyteboat try --result json (built bin, scripted model)', () => {
-  const scratch = createLyteboatScratch('try-result')
-  const agents = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
+describe('lyteboat headless --agent --result json (built bin, scripted model)', () => {
+  const scratch = createLyteboatScratch('headless-result')
   let model: ScriptedModel
 
   beforeAll(async () => {
@@ -97,10 +101,10 @@ describe('lyteboat try --result json (built bin, scripted model)', () => {
 
   it('prints the turn as one result object: outcome, text, cards, tools, model, and session id', async () => {
     const { home, workspace } = scratch.run('result')
-    const run = await runLyteboat(['try', '--agents', agents, '--agent', 'echo', '--result', 'json', 'hello'], { cwd: workspace, env: { LYTEBOAT_HOME: home, ...scriptedModelEnv(model) } })
+    const run = await runLyteboat(['headless', '--agents', AGENTS, '--agent', 'echo', '--result', 'json', 'hello'], { cwd: workspace, env: { LYTEBOAT_HOME: home, ...scriptedModelEnv(model) } })
 
     expect(run.code, run.stderr).toBe(0)
-    const result = lyteboatTryResultSchema.parse(JSON.parse(run.stdout))
+    const result = lyteboatHeadlessResultSchema.parse(JSON.parse(run.stdout))
     expect(result).toMatchObject({ outcome: 'completed', text: 'RESULT-OK', cards: [], tools: [], model: { provider: expect.any(String), model: expect.any(String) } })
     expect(run.stderr).toContain(`lyteboat: session ${result.sessionId}`)
   })
