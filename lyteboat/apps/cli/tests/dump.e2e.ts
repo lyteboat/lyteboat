@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { LYTEBOAT_HEADLESS_AGENT_BUNDLES } from '@lyteboat/testing/composition'
+import { LYTEBOAT_HEADLESS_AGENT_BUNDLES } from '@lyteboat/testkit/composition'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { LYTEBOAT_PROFILE_TEMPLATES } from '../src/templates.ts'
 import { runLyteboat } from './support/lyteboat-process.ts'

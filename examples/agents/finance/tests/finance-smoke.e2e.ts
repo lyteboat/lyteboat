@@ -8,10 +8,10 @@
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { lyteboatLauncher } from '@lyteboat/testing/process'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
-import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { lyteboatLauncher } from '@lyteboat/testkit/process'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
+import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 
 /** The examples/agents root this package lives in, as `--agents ./examples/agents` names it. */
 const AGENTS = fileURLToPath(new URL('../..', import.meta.url))

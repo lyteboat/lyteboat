@@ -21,12 +21,12 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { setStudioAccount, setStudioGrant } from '@lyteboat/studio-auth/accounts'
-import { postChat } from '@lyteboat/testing/chat-client'
-import { LYTEBOAT_SERVE_BUNDLES, LYTEBOAT_STUDIO_BUNDLES, bootComposition, startComposition, type RunningComposition } from '@lyteboat/testing/composition'
-import { readJsonLines } from '@lyteboat/testing/json-lines'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
-import { findSessionLogs } from '@lyteboat/testing/session-log'
+import { postChat } from '@lyteboat/testkit/chat-client'
+import { LYTEBOAT_SERVE_BUNDLES, LYTEBOAT_STUDIO_BUNDLES, bootComposition, startComposition, type RunningComposition } from '@lyteboat/testkit/composition'
+import { readJsonLines } from '@lyteboat/testkit/json-lines'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
+import { findSessionLogs } from '@lyteboat/testkit/session-log'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
 const WORKSPACE_MODULES = fileURLToPath(new URL('../../../../node_modules', import.meta.url))

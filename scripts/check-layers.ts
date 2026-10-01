@@ -17,7 +17,7 @@ import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { kernelPackages } from './dist/kernel.ts'
 
-const LAYERS = ['examples', 'apps', 'bundles', 'plugins', 'core', 'tooling'] as const
+const LAYERS = ['examples', 'apps', 'bundles', 'plugins', 'core', 'test-support'] as const
 type Layer = typeof LAYERS[number]
 
 /** Layers a package may reach at runtime, by its own layer. No layer reaches `examples`. */
@@ -28,19 +28,19 @@ const RUNTIME: Readonly<Record<Layer, readonly Layer[]>> = {
   bundles: ['plugins', 'core'],
   plugins: ['plugins', 'core'],
   core: ['core'],
-  tooling: ['core'],
+  'test-support': ['core'],
 }
 
 /** Extra layers a package's tests may reach through devDependencies. */
 const DEV_ONLY: Readonly<Record<Layer, readonly Layer[]>> = {
   // An agent's composition test boots the bundle that loads it; its smoke runs the built launcher.
-  examples: ['apps', 'bundles', 'tooling'],
-  apps: ['tooling'],
+  examples: ['apps', 'bundles', 'test-support'],
+  apps: ['test-support'],
   // A bundle's composition test boots the bundles its profiles list beside it.
-  bundles: ['bundles', 'tooling'],
-  plugins: ['tooling'],
-  core: ['tooling'],
-  tooling: [],
+  bundles: ['bundles', 'test-support'],
+  plugins: ['test-support'],
+  core: ['test-support'],
+  'test-support': [],
 }
 
 interface Manifest {

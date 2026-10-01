@@ -114,9 +114,9 @@ importers:
       '@deepseek-ai/dsh-typert-generator':
         specifier: catalog:dsh
         version: 0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:lyteboat/tooling/testing
+        version: link:lyteboat/test-support/testkit
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.4
@@ -1145,9 +1145,9 @@ importers:
       '@lyteboat/skill-router':
         specifier: workspace:*
         version: link:../../../lyteboat/plugins/skill-router
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../../lyteboat/tooling/testing
+        version: link:../../../lyteboat/test-support/testkit
       '@lyteboat/tool-policy':
         specifier: workspace:*
         version: link:../../../lyteboat/plugins/tool-policy
@@ -1431,9 +1431,9 @@ importers:
       '@lyteboat/contracts':
         specifier: workspace:*
         version: link:../../core/contracts
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
       '@types/js-yaml':
         specifier: 'catalog:'
         version: 4.0.9
@@ -1513,9 +1513,9 @@ importers:
       '@lyteboat/base':
         specifier: workspace:*
         version: link:../base
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/bundles/headless:
     dependencies:
@@ -1580,9 +1580,9 @@ importers:
       '@lyteboat/base':
         specifier: workspace:*
         version: link:../base
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/bundles/inspect:
     dependencies:
@@ -1620,9 +1620,9 @@ importers:
       '@lyteboat/base':
         specifier: workspace:*
         version: link:../base
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/bundles/serve:
     dependencies:
@@ -1675,9 +1675,9 @@ importers:
       '@lyteboat/eval':
         specifier: workspace:*
         version: link:../eval
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/bundles/studio:
     dependencies:
@@ -1742,9 +1742,9 @@ importers:
       '@lyteboat/serve':
         specifier: workspace:*
         version: link:../serve
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/core/contracts:
     dependencies:
@@ -1813,9 +1813,9 @@ importers:
       '@lyteboat/distro':
         specifier: workspace:*
         version: link:../distro
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/agent-catalog:
     dependencies:
@@ -1859,9 +1859,9 @@ importers:
       '@deepseek-ai/dsh-system-prompt':
         specifier: workspace:*
         version: link:../../../dsh/core/system-prompt
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
       '@types/js-yaml':
         specifier: 'catalog:'
         version: 4.0.9
@@ -1923,9 +1923,9 @@ importers:
       '@lyteboat/distro':
         specifier: workspace:*
         version: link:../distro
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/agent-inspector:
     dependencies:
@@ -1969,9 +1969,9 @@ importers:
       '@lyteboat/distro':
         specifier: workspace:*
         version: link:../distro
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/aux-llm:
     dependencies:
@@ -2000,9 +2000,9 @@ importers:
       '@lyteboat/distro':
         specifier: workspace:*
         version: link:../distro
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/chat-api:
     dependencies:
@@ -2117,9 +2117,9 @@ importers:
       '@deepseek-ai/dsh-session':
         specifier: workspace:*
         version: link:../../../dsh/core/session
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
       '@types/js-yaml':
         specifier: 'catalog:'
         version: 4.0.9
@@ -2142,9 +2142,9 @@ importers:
       '@deepseek-ai/dsh-session-projection':
         specifier: workspace:*
         version: link:../../../dsh/session/session-projection
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/intake-guard:
     dependencies:
@@ -2176,9 +2176,9 @@ importers:
       '@lyteboat/distro':
         specifier: workspace:*
         version: link:../distro
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/request-context:
     dependencies:
@@ -2201,9 +2201,9 @@ importers:
       '@deepseek-ai/dsh-session-projection':
         specifier: workspace:*
         version: link:../../../dsh/session/session-projection
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/run-metrics:
     dependencies:
@@ -2235,9 +2235,9 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../../dsh/core/tools
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/session-index:
     dependencies:
@@ -2275,9 +2275,9 @@ importers:
       '@deepseek-ai/dsh-skill':
         specifier: workspace:*
         version: link:../../../dsh/skill/skill
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/skill-router:
     dependencies:
@@ -2327,9 +2327,9 @@ importers:
       '@lyteboat/distro':
         specifier: workspace:*
         version: link:../distro
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/studio-api:
     dependencies:
@@ -2403,9 +2403,9 @@ importers:
       '@lyteboat/skill-router':
         specifier: workspace:*
         version: link:../skill-router
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
       '@lyteboat/tool-policy':
         specifier: workspace:*
         version: link:../tool-policy
@@ -2434,9 +2434,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: catalog:cordis
         version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
   lyteboat/plugins/studio-web:
     dependencies:
@@ -2453,9 +2453,9 @@ importers:
       '@lyteboat/contracts':
         specifier: workspace:*
         version: link:../../core/contracts
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
       '@types/react':
         specifier: ~18.3.1
         version: 18.3.31
@@ -2502,11 +2502,11 @@ importers:
       '@lyteboat/distro':
         specifier: workspace:*
         version: link:../distro
-      '@lyteboat/testing':
+      '@lyteboat/testkit':
         specifier: workspace:*
-        version: link:../../tooling/testing
+        version: link:../../test-support/testkit
 
-  lyteboat/tooling/testing:
+  lyteboat/test-support/testkit:
     dependencies:
       '@lyteboat/contracts':
         specifier: workspace:*

@@ -11,7 +11,7 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 import type { EvalRunListing } from '@lyteboat/eval-runner/records'
-import { lyteboatTempDir } from '@lyteboat/testing/scratch'
+import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
 import { StudioEvalJobs, type StudioEvalJob } from '../src/studio-eval-jobs.ts'
 import { studioEvalRunOf } from '../src/studio-eval-runs.ts'
 

@@ -1,7 +1,7 @@
 /**
  * Spawn a built lyteboat launcher under plain Node and collect its output. The
  * launcher path comes from the caller, so this package never depends on an app.
- * @module @lyteboat/testing/process
+ * @module @lyteboat/testkit/process
  */
 
 import { spawn, type ChildProcess } from 'node:child_process'

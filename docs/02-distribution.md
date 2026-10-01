@@ -755,7 +755,7 @@ typert vs dsh 0.2.0-rc.2: @deepseek-ai/dsh-llm, @deepseek-ai/dsh-api-session-con
 - **不比什么。** G4 不比较请求体。在声明 `toolUpdate` 的路由上，新可见的工具在请求里以 `defer_loading` 声明、由一个 `tool_addition` 块宣布；这一步序列化在 npm 上原样的 `dsh-llm-deepseek` 里（`up:packages/llm/llm-deepseek/src/serialize.ts`），两棵树用的是同一份。
 - **为什么 lyteboat 要这两个场景。** "开不开新序列"的条件里有 lyteboat 的一个子句：会话还没有 `request/header` 时开新序列（`dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.step`），与上游的 `toolUpdate` / `toolsChanged` 子句同在一个条件里。lyteboat 的 tool-policy 又恰好会在两次请求之间改变可见工具集（`visibility: 'auto'` 的工具随技能激活才可见，`.claude/rules/agent-design.md`），而 dsh 默认的 `deepseek-flash` 路由声明了 `addition-only`（`up:packages/llm/llm-deepseek/src/models.ts:13`）。这两个场景证明，无论路由是否声明 `toolUpdate`，lyteboat 内核在工具集变化时写出的日志都与官方一致。
 
-**归一化做什么**（`lyteboat/tooling/testing/src/session-log.ts` 的 `normalizeSessionLog`）：
+**归一化做什么**（`lyteboat/test-support/testkit/src/session-log.ts` 的 `normalizeSessionLog`）：
 
 - 去掉计时字段（`TIMING_KEYS`：`time`、`time0`、`dt`、`createdAt`、`delayMs`）；
 - 看起来像 epoch 毫秒的整数换成 `<epoch-ms>`；
@@ -827,9 +827,9 @@ typert vs dsh 0.2.0-rc.2: @deepseek-ai/dsh-llm, @deepseek-ai/dsh-api-session-con
 | `LYTEBOAT_HOME` | lyteboat 的全部数据（profile、会话、存储），默认 `~/.lyteboat`；launcher 在任何 dsh 模块加载之前把它导出为 `DSH_HOME`，所以用户的 `~/.dsh` 不会被碰 | `CLAUDE.md`「Commands」末段 |
 | `DSH_TELEMETRY_DISABLED=1` | 测试与 CI 必设 | 同上；`ci.yml` |
 | `LYTEBOAT_DIST_CACHE` | G3 基线、G4–G6 安装树与内核打包、`dist:import`/`dist:snapshot` 的原版树的位置，默认 `~/.cache/lyteboat-dist`。几个工作树并行跑 `pnpm run dsh-compat` 时，各自设一个目录，免得互相删掉对方正在用的树 | `scripts/dist/trees.ts` `distCache` |
-| `DEEPSEEK_BASE_URL` + `DEEPSEEK_API_KEY` | 指向脚本化模型（`@lyteboat/testing/scripted-model`）做 lyteboat 的 e2e 或实跑；G4–G6 用上游的 `@deepseek-ai/dsh-llm-mock-server` | `CLAUDE.md`「Commands」 |
+| `DEEPSEEK_BASE_URL` + `DEEPSEEK_API_KEY` | 指向脚本化模型（`@lyteboat/testkit/scripted-model`）做 lyteboat 的 e2e 或实跑；G4–G6 用上游的 `@deepseek-ai/dsh-llm-mock-server` | `CLAUDE.md`「Commands」 |
 
-**脚本化模型怎么接。** `startScriptedModel(script)` 在 `127.0.0.1` 的随机端口起一个 DeepSeek Messages 协议的服务器，按请求用途（loop / title / router）回答并记录每个请求；`withTitle` 替你回答会话标题请求；`scriptedModelEnv(model)` 给出 `DEEPSEEK_BASE_URL`（在 `baseURL` 后补 `/v1`）、`DEEPSEEK_API_KEY=mock-key` 和 `DSH_TELEMETRY_DISABLED=1`（`lyteboat/tooling/testing/src/scripted-model.ts`）。模型服务器和启动它的进程在同一个事件循环里：用 `spawnSync` 调 launcher 会阻塞事件循环，服务器就答不了请求，launcher 会一直等；必须用异步的 `spawn`。在构建好的 launcher 上这样跑的现成写法是 `lyteboat/apps/cli/tests/*.e2e.ts`（`@lyteboat/testing/process` 的 `lyteboatLauncher`）。
+**脚本化模型怎么接。** `startScriptedModel(script)` 在 `127.0.0.1` 的随机端口起一个 DeepSeek Messages 协议的服务器，按请求用途（loop / title / router）回答并记录每个请求；`withTitle` 替你回答会话标题请求；`scriptedModelEnv(model)` 给出 `DEEPSEEK_BASE_URL`（在 `baseURL` 后补 `/v1`）、`DEEPSEEK_API_KEY=mock-key` 和 `DSH_TELEMETRY_DISABLED=1`（`lyteboat/test-support/testkit/src/scripted-model.ts`）。模型服务器和启动它的进程在同一个事件循环里：用 `spawnSync` 调 launcher 会阻塞事件循环，服务器就答不了请求，launcher 会一直等；必须用异步的 `spawn`。在构建好的 launcher 上这样跑的现成写法是 `lyteboat/apps/cli/tests/*.e2e.ts`（`@lyteboat/testkit/process` 的 `lyteboatLauncher`）。
 
 不需要模型的 [实跑]（`config dump`、`contract:check`、`dist:delta`、准入实验）直接设临时 `LYTEBOAT_HOME`/`DSH_HOME` 和 `DSH_TELEMETRY_DISABLED=1` 运行即可：
 
@@ -923,7 +923,7 @@ eq true
 - **例外：非内核的 dsh peer 写跟踪版本的精确值。**
 - 内核 peer 写 `workspace:*`。
 
-例子是 `lyteboat/tooling/testing/package.json`：peer `"@deepseek-ai/dsh-app-boot": "0.2.0-rc.2"`，devDependency `"@deepseek-ai/dsh-app-boot": "catalog:dsh"`；dsh-llm 在两处都是 `workspace:*`。
+例子是 `lyteboat/test-support/testkit/package.json`：peer `"@deepseek-ai/dsh-app-boot": "0.2.0-rc.2"`，devDependency `"@deepseek-ai/dsh-app-boot": "catalog:dsh"`；dsh-llm 在两处都是 `workspace:*`。
 
 **为什么。** 准入逻辑在 `up:packages/boot/app-boot/src/plugin-compatibility.ts:61-88`：
 

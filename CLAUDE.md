@@ -99,7 +99,7 @@ TypeScript 6 (`strict`, `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`
 
 The layers and what each package does are in README.md「项目结构」; `dsh/kernel.json` lists the kernel. The rules:
 
-- Under `lyteboat/`, one directory per layer, and a package's layer is its directory. `lyteboat/apps/*` owns a process, and only `lyteboat/apps/cli` owns a bin. `lyteboat/bundles/*` are compositions a profile includes by name, with no bin of their own. `lyteboat/plugins/*` are the capabilities the bundles wire together, `lyteboat/core/*` are declarations, and `lyteboat/tooling/*` is test infrastructure no runtime package depends on.
+- Under `lyteboat/`, one directory per layer, and a package's layer is its directory. `lyteboat/apps/*` owns a process, and only `lyteboat/apps/cli` owns a bin. `lyteboat/bundles/*` are compositions a profile includes by name, with no bin of their own. `lyteboat/plugins/*` are the capabilities the bundles wire together, `lyteboat/core/*` are declarations, and `lyteboat/test-support/*` is test infrastructure no runtime package depends on.
 - Business agents are not part of the distribution. They sit beside it in `examples/<kind>/*`, build on `lyteboat/`, and nothing in `lyteboat/` names them. A new runnable mode (an SDK entry, say) is a new `lyteboat/bundles/<name>`, not a second app and not a branch inside `@lyteboat/headless`.
 - Each lyteboat package has `src/` (compiled to `lib/`, gitignored), `tests/`, its own `tsconfig.json` with `references` to every workspace package it imports (kernel packages included), and an entry in the root `tsconfig.json`. Its package.json has an `exports` entry per public subpath whose first key is the `@lyteboat/source` condition pointing at `src/*.ts`.
 - `exports` is the only resolution table; there is no `paths` table. Typecheck (`customConditions` in `lyteboat/tsconfig.base.json`) and vitest set `@lyteboat/source` and read `src`. Node, the built CLI (`lyteboat/apps/cli/lib/bin.js`), and cordis compositions use the default conditions and load `lib/`.
@@ -116,13 +116,13 @@ apps/*                          ← processes: they select and boot compositions
 bundles/*                       ← compositions: they wire, they do not implement behavior
 plugins/*                       ← lyteboat plugins; depend on core + dsh seams; between plugins only `import type` (a service declaration)
 core/contracts                  ← types, constants, declaration merging, and the schemas of the types it declares; no other runtime behavior
-tooling/*                       ← tests only (devDependencies); depends on core + dsh
+test-support/*                  ← tests only (devDependencies); depends on core + dsh
 dsh/ (the kernel) + @deepseek-ai/dsh-* from npm
                                 ← the seams: tools, skills, llm, sessions, sessionProjections, systemPrompt, agents, presets;
                                   the kernel knows no lyteboat package
 ```
 
-`pnpm run lint` enforces the direction with `scripts/check-layers.ts` (runtime edges per layer, devDependency edges to `lyteboat/tooling/*`, between bundles, and from `examples/*/*` to `lyteboat/bundles/*` and `lyteboat/apps/*`, no edge into `examples/`, value imports between plugins, no `@lyteboat/*` anywhere in the kernel), and with knip the declarations (every import a package's `src` or `tests` makes resolves through a dependency that package declares) and dead exports (knip's `exports` and `types` checks).
+`pnpm run lint` enforces the direction with `scripts/check-layers.ts` (runtime edges per layer, devDependency edges to `lyteboat/test-support/*`, between bundles, and from `examples/*/*` to `lyteboat/bundles/*` and `lyteboat/apps/*`, no edge into `examples/`, value imports between plugins, no `@lyteboat/*` anywhere in the kernel), and with knip the declarations (every import a package's `src` or `tests` makes resolves through a dependency that package declares) and dead exports (knip's `exports` and `types` checks).
 
 Hard rules:
 
@@ -192,7 +192,7 @@ Run only the gates the change can affect, and report only the commands you ran.
 
 | Task type | Tests required |
 |---|---|
-| `feature` / new plugin | Unit: happy path + ≥1 boundary case on the unit host (`createLyteboatUnitHost` + `MockAdapter` from `@lyteboat/testing`). Composition: one `*.composite.ts` in the bundle (or agent) that wires it, booting the composition in process with the scripted model and asserting on the session log. A new process surface (a flag, a bin, a profile) also gets an `lyteboat/apps/<app>/tests/*.e2e.ts` on the built binary. |
+| `feature` / new plugin | Unit: happy path + ≥1 boundary case on the unit host (`createLyteboatUnitHost` + `MockAdapter` from `@lyteboat/testkit`). Composition: one `*.composite.ts` in the bundle (or agent) that wires it, booting the composition in process with the scripted model and asserting on the session log. A new process surface (a flag, a bin, a profile) also gets an `lyteboat/apps/<app>/tests/*.e2e.ts` on the built binary. |
 | port from the reference implementation | Golden fixtures generated by the reference implementation's Python code, compared with deep equality; each deliberate deviation is a named test. |
 | `bug` | Regression test that fails before and passes after. |
 | `refactor` | Existing tests pass before and after; no new tests unless behavior moved. |
@@ -203,7 +203,7 @@ Conventions:
 - **Tests are type-checked, not only transpiled.** `tsc -b` covers `src/` only and vitest strips types, so `pnpm run typecheck` also runs `tsc -p tsconfig.tests.json`; CI runs it.
 - **Tests describe behavior, not implementation.** Name them `test('<subject> <does what> when <condition>')`; assert on session-log nodes, projection state, the model request the scripted server recorded, or the tool result, never on private fields.
 - **Mock the boundary, not the unit.** The model (`MockAdapter` in unit tests, the scripted DeepSeek Messages server in e2e), the filesystem for skills and templates (fixtures under `tests/fixtures`), the clock when ordering matters. Never mock a lyteboat service to test another lyteboat service; mount both.
-- **Who tests what.** `lyteboat/plugins/*` and `lyteboat/core/*` test their own behavior (`*.spec.ts`, in process, from `src`); `lyteboat/bundles/*` and `examples/agents/*` test their composition (`*.composite.ts`); `lyteboat/apps/*` test only their process surface — flags, help, exit codes, profiles — plus one built-binary smoke per bundle (`*.e2e.ts`); an agent's built-binary smoke is in its own `tests/`. A test never reaches into another package's `tests/` or `src/` by relative path; shared helpers live in `@lyteboat/testing`.
+- **Who tests what.** `lyteboat/plugins/*` and `lyteboat/core/*` test their own behavior (`*.spec.ts`, in process, from `src`); `lyteboat/bundles/*` and `examples/agents/*` test their composition (`*.composite.ts`); `lyteboat/apps/*` test only their process surface — flags, help, exit codes, profiles — plus one built-binary smoke per bundle (`*.e2e.ts`); an agent's built-binary smoke is in its own `tests/`. A test never reaches into another package's `tests/` or `src/` by relative path; shared helpers live in `@lyteboat/testkit`.
 - One `test.skip` is acceptable only with a reason string; a skipped new test marks the step ⚠️ partial in the design document.
 - The unit harness, kernel tests, composition and e2e runs, the scripted model, and where fixtures live: `.claude/rules/testing.md`.
 

@@ -19,8 +19,8 @@
     "lyteboat/core/*/src/**/*.ts",
     "examples/*/*/tests/**/*.ts",
     "examples/*/*/src/**/*.ts",
-    "lyteboat/tooling/*/tests/**/*.ts",
-    "lyteboat/tooling/*/src/**/*.ts",
+    "lyteboat/test-support/*/tests/**/*.ts",
+    "lyteboat/test-support/*/src/**/*.ts",
     "scripts/**/*.ts",
     "dsh-compat/**/*.ts"
   ],

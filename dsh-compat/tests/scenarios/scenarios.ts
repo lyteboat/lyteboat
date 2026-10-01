@@ -8,7 +8,7 @@
  */
 
 import { fileURLToPath } from 'node:url'
-import type { SessionLogRecord } from '@lyteboat/testing/session-log'
+import type { SessionLogRecord } from '@lyteboat/testkit/session-log'
 import type { OfficialScenario } from '../support/official-cli.ts'
 
 /** One G4 run, and what its official log must show when the scenario's setup could fail the same way on both sides. */

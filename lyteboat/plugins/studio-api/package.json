@@ -36,7 +36,7 @@
     "@lyteboat/aux-llm": "workspace:*",
     "@lyteboat/distro": "workspace:*",
     "@lyteboat/skill-router": "workspace:*",
-    "@lyteboat/testing": "workspace:*",
+    "@lyteboat/testkit": "workspace:*",
     "@lyteboat/tool-policy": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis",

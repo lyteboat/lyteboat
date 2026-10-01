@@ -11,7 +11,7 @@ import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { startMockLlmServer, type MockLlmBehavior, type MockLlmServerOptions } from '@deepseek-ai/dsh-llm-mock-server'
-import { findSessionLogs, normalizeSessionLog, readSessionLog, type SessionLogRecord } from '@lyteboat/testing/session-log'
+import { findSessionLogs, normalizeSessionLog, readSessionLog, type SessionLogRecord } from '@lyteboat/testkit/session-log'
 
 /** One scripted run: the task, the model's behaviors in order, and the workspace it runs in. */
 export interface OfficialScenario {

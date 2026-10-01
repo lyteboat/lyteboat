@@ -10,7 +10,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import LyteboatDistroService from '@lyteboat/distro'
-import { MockAdapter, createLyteboatUnitHost, maxTokensResponse, textResponse } from '@lyteboat/testing'
+import { MockAdapter, createLyteboatUnitHost, maxTokensResponse, textResponse } from '@lyteboat/testkit'
 import AuxLlmService, { type AuxLlmCall, type Config } from '@lyteboat/aux-llm'
 
 async function harness(adapter: MockAdapter, config: Config = {}): Promise<Context> {

@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url'
-import { LYTEBOAT_HEADLESS_AGENT_BUNDLES, bootComposition, type CompositionRun, type PatchOptions } from '@lyteboat/testing/composition'
+import { LYTEBOAT_HEADLESS_AGENT_BUNDLES, bootComposition, type CompositionRun, type PatchOptions } from '@lyteboat/testkit/composition'
 
 /** This package's test fixtures: agent directories, plugin files, history files. */
 export const FIXTURES = fileURLToPath(new URL('../fixtures', import.meta.url))

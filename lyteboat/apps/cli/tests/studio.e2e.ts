@@ -8,8 +8,8 @@
  */
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it, vi } from 'vitest'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { scriptedModelEnv, startScriptedModel, withTitle } from '@lyteboat/testing/scripted-model'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { scriptedModelEnv, startScriptedModel, withTitle } from '@lyteboat/testkit/scripted-model'
 import { runLyteboat, startLyteboat } from './support/lyteboat-process.ts'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))

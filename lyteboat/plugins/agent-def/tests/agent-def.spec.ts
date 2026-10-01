@@ -14,7 +14,7 @@ import LyteboatDistroService from '@lyteboat/distro'
 import IntakeGuardService from '@lyteboat/intake-guard'
 import RequestContextService from '@lyteboat/request-context'
 import SkillRouterService from '@lyteboat/skill-router'
-import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, mountAgentStandingScope, textResponse } from '@lyteboat/testing'
+import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, mountAgentStandingScope, textResponse } from '@lyteboat/testkit'
 import ToolPolicyService from '@lyteboat/tool-policy'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))

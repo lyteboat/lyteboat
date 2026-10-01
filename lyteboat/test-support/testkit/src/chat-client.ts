@@ -3,7 +3,7 @@
  * enterprise event stream read frame by frame. It knows the wire only (the
  * `event:` / `data:` lines and `: keep-alive` comments), not chat-api's types,
  * so this package never depends on a plugin.
- * @module @lyteboat/testing/chat-client
+ * @module @lyteboat/testkit/chat-client
  */
 
 /** One enterprise frame as the wire carries it. */

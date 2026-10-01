@@ -349,7 +349,7 @@ mkdir -p examples/agents/policy-desk/{src,tests,assets/sample-data,assets/skills
     "@lyteboat/intake-guard": "workspace:*",
     "@lyteboat/request-context": "workspace:*",
     "@lyteboat/skill-router": "workspace:*",
-    "@lyteboat/testing": "workspace:*",
+    "@lyteboat/testkit": "workspace:*",
     "@lyteboat/tool-policy": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-llm": "workspace:*",
@@ -368,7 +368,7 @@ mkdir -p examples/agents/policy-desk/{src,tests,assets/sample-data,assets/skills
 | `files` | 发布时需要的全部运行时文件：`lib`、`agent.yml`、`assets`（技能、卡片模板、示例数据都在它下面，§1.3）。写了 `agent.cordis.yml` 的 agent 把它也列上 |
 | `dependencies` | 照金融智能体（`examples/agents/finance/package.json`，它另有本例用不到的 `zod`）：代码里当库用的包。`@lyteboat/agent-def` 提供 `lyteboatAgentDef` 和 `LyteboatAgentTool`、`LyteboatAgentHost` 两个类型，它是库，不是宿主上的服务（`CLAUDE.md`「Coding conventions」的 A plugin is a class 一条）；`@deepseek-ai/dsh-tools` 提供纯函数 `defineTool`（内核包，所以是 `workspace:*`）；`@lyteboat/contracts` 只提供类型 |
 | `peerDependencies` | `@lyteboat/a2ui`：它是宿主上的服务插件，工具从它取两个纯函数 `cardMarker`、`cardsPresentationMeta`，peer 表示「用宿主树里那一份」（金融智能体同样把它放在 peer）。声明用到的宿主服务不在这里写：`lyteboatAgentDef` 自己注入它们，agent 的代码只调 `host` 上的方法（§0.3） |
-| `devDependencies` | 测试 import 的包：`@lyteboat/testing`；单元测试挂到宿主上的服务所在的包（`@lyteboat/distro`、`@lyteboat/tool-policy`、`@lyteboat/aux-llm`、`@lyteboat/skill-router`、`@lyteboat/a2ui`、`@lyteboat/request-context`、`@lyteboat/intake-guard`，以及技能注册表 `@deepseek-ai/dsh-skill`）；只 import 类型的 `@deepseek-ai/cordis`（`Context`）、`@deepseek-ai/dsh-llm`（`GenerateOptions`、`StreamChunk`）、`@deepseek-ai/dsh-session`（`SessionEvent`）；外加 composite 测试要启动的 bundle（`@lyteboat/base`、`@lyteboat/headless`），以及冒烟要运行的启动器 `@lyteboat/cli`（§2.16）。`examples` 是最外层：运行时（`dependencies`、`peerDependencies`）只能依赖 `plugins` 和 `core`，`apps`、`bundles`、`tooling` 只能经 devDependencies 依赖，反过来没有任何层能依赖 `examples`（`scripts/check-layers.ts` `RUNTIME`、`DEV_ONLY`，`CLAUDE.md`「Architecture boundaries」）。测试 import 了却没列的包，`pnpm run lint` 里的 knip 会报 `Unlisted dependencies` |
+| `devDependencies` | 测试 import 的包：`@lyteboat/testkit`；单元测试挂到宿主上的服务所在的包（`@lyteboat/distro`、`@lyteboat/tool-policy`、`@lyteboat/aux-llm`、`@lyteboat/skill-router`、`@lyteboat/a2ui`、`@lyteboat/request-context`、`@lyteboat/intake-guard`，以及技能注册表 `@deepseek-ai/dsh-skill`）；只 import 类型的 `@deepseek-ai/cordis`（`Context`）、`@deepseek-ai/dsh-llm`（`GenerateOptions`、`StreamChunk`）、`@deepseek-ai/dsh-session`（`SessionEvent`）；外加 composite 测试要启动的 bundle（`@lyteboat/base`、`@lyteboat/headless`），以及冒烟要运行的启动器 `@lyteboat/cli`（§2.16）。`examples` 是最外层：运行时（`dependencies`、`peerDependencies`）只能依赖 `plugins` 和 `core`，`apps`、`bundles`、`test-support` 只能经 devDependencies 依赖，反过来没有任何层能依赖 `examples`（`scripts/check-layers.ts` `RUNTIME`、`DEV_ONLY`，`CLAUDE.md`「Architecture boundaries」）。测试 import 了却没列的包，`pnpm run lint` 里的 knip 会报 `Unlisted dependencies` |
 
 **这套分法是金融智能体的做法，不是 `CLAUDE.md` 的字面规则。** `CLAUDE.md`「Coding conventions」的 Tooling 一条说 dsh 和 cordis 包写成 `peerDependencies`（外加 `devDependencies`）。现有的包并不一致：金融智能体把 `dsh-tools` 放在 `dependencies`，把 `dsh-agent` 放在 peer；`@lyteboat/tool-policy` 把 `dsh-scope` 放在 `dependencies`，却把 `dsh-tools` 放在 peer（`lyteboat/plugins/tool-policy/package.json`）。两种写法 knip 和 check-layers 都接受。`scripts/upstream-pins.spec.ts` 只检查 `lyteboat/` 下的包（`scripts/upstream-pins.spec.ts`），`examples/` 下的 agent 不在它的检查范围里，所以写 dsh peer 时要自己守住这条硬约束：内核包写 `workspace:*`，非内核 dsh 包写跟踪版本的精确号 `0.2.0-rc.2`，不能写 `catalog:dsh`。原因是 dsh 启动准入从磁盘上的 manifest 读一行的 dsh peer，而 pnpm 不会解析那里的 `catalog:`（同一条，`scripts/upstream-pins.spec.ts`）。本例只依赖内核包和 lyteboat 包，没有非内核的 dsh 包；agent 自己带 dsh 工具行时（§4.11）碰得到这条。
 
@@ -405,7 +405,7 @@ agent 目录在仓库根下三层（`examples/agents/policy-desk`），所以 `e
 +      "path": "./examples/agents/policy-desk"
 +    },
      {
-       "path": "./lyteboat/tooling/testing"
+       "path": "./lyteboat/test-support/testkit"
      }
 ```
 
@@ -947,16 +947,16 @@ DEEPSEEK_API_KEY=<你的 key> node lyteboat/apps/cli/lib/bin.js headless --agent
 LYTEBOAT_POLICY_DESK_BOOK=<保单簿 JSON 的路径> DEEPSEEK_API_KEY=<你的 key> node lyteboat/apps/cli/lib/bin.js headless --agents ./examples/agents --agent policy-desk "保单 P-1001 还有效吗"
 ```
 
-**用脚本模型**（不需要 key，结果确定）：把下面这段存到仓库外，例如 `$SCRATCH/policy-desk-run.sh`。它启动 `@lyteboat/testing` 的脚本模型，用 `scriptedModelEnv` 把 DeepSeek 的地址和 key 指过去，在临时 `LYTEBOAT_HOME` 下运行构建好的 CLI，再把会话日志逐条打印出来。模型的回答按请求用途决定：路由请求靠系统文本里的 `skill 路由器` 识别，标题请求靠 `concise title` 识别（`lyteboat/tooling/testing/src/scripted-model.ts` `classify`；业务模式不发标题请求，`withTitle` 留着也无妨）；loop 请求在查完保单之后，照 digest 的要求把卡片标记单独写一行。`ROOT` 和 `SESSION` 两个环境变量留给 §4.10 的续聊用。
+**用脚本模型**（不需要 key，结果确定）：把下面这段存到仓库外，例如 `$SCRATCH/policy-desk-run.sh`。它启动 `@lyteboat/testkit` 的脚本模型，用 `scriptedModelEnv` 把 DeepSeek 的地址和 key 指过去，在临时 `LYTEBOAT_HOME` 下运行构建好的 CLI，再把会话日志逐条打印出来。模型的回答按请求用途决定：路由请求靠系统文本里的 `skill 路由器` 识别，标题请求靠 `concise title` 识别（`lyteboat/test-support/testkit/src/scripted-model.ts` `classify`；业务模式不发标题请求，`withTitle` 留着也无妨）；loop 请求在查完保单之后，照 digest 的要求把卡片标记单独写一行。`ROOT` 和 `SESSION` 两个环境变量留给 §4.10 的续聊用。
 
 ```sh
 node --input-type=module <<'EOF'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { scriptedModelEnv, startScriptedModel, withTitle } from '@lyteboat/testing/scripted-model'
-import { lyteboatLauncher } from '@lyteboat/testing/process'
-import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
+import { scriptedModelEnv, startScriptedModel, withTitle } from '@lyteboat/testkit/scripted-model'
+import { lyteboatLauncher } from '@lyteboat/testkit/process'
+import { findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
 
 const task = process.env.TASK ?? '保单 P-1001 还有效吗'
 const model = await startScriptedModel(withTitle((request) => {
@@ -1142,7 +1142,7 @@ describe('policyDeskVerdict', () => {
 })
 ```
 
-`tests/policy-desk.spec.ts` 把整个 agent 挂在**单元宿主**上。`createLyteboatUnitHost(adapter)`（`@lyteboat/testing`）按 `.claude/rules/testing.md`的 Unit harness 一条搭好宿主：dsh 的不变量注册表、dsh 服务、内核的 agent loop，`adapter` 作为 `mock` provider 的模型，测试结束时自动释放（`lyteboat/tooling/testing/src/index.ts`）。测试再挂上声明要用的 lyteboat 服务，然后用 `mountAgentStandingScope(ctx, agentDir, agentRow)` 把 agent 的那一行挂上：它照 dsh 的 preset 注册表的做法建一个常驻作用域，以 agent 目录为 `baseUrl` 挂这一行，返回的 `createAgentInstance(sessionId)` 建一个挂在这个作用域下的 Agent 实例，就像这个 agent 的一个会话；这一行没有激活（挂载失败，或者一直等着单元宿主上没有的服务）时，它抛错，等服务时报出缺的服务名（`index.ts`）。`followUpAndWait(agent, text)` 发一条普通的用户消息并等到 agent 空闲（`index.ts`），它不经过 `submit`；要走 `lyteboat headless --agent` 那条路径，就调 `ctx.intakeGuard.submit` 再 `agent.whenIdle()`。
+`tests/policy-desk.spec.ts` 把整个 agent 挂在**单元宿主**上。`createLyteboatUnitHost(adapter)`（`@lyteboat/testkit`）按 `.claude/rules/testing.md`的 Unit harness 一条搭好宿主：dsh 的不变量注册表、dsh 服务、内核的 agent loop，`adapter` 作为 `mock` provider 的模型，测试结束时自动释放（`lyteboat/test-support/testkit/src/index.ts`）。测试再挂上声明要用的 lyteboat 服务，然后用 `mountAgentStandingScope(ctx, agentDir, agentRow)` 把 agent 的那一行挂上：它照 dsh 的 preset 注册表的做法建一个常驻作用域，以 agent 目录为 `baseUrl` 挂这一行，返回的 `createAgentInstance(sessionId)` 建一个挂在这个作用域下的 Agent 实例，就像这个 agent 的一个会话；这一行没有激活（挂载失败，或者一直等着单元宿主上没有的服务）时，它抛错，等服务时报出缺的服务名（`index.ts`）。`followUpAndWait(agent, text)` 发一条普通的用户消息并等到 agent 空闲（`index.ts`），它不经过 `submit`；要走 `lyteboat headless --agent` 那条路径，就调 `ctx.intakeGuard.submit` 再 `agent.whenIdle()`。
 
 ```ts
 /**
@@ -1161,7 +1161,7 @@ import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
 import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
-import { MockAdapter, createLyteboatUnitHost, followUpAndWait, mountAgentStandingScope, textResponse, toolCallResponse, type AgentStandingScope } from '@lyteboat/testing'
+import { MockAdapter, createLyteboatUnitHost, followUpAndWait, mountAgentStandingScope, textResponse, toolCallResponse, type AgentStandingScope } from '@lyteboat/testkit'
 import LyteboatDistroService from '@lyteboat/distro'
 import ToolPolicyService from '@lyteboat/tool-policy'
 import AuxLlmService from '@lyteboat/aux-llm'
@@ -1270,7 +1270,7 @@ describe('the policy-desk agent on the unit host (MockAdapter)', () => {
 })
 ```
 
-- **宿主上要挂什么，由声明决定。** 声明写了 `persona`、`skillRouting`、`toolPolicy`、`tools`、`admission`，`lyteboatAgentDef` 就注入 `systemPrompt`、`skills`、`skillRouter`、`toolPolicy`、`intakeGuard`，外加钩子的 `host` 背后的 `a2ui`、`auxLlm`、`requestContext`（`lyteboat/plugins/agent-def/src/index.ts` `injectedServicesOf`）。少挂一个，这一行就一直等那个服务，声明的东西一样也挂不上，`mountAgentStandingScope` 抛错并报出缺的服务（`lyteboat/tooling/testing/src/index.ts` `mountAgentStandingScope`）。实测去掉 `IntakeGuardService`，五个用例都失败在 `Error: mountAgentStandingScope: the agent row is not active; mount on the unit host the services it waits for: intakeGuard`。
+- **宿主上要挂什么，由声明决定。** 声明写了 `persona`、`skillRouting`、`toolPolicy`、`tools`、`admission`，`lyteboatAgentDef` 就注入 `systemPrompt`、`skills`、`skillRouter`、`toolPolicy`、`intakeGuard`，外加钩子的 `host` 背后的 `a2ui`、`auxLlm`、`requestContext`（`lyteboat/plugins/agent-def/src/index.ts` `injectedServicesOf`）。少挂一个，这一行就一直等那个服务，声明的东西一样也挂不上，`mountAgentStandingScope` 抛错并报出缺的服务（`lyteboat/test-support/testkit/src/index.ts` `mountAgentStandingScope`）。实测去掉 `IntakeGuardService`，五个用例都失败在 `Error: mountAgentStandingScope: the agent row is not active; mount on the unit host the services it waits for: intakeGuard`。
 - **`skill` 工具要自己注册一个。** 声明的 `toolPolicy` 把 `skill` 声明成 `always`，而单元宿主上没有 dsh-tool-skill；没人注册它，第一步就以「声明了却没有行注册」失败（§4.9）。测试用 `defineContentToolFixture` 注册一个替身，金融智能体的单元测试也这样做（`examples/agents/finance/tests/finance.spec.ts`）。
 - **路由照常跑。** 声明打开了 dynamic 路由，每一轮的第一步都有一次路由的旁路调用，它和 loop 请求用同一个 `MockAdapter`。脚本靠系统文本里的 `skill 路由器` 认出它，不靠调用顺序（`.claude/rules/testing.md`的 Unit harness 一条）；路由到 `policy-lookup` 之后两个工具才可见，模型才调得到 `query_policy`。所以一次查询是三次模型调用：路由、调工具、作答。路由本身的细节由组合测试负责（§2.15）。
 - `validateFullPayload(payload, { strict: true })` 按默认的领域中立目录做契约校验，`renderCard` 不做这一步（§2.9、§2.10）。
@@ -1289,7 +1289,7 @@ npx vitest run --project source examples/agents/policy-desk --exclude '**/*.e2e.
 
 ### 2.15 组合测试：`tests/policy-desk.composite.ts`
 
-agent 必须有组合测试（`CLAUDE.md`「Testing」的测试表和 Who tests what）。`bootComposition`（`@lyteboat/testing/composition`）在测试进程里按 launcher 的方式启动 `LYTEBOAT_HEADLESS_AGENT_BUNDLES`（`dsh-base + dsh-headless + @lyteboat/base + @lyteboat/headless`），内部参数放在 `ctx.cmdlineArgs` 上；profile 跳过了要求的 bundle 时启动失败。loader 加载 `lib/`，所以要先构建（`lyteboat/tooling/testing/src/composition.ts`）。`createLyteboatScratch(name)` 给每个测试文件一个临时根目录，`run(label)` 在它下面建一对干净的 home 和工作区（`lyteboat/tooling/testing/src/scratch.ts`）；`scriptedModelEnv(model)` 给出指向脚本模型的环境变量（`scripted-model.ts`）；`printedSessionId(stderr)` 从 stderr 取会话 id（`composition.ts`）；`reopenRefusal(records)` 用 dsh 自己的校验器判断日志能不能重开（`lyteboat/tooling/testing/src/session-reopen.ts`）。
+agent 必须有组合测试（`CLAUDE.md`「Testing」的测试表和 Who tests what）。`bootComposition`（`@lyteboat/testkit/composition`）在测试进程里按 launcher 的方式启动 `LYTEBOAT_HEADLESS_AGENT_BUNDLES`（`dsh-base + dsh-headless + @lyteboat/base + @lyteboat/headless`），内部参数放在 `ctx.cmdlineArgs` 上；profile 跳过了要求的 bundle 时启动失败。loader 加载 `lib/`，所以要先构建（`lyteboat/test-support/testkit/src/composition.ts`）。`createLyteboatScratch(name)` 给每个测试文件一个临时根目录，`run(label)` 在它下面建一对干净的 home 和工作区（`lyteboat/test-support/testkit/src/scratch.ts`）；`scriptedModelEnv(model)` 给出指向脚本模型的环境变量（`scripted-model.ts`）；`printedSessionId(stderr)` 从 stderr 取会话 id（`composition.ts`）；`reopenRefusal(records)` 用 dsh 自己的校验器判断日志能不能重开（`lyteboat/test-support/testkit/src/session-reopen.ts`）。
 
 ```ts
 /**
@@ -1303,11 +1303,11 @@ agent 必须有组合测试（`CLAUDE.md`「Testing」的测试表和 Who tests 
  */
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { LYTEBOAT_HEADLESS_AGENT_BUNDLES, bootComposition, printedSessionId } from '@lyteboat/testing/composition'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
-import { reopenRefusal } from '@lyteboat/testing/session-reopen'
-import { scriptedModelEnv, startScriptedModel, withTitle, type ChatBlock, type RecordedRequest, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { LYTEBOAT_HEADLESS_AGENT_BUNDLES, bootComposition, printedSessionId } from '@lyteboat/testkit/composition'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
+import { reopenRefusal } from '@lyteboat/testkit/session-reopen'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ChatBlock, type RecordedRequest, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 
 /** The agents root this package lives in, as `--agents ./examples/agents` names it. */
 const AGENTS = fileURLToPath(new URL('../..', import.meta.url))
@@ -1493,10 +1493,10 @@ pnpm run build && npx vitest run examples/agents/policy-desk/tests/policy-desk.c
 import { createRequire } from 'node:module'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { lyteboatLauncher } from '@lyteboat/testing/process'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
-import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { lyteboatLauncher } from '@lyteboat/testkit/process'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
+import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 
 /** The examples/agents root this package lives in, as `--agents ./examples/agents` names it. */
 const AGENTS = fileURLToPath(new URL('../..', import.meta.url))
@@ -1550,9 +1550,9 @@ pnpm run build && npx vitest run examples/agents/policy-desk/tests/policy-desk-s
       Tests  1 passed (1)
 ```
 
-冒烟和 CLI 自己的 e2e 一样派生构建好的 `lib/bin.js`，但它不在 CLI 包里，也不能伸进 `lyteboat/apps/cli/tests/` 借那里的辅助文件（`CLAUDE.md`「Testing」的 Who tests what）。所以它自己用 `@lyteboat/testing/process` 的 `lyteboatLauncher` 绑定启动器，启动器的路径经本包对 `@lyteboat/cli` 的 devDependency 解析成 `@lyteboat/cli/lib/bin.js`，写法照金融智能体的冒烟（`examples/agents/finance/tests/finance-smoke.e2e.ts`）。`@lyteboat/cli` 在 `apps` 层，`examples` 只能经 devDependencies 依赖它（§2.2）。这一项要自己记得写：`createRequire(...).resolve` 不是 import，knip 不把它当依赖（实测去掉这一项，knip 照样通过），而根 `node_modules` 提升了每个 `@lyteboat/*` 包（`pnpm-workspace.yaml`），解析也能碰巧成功；写上它，这条边才出现在清单里，由 check-layers 检查。stdout 断言的是整轮输出：脚本的回答没写卡片标记，本轮正常结束，所以 `deferred` 的保单卡跟在回答后面，打成一行 `[card policy_card]`，写法和金融智能体的冒烟一样（`finance-smoke.e2e.ts`）。
+冒烟和 CLI 自己的 e2e 一样派生构建好的 `lib/bin.js`，但它不在 CLI 包里，也不能伸进 `lyteboat/apps/cli/tests/` 借那里的辅助文件（`CLAUDE.md`「Testing」的 Who tests what）。所以它自己用 `@lyteboat/testkit/process` 的 `lyteboatLauncher` 绑定启动器，启动器的路径经本包对 `@lyteboat/cli` 的 devDependency 解析成 `@lyteboat/cli/lib/bin.js`，写法照金融智能体的冒烟（`examples/agents/finance/tests/finance-smoke.e2e.ts`）。`@lyteboat/cli` 在 `apps` 层，`examples` 只能经 devDependencies 依赖它（§2.2）。这一项要自己记得写：`createRequire(...).resolve` 不是 import，knip 不把它当依赖（实测去掉这一项，knip 照样通过），而根 `node_modules` 提升了每个 `@lyteboat/*` 包（`pnpm-workspace.yaml`），解析也能碰巧成功；写上它，这条边才出现在清单里，由 check-layers 检查。stdout 断言的是整轮输出：脚本的回答没写卡片标记，本轮正常结束，所以 `deferred` 的保单卡跟在回答后面，打成一行 `[card policy_card]`，写法和金融智能体的冒烟一样（`finance-smoke.e2e.ts`）。
 
-最后一条断言故意不写 `.at(-1)`：它要证明的是这一轮结束了，不是 `turn/end` 恰好是最后一条。业务模式只写一条回退标题，落在 `turn/end` 之前；在带着标题请求的组合里（打开了 `session-title-llm` 行），模型给出的 `session/title` 是异步到达的，可能排在 `turn/end` 之后，`normalizeSessionLog` 为此专门去掉 `session/title*`（`lyteboat/tooling/testing/src/session-log.ts` `DROPPED_EVENT_TYPES`）。
+最后一条断言故意不写 `.at(-1)`：它要证明的是这一轮结束了，不是 `turn/end` 恰好是最后一条。业务模式只写一条回退标题，落在 `turn/end` 之前；在带着标题请求的组合里（打开了 `session-title-llm` 行），模型给出的 `session/title` 是异步到达的，可能排在 `turn/end` 之后，`normalizeSessionLog` 为此专门去掉 `session/title*`（`lyteboat/test-support/testkit/src/session-log.ts` `DROPPED_EVENT_TYPES`）。
 
 ### 2.17 收尾
 
@@ -1662,7 +1662,7 @@ sequenceDiagram
 
 ### 3.2 对应的会话日志片段
 
-日志在 `$LYTEBOAT_HOME/sessions/<编码后的 cwd>/session-<uuid>/session.v4.jsonl.zstd`（带 `--agent` 时 cwd 是 agent 的工作目录 `$LYTEBOAT_HOME/agent-workdirs/<id>`），每次持久写入追加一个 zstd 帧。`@lyteboat/testing/session-log` 的 `readSessionLog` 读文件并逐帧解码（`lyteboat/tooling/testing/src/session-log.ts` `decodeSessionLog`、`readSessionLog`，帧扫描在 `scanZstdFrames`）。第一行是会话头，其中 `"agentPreset":"policy-desk"`。下面是 §2.13 第一次运行的关键记录，已裁剪（去掉 `time`，长字段和 id 用 `…` 代替；`deepseek-flash` 是 dsh-base 配置的默认模型 id）：
+日志在 `$LYTEBOAT_HOME/sessions/<编码后的 cwd>/session-<uuid>/session.v4.jsonl.zstd`（带 `--agent` 时 cwd 是 agent 的工作目录 `$LYTEBOAT_HOME/agent-workdirs/<id>`），每次持久写入追加一个 zstd 帧。`@lyteboat/testkit/session-log` 的 `readSessionLog` 读文件并逐帧解码（`lyteboat/test-support/testkit/src/session-log.ts` `decodeSessionLog`、`readSessionLog`，帧扫描在 `scanZstdFrames`）。第一行是会话头，其中 `"agentPreset":"policy-desk"`。下面是 §2.13 第一次运行的关键记录，已裁剪（去掉 `time`，长字段和 id 用 `…` 代替；`deepseek-flash` 是 dsh-base 配置的默认模型 id）：
 
 ```jsonl
 {"type":"lyteboat/aux-llm-call","seq":3,"data":{"purpose":"skill-router","route":{"provider":"deepseek-official","model":"deepseek-flash"},"system":"你是一个 skill 路…","prompt":"<task>…</task>…<latest_user_input>保单 P-1001 还有效吗</latest_user_input>…","maxTokens":200,"temperature":0,"output":"{\"skill_id\":\"policy-lookup\",\"reason\":\"保单类\"}","durationMs":65},"ignorable":true}
@@ -1859,7 +1859,7 @@ agent 的行只能声明、注册（工具、准入函数）、监听：`lyteboa
 - 给模型的东西，只能走日志里有的渠道：工具 `render` 的文本（进 `tool/result.message`）、runtime context（`lyteboatState` 由 `tool/result.meta` 折叠而来）、技能调用消息（路由到的技能正文本身就是日志里的一条 user 消息）、persona 段（进 `system/message`）、准入回复（一条助手消息）、工具集的变化（`request/header` 加 `developer/message`，§3.3）。
 - 旁路调用也是一次模型请求，只是不进 loop：它的 system、prompt 和回答都记在那条 `lyteboat/aux-llm-call` 里（§3.2 的 seq 3）。agent 自己的旁路调用走 `host.auxLlm`，就自动有这份记录。
 - 不要在工具外面偷偷改 prompt，也不要用只存在于进程内存里的数据拼 prompt。
-- 想记录新的事实，先用已有的 envelope（`tool/result.meta`、助手消息的 `source`、人类消息的 `source`：请求上下文和准入判定就在这里）。只供审计、读者跳过也不影响重建会话的记录，可以用内核扩展 `session-append-ignorable` 追加成可忽略的（`Session.append(type, data, { ignorable: true })`，`lyteboat/aux-llm-call` 就是这样）；读者需要的事实绝不能放在可忽略的记录上。新的日志节点要登记在 contracts 里，并证明会话能持久化后重开（`CLAUDE.md`「Architecture boundaries」的 A new session event type is proven reopenable 一条）。`@lyteboat/testing/session-reopen` 的 `reopenRefusal` 就是这个证明用的检查（§2.15）。
+- 想记录新的事实，先用已有的 envelope（`tool/result.meta`、助手消息的 `source`、人类消息的 `source`：请求上下文和准入判定就在这里）。只供审计、读者跳过也不影响重建会话的记录，可以用内核扩展 `session-append-ignorable` 追加成可忽略的（`Session.append(type, data, { ignorable: true })`，`lyteboat/aux-llm-call` 就是这样）；读者需要的事实绝不能放在可忽略的记录上。新的日志节点要登记在 contracts 里，并证明会话能持久化后重开（`CLAUDE.md`「Architecture boundaries」的 A new session event type is proven reopenable 一条）。`@lyteboat/testkit/session-reopen` 的 `reopenRefusal` 就是这个证明用的检查（§2.15）。
 
 ### 4.8 状态对模型可见
 
@@ -2024,7 +2024,7 @@ export function apply(ctx) {
 
 夹具代表第三方代码，写成 `apply` 函数；agent 自己写这一行时，照 `CLAUDE.md`「Coding conventions」的 A plugin is a class 一条写成默认导出的类，依赖写在 `static inject` 里。`chatApi` 只由 serve 组合发布：带这种行的 agent 在 `lyteboat headless --agent` 下等不到它，preset 挂载审计会判这个 agent 失效，启动以 `alpha: frame-tag (./frame-tag.mjs): waiting for chatApi` 报错退出（机制同 [01-architecture.md §3.4](01-architecture.md#34-启动保证哪些能力) 缺 `skills` 的例子）。用 TypeScript 写这一行时，照 §7.8 的表为 `@lyteboat/chat-api` 加类型 import、依赖和 `tsconfig.json` 引用。
 
-组合测试用 `startComposition` 和 `LYTEBOAT_SERVE_BUNDLES` 在进程内起服务，用 `@lyteboat/testing/chat-client` 的 `postChat`、`streamChat` 调它（§7.7）；金融智能体的 `examples/agents/finance/tests/finance-chat.composite.ts` 是现成的例子，事件流的金样在同目录的 `fixtures/frames/`。
+组合测试用 `startComposition` 和 `LYTEBOAT_SERVE_BUNDLES` 在进程内起服务，用 `@lyteboat/testkit/chat-client` 的 `postChat`、`streamChat` 调它（§7.7）；金融智能体的 `examples/agents/finance/tests/finance-chat.composite.ts` 是现成的例子，事件流的金样在同目录的 `fixtures/frames/`。
 
 ### 4.14 评测用例：`lyteboat eval`
 
@@ -2357,7 +2357,7 @@ eval case files (1):
 | 模型看到了什么 | 看脚本模型记录的请求：`systemText`、`toolNames`、消息文本（包括 `<skill_content name="…">`、digest、`lyteboat:state` 的 JSON），以及**看不到**的东西（例如 `rootComponentId`、请求上下文） |
 | 本轮结束了 | `eventTypes(records)` 包含 `'turn/end'`；不要断言它是最后一条（§2.16） |
 
-还有两个小工具：`eventTypes(records)` 返回除会话头以外所有记录的 type；`normalizeSessionLog` 用于跨运行比较，它会去掉 `session/title*`，因为标题结果可能在 `turn/end` 之后才到（`lyteboat/tooling/testing/src/session-log.ts` `DROPPED_EVENT_TYPES`）。
+还有两个小工具：`eventTypes(records)` 返回除会话头以外所有记录的 type；`normalizeSessionLog` 用于跨运行比较，它会去掉 `session/title*`，因为标题结果可能在 `turn/end` 之后才到（`lyteboat/test-support/testkit/src/session-log.ts` `DROPPED_EVENT_TYPES`）。
 
 ### 5.3 命令
 
@@ -2459,7 +2459,7 @@ lyteboat: session session-…
 | Studio 看板的性能视图是空的，运行中的消息是 0 | 运行指标只有 serve 写，`lyteboat headless --agent` 和 eval 不写；或者 Studio 和 serve 用的不是同一个 `LYTEBOAT_HOME` | 用同一个 home 起 serve 和 Studio，经 `/chat` 发消息（§4.16） |
 | Studio 里起评测运行被拒（409） | 这个 agent 已经有一个运行在跑，或者全局已经有两个；或者这个 Studio 不是 `lyteboat` 启动器起的，没有可以起 `lyteboat eval` 的 bin | 等它跑完或点 Stop；用 `lyteboat studio` 起 Studio（§4.16） |
 | 热修技能之后，`serve --release` 退出 1：`<id>: the directory differs from its release <版本> (sha256:…): changed assets/skills/<名字>/SKILL.md` | 热修改了 agent 目录，摘要和锁不同，雷达上也标着偏离发布 | 把热修当新版本：升版本、重录基线、重新发布；不要就把文件恢复原样（§4.16、§4.15） |
-| 单元测试报 `Error: mountAgentStandingScope: the agent row is not active; mount on the unit host the services it waits for: intakeGuard`（实测） | 单元宿主上没挂声明要注入的某个服务，agent 的那一行一直在等它 | 按报出的名字挂上对应的服务（§2.14，`lyteboat/tooling/testing/src/index.ts` `mountAgentStandingScope`） |
+| 单元测试报 `Error: mountAgentStandingScope: the agent row is not active; mount on the unit host the services it waits for: intakeGuard`（实测） | 单元宿主上没挂声明要注入的某个服务，agent 的那一行一直在等它 | 按报出的名字挂上对应的服务（§2.14，`lyteboat/test-support/testkit/src/index.ts` `mountAgentStandingScope`） |
 | composite 测试拿到的请求比预期多一个 | agent 自己的旁路调用，脚本模型把它记成 `loop`；打开了标题行的组合里还有标题请求（`purpose === 'title'`，业务模式不发） | 按 `purpose` 过滤，`withTitle` 负责应答标题；旁路调用按它的系统文本认（§2.15） |
 
 ---
@@ -2571,19 +2571,19 @@ export interface LyteboatStepPayload {
 3. `package.json` 的 `peerDependencies` 和 `devDependencies` 都加 `"@deepseek-ai/dsh-session-projection": "workspace:*"`（内核包，`lyteboat/plugins/request-context/package.json`）。少了这一处，类型检查照样通过（包已经提升到根 `node_modules`），但 `pnpm run lint` 里的 knip 报 `Unlisted dependencies`，指向那行 import。
 4. `tsconfig.json` 的 `references` 加 `{ "path": "../../../dsh/session/session-projection" }`（`lyteboat/plugins/request-context/tsconfig.json`），`tsc -b` 才按依赖顺序构建（`CLAUDE.md`「Repository layout」）。
 
-### 7.7 `@lyteboat/testing`
+### 7.7 `@lyteboat/testkit`
 
 | 子路径 | 导出 | 说明 |
 |---|---|---|
-| `@lyteboat/testing` | `createLyteboatUnitHost(adapter, options?)` → `Context`；`followUpAndWait(agent, text \| message)`；`mountAgentStandingScope(ctx, agentDir, agentRow)` → `{ standingKey, createAgentInstance(sessionId) }`；`MockAdapter`、`textResponse`、`toolCallResponse`、`maxTokensResponse`；`mountDshTestServices(ctx, options?)` | 单元宿主：不变量注册表、dsh 服务、内核 agent loop、`mock` provider，测试结束时释放；要测的 lyteboat 服务由测试自己挂（`lyteboat/tooling/testing/src/index.ts`）。`mountAgentStandingScope` 照 preset 注册表的做法，以 agent 目录为 `baseUrl` 在一个常驻作用域里挂 agent 的那一行，这一行没有激活时抛错，等服务时报出宿主上缺的服务名；`createAgentInstance` 建一个挂在它下面的 Agent 实例（§2.14）。`MockAdapter` 按脚本逐次应答，并记录每次请求（`mock-adapter.ts`） |
-| `@lyteboat/testing/scratch` | `createLyteboatScratch(name)` → `{ root, run(label, files?), remove() }`；`lyteboatTempDir(name)` → 目录路径 | 每个测试文件的临时目录树：`run(label)` 给出干净的 `home` 和 `workspace`（工作区里放一个 `README.md`），同一个 label 再调会重建（`scratch.ts`）。`lyteboatTempDir` 在系统临时目录下建一个空的 `lyteboat-<name>-*`，正在跑的测试结束时（vitest 的 `onTestFinished`）连同内容删掉，所以只能在测试体里调，不能在 `beforeEach`、`beforeAll` 或 `describe` 体里调 |
-| `@lyteboat/testing/composition` | `bootComposition({ bundles, args, cwd, env, home?, patches?, timeoutMs? })` → `{ code, home, stdout, stderr }`；`startComposition(同样的参数)` → `{ home, exited, stdout(), stderr(), waitForStdout(pattern), stop() }`；`LYTEBOAT_HEADLESS_AGENT_BUNDLES`、`LYTEBOAT_SERVE_BUNDLES`、`LYTEBOAT_EVAL_BUNDLES`、`LYTEBOAT_STUDIO_BUNDLES`、`LYTEBOAT_INSPECT_BUNDLES`；`pluginFileRow(file)`；`printedSessionId(stderr)` | 进程内启动组合；profile 跳过了要求的 bundle 时失败；`bootComposition` 等树请求退出，`startComposition` 在服务跑着时就返回，测试调完它再 `stop()`；`pluginFileRow` 相当于 `--plugin`（`composition.ts`） |
-| `@lyteboat/testing/chat-client` | `postChat(url, body, { token? })` → `{ status, body }`；`streamChat(url, body, { token?, onOpen?, onFrame? })` → `{ status, frames, keepAlives, refusal }` | 调 `/chat` 的测试客户端：一个 JSON 回答，或逐帧读 enterprise 事件流；`onFrame` 的 `leave()` 模拟调用方断开（`lyteboat/tooling/testing/src/chat-client.ts`） |
-| `@lyteboat/testing/scripted-model` | `startScriptedModel(script, { apiKey? })` → `{ baseURL, requests, loopRequests(), close() }`；`withTitle(script)`；`scriptedModelEnv(model)` | `RecordedRequest`：`purpose`（`loop`/`title`/`router`，agent 自己的旁路调用也记成 `loop`）、`body`、`lastUser`、`latestMessage`（最后一条 user 消息里最后一个不是 dsh 运行时上下文快照 `Current runtime context.` 的文本块，即调用方最后写的话）、`systemText`、`toolNames`、`calledTools`；回复为 `{ text }` 或 `{ toolCall: { name, arguments, id? } }`，脚本也可以返回 Promise，在它落定之前压住回答（`scripted-model.ts`）。`scriptedModelEnv` 给出 `DEEPSEEK_BASE_URL`（`${baseURL}/v1`）、`DEEPSEEK_API_KEY`（`mock-key`）、`DSH_TELEMETRY_DISABLED` |
-| `@lyteboat/testing/session-log` | `findSessionLogs(home)`、`readSessionLog(path)`、`waitForSessionLog(home, sessionId, until, { timeout?, interval? })`、`eventTypes(records)`、`normalizeSessionLog(records, options)` | 找、读（逐帧解压）、归一化会话日志（`session-log.ts`）；`waitForSessionLog` 用 vitest 的 `vi.waitFor` 轮询这个会话的日志，直到 `until` 成立，默认最多 10 秒、每 50 毫秒读一次 |
-| `@lyteboat/testing/json-lines` | `readJsonLines(file)` | 按行解析 JSON Lines 文件的每个非空行：评测的 `results.jsonl`、Studio 的审计日志、运行指标的日文件；会话日志仍走 `session-log` |
-| `@lyteboat/testing/session-reopen` | `reopenRefusal(records)` | dsh 的持久化拒绝重开这份日志的原因；能重开时为 `undefined`（`session-reopen.ts`） |
-| `@lyteboat/testing/process` | `lyteboatLauncher(bin)` → `{ runLyteboat(args, { env, cwd, timeoutMs }), startLyteboat(…) }` | 派生构建好的 CLI；`env` 里值为 `undefined` 的键会从子进程环境里删掉（`lyteboat/tooling/testing/src/process.ts` `childEnv`） |
+| `@lyteboat/testkit` | `createLyteboatUnitHost(adapter, options?)` → `Context`；`followUpAndWait(agent, text \| message)`；`mountAgentStandingScope(ctx, agentDir, agentRow)` → `{ standingKey, createAgentInstance(sessionId) }`；`MockAdapter`、`textResponse`、`toolCallResponse`、`maxTokensResponse`；`mountDshTestServices(ctx, options?)` | 单元宿主：不变量注册表、dsh 服务、内核 agent loop、`mock` provider，测试结束时释放；要测的 lyteboat 服务由测试自己挂（`lyteboat/test-support/testkit/src/index.ts`）。`mountAgentStandingScope` 照 preset 注册表的做法，以 agent 目录为 `baseUrl` 在一个常驻作用域里挂 agent 的那一行，这一行没有激活时抛错，等服务时报出宿主上缺的服务名；`createAgentInstance` 建一个挂在它下面的 Agent 实例（§2.14）。`MockAdapter` 按脚本逐次应答，并记录每次请求（`mock-adapter.ts`） |
+| `@lyteboat/testkit/scratch` | `createLyteboatScratch(name)` → `{ root, run(label, files?), remove() }`；`lyteboatTempDir(name)` → 目录路径 | 每个测试文件的临时目录树：`run(label)` 给出干净的 `home` 和 `workspace`（工作区里放一个 `README.md`），同一个 label 再调会重建（`scratch.ts`）。`lyteboatTempDir` 在系统临时目录下建一个空的 `lyteboat-<name>-*`，正在跑的测试结束时（vitest 的 `onTestFinished`）连同内容删掉，所以只能在测试体里调，不能在 `beforeEach`、`beforeAll` 或 `describe` 体里调 |
+| `@lyteboat/testkit/composition` | `bootComposition({ bundles, args, cwd, env, home?, patches?, timeoutMs? })` → `{ code, home, stdout, stderr }`；`startComposition(同样的参数)` → `{ home, exited, stdout(), stderr(), waitForStdout(pattern), stop() }`；`LYTEBOAT_HEADLESS_AGENT_BUNDLES`、`LYTEBOAT_SERVE_BUNDLES`、`LYTEBOAT_EVAL_BUNDLES`、`LYTEBOAT_STUDIO_BUNDLES`、`LYTEBOAT_INSPECT_BUNDLES`；`pluginFileRow(file)`；`printedSessionId(stderr)` | 进程内启动组合；profile 跳过了要求的 bundle 时失败；`bootComposition` 等树请求退出，`startComposition` 在服务跑着时就返回，测试调完它再 `stop()`；`pluginFileRow` 相当于 `--plugin`（`composition.ts`） |
+| `@lyteboat/testkit/chat-client` | `postChat(url, body, { token? })` → `{ status, body }`；`streamChat(url, body, { token?, onOpen?, onFrame? })` → `{ status, frames, keepAlives, refusal }` | 调 `/chat` 的测试客户端：一个 JSON 回答，或逐帧读 enterprise 事件流；`onFrame` 的 `leave()` 模拟调用方断开（`lyteboat/test-support/testkit/src/chat-client.ts`） |
+| `@lyteboat/testkit/scripted-model` | `startScriptedModel(script, { apiKey? })` → `{ baseURL, requests, loopRequests(), close() }`；`withTitle(script)`；`scriptedModelEnv(model)` | `RecordedRequest`：`purpose`（`loop`/`title`/`router`，agent 自己的旁路调用也记成 `loop`）、`body`、`lastUser`、`latestMessage`（最后一条 user 消息里最后一个不是 dsh 运行时上下文快照 `Current runtime context.` 的文本块，即调用方最后写的话）、`systemText`、`toolNames`、`calledTools`；回复为 `{ text }` 或 `{ toolCall: { name, arguments, id? } }`，脚本也可以返回 Promise，在它落定之前压住回答（`scripted-model.ts`）。`scriptedModelEnv` 给出 `DEEPSEEK_BASE_URL`（`${baseURL}/v1`）、`DEEPSEEK_API_KEY`（`mock-key`）、`DSH_TELEMETRY_DISABLED` |
+| `@lyteboat/testkit/session-log` | `findSessionLogs(home)`、`readSessionLog(path)`、`waitForSessionLog(home, sessionId, until, { timeout?, interval? })`、`eventTypes(records)`、`normalizeSessionLog(records, options)` | 找、读（逐帧解压）、归一化会话日志（`session-log.ts`）；`waitForSessionLog` 用 vitest 的 `vi.waitFor` 轮询这个会话的日志，直到 `until` 成立，默认最多 10 秒、每 50 毫秒读一次 |
+| `@lyteboat/testkit/json-lines` | `readJsonLines(file)` | 按行解析 JSON Lines 文件的每个非空行：评测的 `results.jsonl`、Studio 的审计日志、运行指标的日文件；会话日志仍走 `session-log` |
+| `@lyteboat/testkit/session-reopen` | `reopenRefusal(records)` | dsh 的持久化拒绝重开这份日志的原因；能重开时为 `undefined`（`session-reopen.ts`） |
+| `@lyteboat/testkit/process` | `lyteboatLauncher(bin)` → `{ runLyteboat(args, { env, cwd, timeoutMs }), startLyteboat(…) }` | 派生构建好的 CLI；`env` 里值为 `undefined` 的键会从子进程环境里删掉（`lyteboat/test-support/testkit/src/process.ts` `childEnv`） |
 
 ### 7.8 请求上下文、准入、旁路调用
 

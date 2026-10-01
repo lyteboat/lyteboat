@@ -2,7 +2,7 @@ packages:
   # lyteboat/<layer>/<package>: one directory per architecture layer; dependencies point
   # down only (scripts/check-layers.ts enforces it): apps own processes (the `lyteboat`
   # bin), bundles are compositions a profile includes by name, plugins are
-  # capabilities on the dsh seams, core are declarations, tooling is test infrastructure.
+  # capabilities on the dsh seams, core are declarations, test-support is test infrastructure.
   # examples/<kind>/<package> build on it; it never names them.
   - lyteboat/*/*
   - examples/*/*

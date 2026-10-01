@@ -9,7 +9,7 @@ import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import type { AgentCatalogEntry } from '@lyteboat/agent-catalog'
 import type { LyteboatAgentIdentity, LyteboatEvalRunRecord } from '@lyteboat/contracts'
-import { lyteboatTempDir } from '@lyteboat/testing/scratch'
+import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
 import { releaseAgent, type EvalBaselineReplay } from '../src/eval-release.ts'
 import type { EvalTurnResult } from '../src/eval-report.ts'
 

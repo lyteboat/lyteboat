@@ -5,7 +5,7 @@
  *
  * Adapted from deepseek-ai/deepseek-harness packages/core/agent-loop/tests/mock-adapter.ts
  * @ dsh-v0.2.0-rc.2 (639ed015), MIT — see THIRD_PARTY_NOTICES.md.
- * @module @lyteboat/testing/mock-adapter
+ * @module @lyteboat/testkit/mock-adapter
  */
 
 import type { GenerateOptions, LlmModelReasoningInfo, LlmResolvedModelInfo, StreamChunk, SystemPromptUpdate, ToolUpdate } from '@deepseek-ai/dsh-llm'

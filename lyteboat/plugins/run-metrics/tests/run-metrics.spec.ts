@@ -16,9 +16,9 @@ import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
 import type { LyteboatRunHeartbeat, LyteboatRunMetric } from '@lyteboat/contracts'
 import RunMetricsRecorder from '@lyteboat/run-metrics'
 import RunMetricsReaderService from '@lyteboat/run-metrics/reader'
-import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testing'
-import { readJsonLines } from '@lyteboat/testing/json-lines'
-import { lyteboatTempDir } from '@lyteboat/testing/scratch'
+import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testkit'
+import { readJsonLines } from '@lyteboat/testkit/json-lines'
+import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
 import { runMetricDayOf } from '../src/run-metric-files.ts'
 
 async function recorderHost(adapter: MockAdapter, dir: string): Promise<Context> {

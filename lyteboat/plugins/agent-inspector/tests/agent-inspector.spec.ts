@@ -16,7 +16,7 @@ import AgentInspectorService from '@lyteboat/agent-inspector'
 import AuxLlmService from '@lyteboat/aux-llm'
 import LyteboatDistroService from '@lyteboat/distro'
 import SkillRouterService from '@lyteboat/skill-router'
-import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
+import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testkit'
 import ToolPolicyService from '@lyteboat/tool-policy'
 
 const agentsRoot = fileURLToPath(new URL('./fixtures/agents', import.meta.url))

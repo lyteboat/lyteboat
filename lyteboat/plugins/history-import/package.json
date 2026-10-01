@@ -24,7 +24,7 @@
     "@deepseek-ai/dsh-session": "workspace:*"
   },
   "devDependencies": {
-    "@lyteboat/testing": "workspace:*",
+    "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",

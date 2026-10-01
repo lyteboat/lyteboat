@@ -5,7 +5,7 @@
  * home and run in the workspace, so no run sees another's sessions or files.
  * A test that needs only a directory of its own takes `lyteboatTempDir`, which
  * is removed when that test finishes.
- * @module @lyteboat/testing/scratch
+ * @module @lyteboat/testkit/scratch
  */
 
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'

@@ -1,9 +1,9 @@
 /**
  * Read the JSON Lines files a run writes beside its sessions (an eval run's
  * results, the Studio's audit log, a run-metrics day file) as parsed values.
- * Session logs go through `@lyteboat/testing/session-log`, which also decodes
+ * Session logs go through `@lyteboat/testkit/session-log`, which also decodes
  * their Zstandard form.
- * @module @lyteboat/testing/json-lines
+ * @module @lyteboat/testkit/json-lines
  */
 
 import { readFileSync } from 'node:fs'

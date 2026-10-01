@@ -1,9 +1,9 @@
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
 import { FIXTURES, headlessComposition } from './support/headless-composition.ts'
-import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 
 const AGENTS = join(FIXTURES, 'agents')
 const ANSWER = 'PRESET-RUN-OK'

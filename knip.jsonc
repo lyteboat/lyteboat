@@ -44,7 +44,7 @@
       "entry": ["src/*.ts", "tests/**/*.{spec,composite,e2e}.ts"],
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
-    "lyteboat/tooling/*": {
+    "lyteboat/test-support/*": {
       "entry": ["src/*.ts", "tests/**/*.{spec,composite,e2e}.ts"],
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     }
