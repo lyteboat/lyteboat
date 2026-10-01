@@ -1770,6 +1770,9 @@ importers:
       '@deepseek-ai/dsh-agent-loop':
         specifier: workspace:*
         version: link:../../../dsh/core/agent-loop
+      '@deepseek-ai/dsh-headless':
+        specifier: workspace:*
+        version: link:../../../dsh/bundle/headless
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../../dsh/llm/llm

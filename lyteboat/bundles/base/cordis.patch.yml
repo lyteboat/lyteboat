@@ -1,5 +1,6 @@
 # The @lyteboat/base bundle patch: the business base, applied right after
-# dsh-base and before the mode bundle (try, serve, eval, studio, inspect).
+# dsh-base (and dsh-headless in the one-shot) and before the mode bundle
+# (headless, serve, eval, studio, inspect).
 # dsh-base's own agent-loop row stays: its package resolves to lyteboat's
 # kernel (dsh/core/agent-loop), which dispatches lyteboat/intake and
 # lyteboat/pre-assemble. lyteboat's service rows sit on the host plane, where
