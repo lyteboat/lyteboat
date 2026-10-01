@@ -7,7 +7,8 @@
  * imported history; it submits the task through `intakeGuard.submit` with its
  * request context; and it prints the turn with its cards placed (each as a
  * `[card <area>]` line), or with `result: json` as one
- * {@link LyteboatHeadlessResult} object, and the session id to stderr. It
+ * {@link LyteboatHeadlessResult} object, and the session id to stderr (with
+ * `--json`, dsh's stream names it in its `session` event). It
  * publishes `headlessStartup`, which the runner row injects, only once it
  * listens, so the runner never starts a business run this row does not shape.
  * @module @lyteboat/headless

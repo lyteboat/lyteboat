@@ -122,7 +122,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 | `--agents <目录>` | 存放 agent 的目录（可重复） |
 | `--agent <id>` | 运行其中的某个 agent |
 | `--history <文件>` | 先导入一份外部对话历史，任务成为它的下一轮 |
-| `--session-id <id>` | 在已存的会话上续聊；每次运行都把会话 id 打到 stderr |
+| `--session-id <id>` | 在已存的会话上续聊；每次运行都把会话 id 打到 stderr（`--json` 时在事件流的 `session` 事件里） |
 | `--context <json>` | 请求上下文：一个 JSON 对象，内联或放在文件里；随请求落日志，工具读取，模型看不到 |
 | `--result <格式>` | `text`（默认：回答原文，每张卡片一行 `[card <区域>]`）或 `json`（这一轮打成一个 JSON 对象：结局、正文、卡片、工具、技能、模型、会话 id） |
 
@@ -242,7 +242,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | 路径 | 包 | 作用 |
 |---|---|---|
 | `lyteboat/apps/cli` | `@lyteboat/cli` | `lyteboat` 启动器：profile 模板、patch 叠加、启动（改编自 dsh 的 CLI） |
-| `lyteboat/bundles/base` | `@lyteboat/base` | 业务底座，headless-agent、serve、eval、studio、inspect 五个 profile 都带，只有一个 patch：发行版标记与各能力插件的服务行；关掉 dsh-base 的会话上传；关掉编码工具和只为它们服务的行，关掉沙箱、审批与权限，关掉工作区 AGENTS.md、本机包清单、插件管理、会话标题的旁路请求；不挂宿主的默认技能目录，不加宿主的 persona（dsh headless 给编码 agent 的前后缀也清掉）和 harness 身份段 |
+| `lyteboat/bundles/base` | `@lyteboat/base` | 业务底座，headless-agent、serve、eval、studio、inspect 五个 profile 都带，只有一个 patch：发行版标记与各能力插件的服务行；关掉编码工具和只为它们服务的行，关掉沙箱、审批与权限，关掉工作区 AGENTS.md、插件管理、会话标题的旁路请求（会话上传和本机包清单由内核的 dsh-base 关掉，COMPAT §8）；不挂宿主的默认技能目录，不加宿主的 persona（dsh headless 给编码 agent 的前后缀也清掉）和 harness 身份段 |
 | `lyteboat/bundles/headless` | `@lyteboat/headless` | `lyteboat headless --agent` 背后的业务一次性 bundle：dsh headless 的 runner 跑任务；它换上自己的启动行（在 dsh 的参数之外认 `--agent`、`--agents`、`--history`、`--context`、`--result`），监听 runner 的三个计划（内核扩展 `headless-hooks`）：挂上 agent 并移到它的工作目录、导入历史，请求进循环前先准入，输出按轮组合卡片 |
 | `lyteboat/bundles/eval` | `@lyteboat/eval` | `lyteboat eval` 背后的 bundle：只声明选中的 agent，挂上 session-controller（不带 Web 界面）和 eval-runner，跑完按结果退出 |
 | `lyteboat/bundles/serve` | `@lyteboat/serve` | `lyteboat serve` 背后的服务 bundle：声明 `--agents` 里的全部 agent，挂上 dsh 的 session-controller（不带 Web 界面）、`/chat` 和运行指标记录器 |
@@ -298,8 +298,8 @@ dsh.upstream.json     所跟踪的 dsh 版本
 
 ## 状态与路线图
 
-- 跟踪 dsh **0.2.0-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的五个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`、`headless-hooks`），上面所有闸门都对它通过。
-- 提供八个命令：原生底座的 `lyteboat web`（dsh 的 web 应用）；两个底座共用的 `headless`（一次性任务：dsh 自己的 agent，或带 `--agent` 以业务 agent 作答）；业务底座的 `serve`（`/chat` 服务）、`eval`（评测用例）、`release`（发布闸门与发布锁）、`inspect`（agent 由什么组成）、`studio`（Studio 工作台）、`config dump`（组合后的插件树），以及它们背后的能力插件、金融智能体、发行版工具与 16 包内核、兼容性闸门 G1–G6。完整清单见 [CHANGELOG](CHANGELOG.md)。
+- 跟踪 dsh **0.2.0-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的五个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`、`headless-hooks`）和 dsh-base 的一项发行版策略（关掉三项上传，COMPAT §8），上面所有闸门都对它通过。
+- 提供八个命令：原生底座的 `lyteboat web`（dsh 的 web 应用）；两个底座共用的 `headless`（一次性任务：dsh 自己的 agent，或带 `--agent` 以业务 agent 作答）；业务底座的 `serve`（`/chat` 服务）、`eval`（评测用例）、`release`（发布闸门与发布锁）、`inspect`（agent 由什么组成）、`studio`（Studio 工作台）；以及看任一 profile 组合后插件树的 `config dump`，以及它们背后的能力插件、金融智能体、发行版工具与 16 包内核、兼容性闸门 G1–G6。完整清单见 [CHANGELOG](CHANGELOG.md)。
 - 已知限制：
   - 业务模式的模型请求里还有几处宿主的痕迹：dsh 的技能调用消息带着技能目录的绝对路径；上下文压缩的摘要指令是按编码助手写的；persona 里的 `{{cwd}}` 渲染成服务器上的路径，业务 persona 不要用它。另外，启动器仍会读它启动目录里的 `.env`（留给运维放部署配置）。
   - 没有记忆和推荐问。旁路调用默认用 agent 自己的模型；技能路由可以在 `lyteboatAgentDef` 的 `skillRouting` 里另指 provider 和 model，准入分类还不能单独指定。

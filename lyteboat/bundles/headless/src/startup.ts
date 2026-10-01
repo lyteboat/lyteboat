@@ -82,7 +82,7 @@ function command(): Command {
     .option('--agent <id>', 'run this agent from the --agents directories')
     .option('--agents <dir>', 'a directory of agents (repeatable)', collect)
     .option('--history <file>', 'seed a new session from an external history file')
-    .option('--session-id <id>', 'continue the stored session with this id (every run prints its id to stderr)')
+    .option('--session-id <id>', 'continue the stored session with this id (every run prints its id: on stderr, or with --json in the session event)')
     .option('--context <json>', 'the request context: a JSON object, inline or in a file; logged with the request, read by tools, not shown to the model (an empty one keeps the session\'s)')
     .option('--result <format>', 'text (the answer, each card as a [card <area>] line), or json (the turn as one object: outcome, text, cards, tools, skill, model, session id)', 'text')
     .option('--json', 'write dsh\'s newline-delimited run events to stdout instead of the turn')

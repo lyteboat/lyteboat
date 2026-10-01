@@ -46,7 +46,7 @@
 | tool | 内核 `@deepseek-ai/dsh-tools`（`ctx.tools`）+ lyteboat 的 `ctx.toolPolicy` | 声明的 `tools: host => [{ definition: defineTool(...), visibility, stateDelta }]`，框架经 `ctx.toolPolicy.register` 注册（§2.10） |
 | skill | 内核 `@deepseek-ai/dsh-skill`（`ctx.skills`）+ npm 上的 `dsh-skill-filesystem` provider + lyteboat 的 `ctx.skillRouter` | `assets/skills/<name>/SKILL.md`；声明的 `skillDirs` 不写时，框架把 `assets/skills` 挂成本 agent 的 skill-filesystem（§1.3、§2.6） |
 | session | 内核 `dsh-session`、`dsh-session-persistence*`、`dsh-session-projection` | 工具里用 `exec.agent.session`；日志落在 `$LYTEBOAT_HOME/sessions/…`（§3.2）；`lyteboat headless --agents … --agent … --session-id <id>` 在已存的会话上续聊（§4.10） |
-| memory | 只有会话内的：`lyteboatState`（工具状态增量折成的投影，每步作为 `lyteboat:state` 发给模型，§4.8）、`lyteboatRequest`（请求上下文，不发给模型），加上会话历史本身 | 没有跨会话记忆。上游 `packages/` 下没有 memory 包；最接近的是 session-query（`session_search` 工具，用 SQLite FTS 检索历史会话），但 dsh-base 把它配成 `path: ':memory:'`、`openAt: never`（`dsh/bundle/base/cordis.patch.yml` 的 `session-query-sqlite` 行），给模型的工具里也没有 `session_search`。`dsh-agent-instructions` 会把 `$LYTEBOAT_HOME/AGENTS.md` 和项目里的 `AGENTS.md` / `CLAUDE.md` 作为指令交给模型（上游 `packages/context/agent-instructions/src/config.ts:12`、`src/files.ts:285`），这是人写的静态说明，不会自动学习；业务底座关掉了它，哪个业务模式都不把它交给模型（原生底座和官方 dsh 一样交给模型）。社区有记忆插件，例如 G5 金丝雀之一 `@zzerx/dsh-plugin-memory` 0.3.1（`dsh-compat/tests/canaries/canaries.yml`），它在官方树和 lyteboat 树上表现相同；但这类插件各自发布自己的服务名，没有公共 seam，多按全局或工作区分区而不按业务用户分区。可以在 agent 的 `agent.cordis.yml` 里加一行试用（写法同 §4.11），先确认它的分区方式和写入内容符合业务要求 |
+| memory | 只有会话内的：`lyteboatState`（工具状态增量折成的投影，每步作为 `lyteboat:state` 发给模型，§4.8）、`lyteboatRequest`（请求上下文，不发给模型），加上会话历史本身 | 没有跨会话记忆。上游 `packages/` 下没有 memory 包；最接近的是 session-query（`session_search` 工具，用 SQLite FTS 检索历史会话），但 dsh-base 把它配成 `path: ':memory:'`、`openAt: never`（`dsh/bundle/base/cordis.patch.yml` 的 `session-query-sqlite` 行），给模型的工具里也没有 `session_search`。`dsh-agent-instructions` 会把 `$LYTEBOAT_HOME/AGENTS.md` 和项目里的 `AGENTS.md` / `CLAUDE.md` 作为指令交给模型（上游 `packages/context/agent-instructions/src/config.ts:12`、`src/files.ts:285`），这是人写的静态说明，不会自动学习；业务底座关掉了它，哪个业务模式都不把它交给模型（原生底座和官方 dsh 一样交给模型）。社区有记忆插件，例如 G5 金丝雀之一 `@zzerx/dsh-plugin-memory` 0.4.2（`dsh-compat/tests/canaries/canaries.yml`），它在官方树和 lyteboat 树上表现相同；但这类插件各自发布自己的服务名，没有公共 seam，多按全局或工作区分区而不按业务用户分区。可以在 agent 的 `agent.cordis.yml` 里加一行试用（写法同 §4.11），先确认它的分区方式和写入内容符合业务要求 |
 
 五个能力的包都在 `dsh/kernel.json` 里（`CLAUDE.md`「Architecture boundaries」的 Promotion 一条：llm 和 skill 是每个组合启动都需要的能力），所以任何 lyteboat 组合都一定带着它们。
 
@@ -947,7 +947,7 @@ DEEPSEEK_API_KEY=<你的 key> node lyteboat/apps/cli/lib/bin.js headless --agent
 LYTEBOAT_POLICY_DESK_BOOK=<保单簿 JSON 的路径> DEEPSEEK_API_KEY=<你的 key> node lyteboat/apps/cli/lib/bin.js headless --agents ./examples/agents --agent policy-desk "保单 P-1001 还有效吗"
 ```
 
-**用脚本模型**（不需要 key，结果确定）：把下面这段存到仓库外，例如 `$SCRATCH/policy-desk-try.sh`。它启动 `@lyteboat/testing` 的脚本模型，用 `scriptedModelEnv` 把 DeepSeek 的地址和 key 指过去，在临时 `LYTEBOAT_HOME` 下运行构建好的 CLI，再把会话日志逐条打印出来。模型的回答按请求用途决定：路由请求靠系统文本里的 `skill 路由器` 识别，标题请求靠 `concise title` 识别（`lyteboat/tooling/testing/src/scripted-model.ts` `classify`；业务模式不发标题请求，`withTitle` 留着也无妨）；loop 请求在查完保单之后，照 digest 的要求把卡片标记单独写一行。`ROOT` 和 `SESSION` 两个环境变量留给 §4.10 的续聊用。
+**用脚本模型**（不需要 key，结果确定）：把下面这段存到仓库外，例如 `$SCRATCH/policy-desk-run.sh`。它启动 `@lyteboat/testing` 的脚本模型，用 `scriptedModelEnv` 把 DeepSeek 的地址和 key 指过去，在临时 `LYTEBOAT_HOME` 下运行构建好的 CLI，再把会话日志逐条打印出来。模型的回答按请求用途决定：路由请求靠系统文本里的 `skill 路由器` 识别，标题请求靠 `concise title` 识别（`lyteboat/tooling/testing/src/scripted-model.ts` `classify`；业务模式不发标题请求，`withTitle` 留着也无妨）；loop 请求在查完保单之后，照 digest 的要求把卡片标记单独写一行。`ROOT` 和 `SESSION` 两个环境变量留给 §4.10 的续聊用。
 
 ```sh
 node --input-type=module <<'EOF'
@@ -973,11 +973,11 @@ const model = await startScriptedModel(withTitle((request) => {
   return { text: afterLookup ? 'SCRIPTED-ANSWER\n[[card:policy_card]]\nSCRIPTED-CLOSING' : 'SCRIPTED-ANSWER' }
 }), { apiKey: 'mock-key' })
 
-const root = process.env.ROOT ?? mkdtempSync(join(tmpdir(), 'policy-desk-try-'))
+const root = process.env.ROOT ?? mkdtempSync(join(tmpdir(), 'policy-desk-run-'))
 const home = join(root, 'lyteboat-home')
 const workspace = join(root, 'workspace')
 mkdirSync(workspace, { recursive: true })
-writeFileSync(join(workspace, 'README.md'), '# try\n')
+writeFileSync(join(workspace, 'README.md'), '# run\n')
 const { runLyteboat } = lyteboatLauncher(resolve('lyteboat/apps/cli/lib/bin.js'))
 const resume = process.env.SESSION === undefined ? [] : ['--session-id', process.env.SESSION]
 const result = await runLyteboat(['headless', '--agents', resolve('examples/agents'), '--agent', 'policy-desk', ...resume, task], {
@@ -1008,7 +1008,7 @@ for (const record of readSessionLog(log).slice(1)) console.log(String(record.seq
 EOF
 ```
 
-在**仓库根**执行 `bash $SCRATCH/policy-desk-try.sh`（模块从当前目录的 `node_modules` 解析，所以必须在仓库根执行）。换任务：`TASK='把保单 P-1001 的电子保单发给我' bash $SCRATCH/policy-desk-try.sh`，或者 `TASK='帮我推荐几只股票' bash $SCRATCH/policy-desk-try.sh`。三次运行的实际输出（`root:` 那一行和部分中间记录略去，略去处写 `...`）：
+在**仓库根**执行 `bash $SCRATCH/policy-desk-run.sh`（模块从当前目录的 `node_modules` 解析，所以必须在仓库根执行）。换任务：`TASK='把保单 P-1001 的电子保单发给我' bash $SCRATCH/policy-desk-run.sh`，或者 `TASK='帮我推荐几只股票' bash $SCRATCH/policy-desk-run.sh`。三次运行的实际输出（`root:` 那一行和部分中间记录略去，略去处写 `...`）：
 
 ```text
 # TASK='保单 P-1001 还有效吗'
@@ -1881,7 +1881,7 @@ agent 的行只能声明、注册（工具、准入函数）、监听：`lyteboa
 
 ### 4.10 续聊：`--session-id`
 
-每次 `lyteboat headless --agent` 都把 `lyteboat: session <id>` 打到 stderr。下一次运行加上 `--session-id <id>`，就在这个会话上接着聊：
+每次 `lyteboat headless --agent` 都把 `lyteboat: session <id>` 打到 stderr（`--json` 时会话 id 在事件流的 `session` 事件里）。下一次运行加上 `--session-id <id>`，就在这个会话上接着聊：
 
 ```sh
 node lyteboat/apps/cli/lib/bin.js headless --agents ./examples/agents --agent policy-desk "保单 P-1001 还有效吗"
@@ -1901,7 +1901,7 @@ node lyteboat/apps/cli/lib/bin.js headless --agents ./examples/agents --agent po
 实测：用 §2.13 的脚本先跑一次「保单 P-1001 还有效吗」，再把 `ROOT` 设为它打出的 `root:`、`SESSION` 设为它 stderr 里的会话 id，跑第二轮：
 
 ```sh
-ROOT=<第一次打出的 root> SESSION=session-… TASK='那什么时候到期' bash $SCRATCH/policy-desk-try.sh
+ROOT=<第一次打出的 root> SESSION=session-… TASK='那什么时候到期' bash $SCRATCH/policy-desk-run.sh
 ```
 
 ```text
@@ -2371,7 +2371,7 @@ eval case files (1):
 
 ### 5.4 验收
 
-规则见 `CLAUDE.md`「Workflow」→「Done criteria」第 4 条。§2.13 的 `policy-desk-try.sh` 就是现成的验收脚本：它的输出同时给出 stdout、stderr、模型请求的用途序列和整份会话日志。
+规则见 `CLAUDE.md`「Workflow」→「Done criteria」第 4 条。§2.13 的 `policy-desk-run.sh` 就是现成的验收脚本：它的输出同时给出 stdout、stderr、模型请求的用途序列和整份会话日志。
 
 ---
 

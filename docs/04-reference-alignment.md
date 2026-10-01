@@ -646,7 +646,7 @@ $ lyteboat headless --agents ./examples/agents --agent finance --context '{"cust
 
 脚本化模型只收到一次请求，就是准入分类；没有路由调用，也没有主循环请求。会话日志里：
 - `lyteboat/aux-llm-call` 带 `ignorable: true`，`purpose` 为 `intake`，`route` 为 `{"provider":"deepseek-official","model":"deepseek-flash"}`，`maxTokens` 为 200。它落在本轮的 `turn/start` 之前，因为准入在 followup 之前就跑完了。
-- 人类消息的 source 是 `{"kind":"user","lyteboatRequest":{"context":{"customer":"none-authorized"},"intake":{"decision":"reply","verdict":"unauthorized","text":"您还没有授权任何账户，授权后我就能帮您看资产了。","cards":[{"surfaceId":"unauthorized-…","area":"unauthorized","emission":"immediate","payload":{…}}],"by":"finance-admission"}}}`。
+- 人类消息的 source 是 `{"kind":"user","lyteboatRequest":{"owner":{"kind":"operator","id":"cli"},"agent":{"id":"finance","version":"1.0.0","digest":"sha256:…"},"context":{"customer":"none-authorized"},"intake":{"decision":"reply","verdict":"unauthorized","text":"您还没有授权任何账户，授权后我就能帮您看资产了。","cards":[{"surfaceId":"unauthorized-…","area":"unauthorized","emission":"immediate","payload":{…}}],"by":"finance-admission"}}}`。
 - 回复是一条 assistant 消息，source 为 `{"kind":"model","provider":"lyteboat","model":"finance-admission"}`，本轮以 `completed` 结束。
 - `reopenRefusal` 对这份日志返回 undefined：dsh 的持久层能重开它。
 
