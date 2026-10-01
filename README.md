@@ -217,7 +217,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 | [开发业务 agent](docs/03-agent-development.md) | 业务 agent 开发指南：从零写一个 agent 的目录、组合、技能、工具、策略、卡片、准入、测试与运行 |
 | [参考实现对齐分析](docs/04-reference-alignment.md) | 与参考实现的对齐分析和后续计划：参考实现的哪些能力要引入，怎样在保留 dsh 能力的前提下落到轻舟上 |
 | [兼容性承诺](dsh-compat/COMPAT.md)、[闸门总表](dsh-compat/README.md) | 轻舟对 dsh 插件的承诺，以及证明它的 G1–G6 |
-| [CLAUDE.md](CLAUDE.md) | 在本仓库工作的约定：分层、提交、测试、同步规则 |
+| [CLAUDE.md](CLAUDE.md) | 在本仓库工作的约定：分层、提交、测试、写作；只管一部分代码的细则在 [`.claude/rules/`](.claude/rules)，打开对应文件时加载；上游同步流程是 [`dsh-sync`](.claude/skills/dsh-sync/SKILL.md) skill |
 | [CHANGELOG](CHANGELOG.md) | 轻舟提供的全部能力；轻舟没有发过版 |
 
 ## 项目结构

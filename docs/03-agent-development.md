@@ -11,7 +11,7 @@
 
 ### 0.1 agent 就是一个目录
 
-一个业务 agent 是 `examples/agents/<id>/`，目录名就是 id（`CLAUDE.md`「Agent design」）。agent 本身写成一份声明：`src/agent.ts` 默认导出 `lyteboatAgentDef({…})`（`@lyteboat/agent-def`），构建成 `lib/agent.js`，这就是 agent 目录唯一的一行（§1.3）。目录里有 `agent.cordis.yml`、`agent.yml`、`lib/agent.js`、`src/agent.ts` 中任何一个就算 agent（`lyteboat/plugins/agent-catalog/src/agent-directory.ts` `AGENT_MARKER_FILES`、`isAgentDirectory`）。agent 不属于发行版：它在 `lyteboat/` 旁边，建在 `lyteboat/` 的插件之上，`lyteboat/` 里没有任何东西提到它（`CLAUDE.md`「Repository layout」）。`lyteboat headless --agents <根目录> --agent <id>` 读这个目录，把它登记给 dsh 的 `dsh-agent-preset-registry`（dsh 把它叫 preset），然后为这次运行的会话创建一个 `Agent` 实例并挂到这个 preset 上（`lyteboat/plugins/agent-catalog/src/index.ts` `AgentCatalogService.declare`、`lyteboat/bundles/headless/src/index.ts` `LyteboatHeadlessHooks.composeAgent`）。「preset」这个词在 lyteboat 里只指这套登记机制；一个 agent 定义可以有很多个运行时实例（同一节）。
+一个业务 agent 是 `examples/agents/<id>/`，目录名就是 id（`.claude/rules/agent-design.md`）。agent 本身写成一份声明：`src/agent.ts` 默认导出 `lyteboatAgentDef({…})`（`@lyteboat/agent-def`），构建成 `lib/agent.js`，这就是 agent 目录唯一的一行（§1.3）。目录里有 `agent.cordis.yml`、`agent.yml`、`lib/agent.js`、`src/agent.ts` 中任何一个就算 agent（`lyteboat/plugins/agent-catalog/src/agent-directory.ts` `AGENT_MARKER_FILES`、`isAgentDirectory`）。agent 不属于发行版：它在 `lyteboat/` 旁边，建在 `lyteboat/` 的插件之上，`lyteboat/` 里没有任何东西提到它（`CLAUDE.md`「Repository layout」）。`lyteboat headless --agents <根目录> --agent <id>` 读这个目录，把它登记给 dsh 的 `dsh-agent-preset-registry`（dsh 把它叫 preset），然后为这次运行的会话创建一个 `Agent` 实例并挂到这个 preset 上（`lyteboat/plugins/agent-catalog/src/index.ts` `AgentCatalogService.declare`、`lyteboat/bundles/headless/src/index.ts` `LyteboatHeadlessHooks.composeAgent`）。「preset」这个词在 lyteboat 里只指这套登记机制；一个 agent 定义可以有很多个运行时实例（同一节）。
 
 ### 0.2 和参考实现的对应
 
@@ -48,7 +48,7 @@
 | session | 内核 `dsh-session`、`dsh-session-persistence*`、`dsh-session-projection` | 工具里用 `exec.agent.session`；日志落在 `$LYTEBOAT_HOME/sessions/…`（§3.2）；`lyteboat headless --agents … --agent … --session-id <id>` 在已存的会话上续聊（§4.10） |
 | memory | 只有会话内的：`lyteboatState`（工具状态增量折成的投影，每步作为 `lyteboat:state` 发给模型，§4.8）、`lyteboatRequest`（请求上下文，不发给模型），加上会话历史本身 | 没有跨会话记忆。上游 `packages/` 下没有 memory 包；最接近的是 session-query（`session_search` 工具，用 SQLite FTS 检索历史会话），但 dsh-base 把它配成 `path: ':memory:'`、`openAt: never`（`dsh/bundle/base/cordis.patch.yml` 的 `session-query-sqlite` 行），给模型的工具里也没有 `session_search`。`dsh-agent-instructions` 会把 `$LYTEBOAT_HOME/AGENTS.md` 和项目里的 `AGENTS.md` / `CLAUDE.md` 作为指令交给模型（上游 `packages/context/agent-instructions/src/config.ts:12`、`src/files.ts:285`），这是人写的静态说明，不会自动学习；业务底座关掉了它，哪个业务模式都不把它交给模型（原生底座和官方 dsh 一样交给模型）。社区有记忆插件，例如 G5 金丝雀之一 `@zzerx/dsh-plugin-memory` 0.4.2（`dsh-compat/tests/canaries/canaries.yml`），它在官方树和 lyteboat 树上表现相同；但这类插件各自发布自己的服务名，没有公共 seam，多按全局或工作区分区而不按业务用户分区。可以在 agent 的 `agent.cordis.yml` 里加一行试用（写法同 §4.11），先确认它的分区方式和写入内容符合业务要求 |
 
-五个能力的包都在 `dsh/kernel.json` 里（`CLAUDE.md`「Architecture boundaries」的 Promotion 一条：llm 和 skill 是每个组合启动都需要的能力），所以任何 lyteboat 组合都一定带着它们。
+五个能力的包都在 `dsh/kernel.json` 里（`.claude/rules/kernel.md`的 Promotion 一条：llm 和 skill 是每个组合启动都需要的能力），所以任何 lyteboat 组合都一定带着它们。
 
 ### 0.4 agent 能在哪里跑
 
@@ -198,7 +198,7 @@ flowchart LR
 为什么是这个形状：
 
 - **目录就是 `baseUrl`。** `@lyteboat/agent-catalog` 先用 `readAgentDefinition` 读出行和清单（显示字段、版本、模型）：目录没有 `agent.cordis.yml` 时，行就是 `{ id: 'policy-desk-agent', name: './lib/agent.js' }` 这一行（`lyteboat/plugins/agent-catalog/src/agent-directory.ts` `readAgentRows`）。它算出目录的摘要，查过发布锁的钉和声明的模型（组合打开了这两项时，§4.15），然后才 import `lib/agent.js`，读出声明带着的 `agentId` 和 `agentName`，用 `agentName` 作 preset 的显示名，再以目录的 `file:` URL 作为 `baseUrl` 登记（`lyteboat/plugins/agent-catalog/src/index.ts` `AgentCatalogService.declare`、`AgentCatalogService.namedPreset`，`agent-directory.ts` `readAgentDefIdentity`）。登记之前被拒的 agent，它的代码不会运行。所以 `./lib/agent.js` 这样的相对行名、声明里的相对路径（`skillDirs`、`a2uiRenderTool.templatesDir`、钩子里的 `host.agentPath(...)`），都相对 agent 目录解析（`lyteboat/plugins/agent-def/src/agent-def-mount.ts` `agentDirOf`、`mountLyteboatAgent`）。preset 注册表本身是 `@lyteboat/headless` 的 patch 插入的另一个 dsh 行，不属于 `lyteboat-headless` 那一行（`lyteboat/bundles/headless/cordis.patch.yml`）。
-- **所有行跑在 preset 的常驻作用域里。** registry 的 `mount()` 把每个 Agent 实例挂成这个常驻 mount 的子作用域，同一 preset 修订版的所有实例共用一次 mount（上游 `packages/preset/agent-preset-registry/src/mount.ts:258`、`src/index.ts:257`）。所以声明挂上的东西只影响本 agent 的会话，声明也只在 mount 时执行一次，不是每个会话一次；按实例的状态必须按 `Agent` 分键（`CLAUDE.md`「Architecture boundaries」的 Registrations are effects 一条）。
+- **所有行跑在 preset 的常驻作用域里。** registry 的 `mount()` 把每个 Agent 实例挂成这个常驻 mount 的子作用域，同一 preset 修订版的所有实例共用一次 mount（上游 `packages/preset/agent-preset-registry/src/mount.ts:258`、`src/index.ts:257`）。所以声明挂上的东西只影响本 agent 的会话，声明也只在 mount 时执行一次，不是每个会话一次；按实例的状态必须按 `Agent` 分键（`.claude/rules/typescript.md`的 Registrations are effects 一条）。
 - **宿主服务在根 realm，agent 的行只向它们「声明」。** 宿主行发布服务。`lyteboatAgentDef` 这一行挂载时先检查声明、核对 `agentId` 等于目录名，再按固定顺序把每项交给负责它的宿主服务：`persona` 挂成本作用域的 dsh-persona 子插件，`skillRouting` 调 `skillRouter.declare`，`toolPolicy` 调 `toolPolicy.declareInherited` 和 `declare`，`skillDirs` 挂成 dsh-skill-filesystem 子插件，`modelRequest` 监听 `agent/request`，`admission` 调 `intakeGuard.register`，`tools` 逐个 `toolPolicy.register`，`a2uiRenderTool` 调 `a2ui.registerRenderTool`，`eventListeners` 逐个 `ctx.on`（`lyteboat/plugins/agent-def/src/agent-def-mount.ts` `mountLyteboatAgent`）。每一项都是这一行的 effect，agent 卸载时一起撤销（`lyteboat/plugins/agent-def/src/index.ts` 的模块说明）。agent 的行绝不向根 realm 发布服务（`CLAUDE.md`「Architecture boundaries」的 Composition is data 一条）。mount 时发现泄漏的服务会直接失败：`Preset services require isolate realms: …`（上游 `mount.ts:267`，§4.6）。
 - **准入在循环之外。** `@lyteboat/headless` 在 dsh 一次性 runner 的 `lyteboat/headless-submit` 计划里，把任务交给 Agent 的方式换成 `ctx.intakeGuard.submit`：它问这个 agent 登记的准入函数（作用域链上最近的那个），把判定和任务写进同一条人类消息，再 `followup` 给 Agent（`lyteboat/bundles/headless/src/index.ts` `LyteboatHeadlessHooks`，`lyteboat/plugins/intake-guard/src/index.ts` `IntakeGuardService.submit`、`IntakeGuardService.admit`）。循环里 intake-guard 只按记录作答；一条没有经过 `submit` 就进来的消息（调用方直接 `agent.followup`，或者 `/chat` 经 session-controller 送进来的消息，§4.13），它在循环里补做一次准入，回复相同，只是判定和判定里的卡片不记在消息上（同文件 `IntakeGuardService.verdictFor`）。
 
@@ -250,9 +250,9 @@ flowchart LR
 
 **`assets/sample-data/`。** agent 运行时读的业务数据和示例输入。
 
-**为什么这三样放在 `assets/`。** `assets/` 与 `src/`、`lib/` 同级（`CLAUDE.md`「Agent design」）。tsc 只把 `.ts` 编译进 `lib/`，不拷贝其他文件；声明里的路径（`skillDirs`、`a2uiRenderTool.templatesDir`）和钩子里的 `host.agentPath(...)` 都相对 agent 目录解析，所以单元测试（跑 `src/agent.ts`）和 CLI、组合测试（跑 `lib/agent.js`）找到的是同一个 `assets/`，不需要拷贝文件的构建步骤（§2.4、§2.14）。`package.json` 的 `files` 写 `assets` 一项即可。
+**为什么这三样放在 `assets/`。** `assets/` 与 `src/`、`lib/` 同级（`.claude/rules/agent-design.md`）。tsc 只把 `.ts` 编译进 `lib/`，不拷贝其他文件；声明里的路径（`skillDirs`、`a2uiRenderTool.templatesDir`）和钩子里的 `host.agentPath(...)` 都相对 agent 目录解析，所以单元测试（跑 `src/agent.ts`）和 CLI、组合测试（跑 `lib/agent.js`）找到的是同一个 `assets/`，不需要拷贝文件的构建步骤（§2.4、§2.14）。`package.json` 的 `files` 写 `assets` 一项即可。
 
-**`src/` → `lib/`。** 声明和业务逻辑。catalog 默认的那一行是 `./lib/agent.js`，因为 loader 在 Node 里直接 import 编译产物（`CLAUDE.md`「Agent design」），所以改了 `src/` 要重新构建（§2.12）。部署输入（数据源、persona 选择等）在边缘从 `Config` 或环境变量读，并写进 `package.json` 的 `description`（同一节）。每个请求各不相同的输入（例如用户是谁）不是部署输入，走请求上下文（§0.3）。
+**`src/` → `lib/`。** 声明和业务逻辑。catalog 默认的那一行是 `./lib/agent.js`，因为 loader 在 Node 里直接 import 编译产物（`.claude/rules/agent-design.md`），所以改了 `src/` 要重新构建（§2.12）。部署输入（数据源、persona 选择等）在边缘从 `Config` 或环境变量读，并写进 `package.json` 的 `description`（同一节）。每个请求各不相同的输入（例如用户是谁）不是部署输入，走请求上下文（§0.3）。
 
 **`tests/`。** `*.spec.ts` 测纯逻辑和挂在单元宿主上的 agent，`*.composite.ts` 测组合，`*-smoke.e2e.ts` 在构建好的可执行文件上跑一次冒烟（§5）。
 
@@ -361,9 +361,9 @@ mkdir -p examples/agents/policy-desk/{src,tests,assets/sample-data,assets/skills
 
 | 字段 | 为什么这样写 |
 |---|---|
-| `name` | `@lyteboat/agent-<id>`，名字带归属（`CLAUDE.md`「Coding conventions」的 Naming 一节） |
+| `name` | `@lyteboat/agent-<id>`，名字带归属（`.claude/rules/typescript.md`的 Naming 一节） |
 | `license` | 和仓库里其他包一样是 `MIT` |
-| `description` | 写明部署输入 `LYTEBOAT_POLICY_DESK_BOOK`（`CLAUDE.md`「Agent design」）；读它的是声明所在的 `src/agent.ts`（§2.4） |
+| `description` | 写明部署输入 `LYTEBOAT_POLICY_DESK_BOOK`（`.claude/rules/agent-design.md`）；读它的是声明所在的 `src/agent.ts`（§2.4） |
 | `exports` | 只导出测试要 import 的三个子路径：`./policies`、`./admission` 给纯函数测试，`./agent` 给把整个 agent 挂在单元宿主上的测试（§2.14）。第一个键 `@lyteboat/source` 指向 `src`，所以 vitest 的 `source` 项目和 typecheck 读本包的源码；Node 和 CLI 走 `default`，读 `lib/`（`CLAUDE.md`「Repository layout」，`vitest.config.ts`）。catalog 按路径加载 `lib/agent.js`，不经过 `exports` |
 | `files` | 发布时需要的全部运行时文件：`lib`、`agent.yml`、`assets`（技能、卡片模板、示例数据都在它下面，§1.3）。写了 `agent.cordis.yml` 的 agent 把它也列上 |
 | `dependencies` | 照金融智能体（`examples/agents/finance/package.json`，它另有本例用不到的 `zod`）：代码里当库用的包。`@lyteboat/agent-def` 提供 `lyteboatAgentDef` 和 `LyteboatAgentTool`、`LyteboatAgentHost` 两个类型，它是库，不是宿主上的服务（`CLAUDE.md`「Coding conventions」的 A plugin is a class 一条）；`@deepseek-ai/dsh-tools` 提供纯函数 `defineTool`（内核包，所以是 `workspace:*`）；`@lyteboat/contracts` 只提供类型 |
@@ -484,7 +484,7 @@ export default lyteboatAgentDef({
   - 业务模式里系统 prompt 就是这一段：业务底座不加宿主 persona，也不加 harness 身份段（`lyteboat/bundles/base/cordis.patch.yml` 的 `system-prompt` 行）。`suffix` 按需写；别在 persona 里用 `{{cwd}}`，它渲染成服务器上 agent 工作目录的绝对路径（§4.11）。
 - **`skillRouting`**：宿主默认 `mode: off`，agent 要用参考实现的动态路由必须在这里打开（`lyteboat/plugins/skill-router/src/index.ts` `DEFAULT_SETTINGS`）。`historyWindow`、`timeoutMs` 与宿主的默认值相同，写出来是让读声明的人不用去查。
 - **`toolPolicy`：只露出自己声明的工具。** 业务模式（headless --agent、serve、eval）本来就只给 agent dsh-base 的 `skill` 工具，编码工具都被业务底座关掉了（§4.11）；可一个 `--plugin` 文件或 `--patch` 也能往宿主上加工具。`inherited: 'hidden'` 让这个 agent 继承来、却没有任何声明点名的工具一律隐藏，而且再也激活不了（`lyteboat/plugins/tool-policy/src/index.ts` `ToolPolicyService.declareInherited`）；`skill` 在 `tools` 里声明成 `always`，留着可见；`tools` 钩子交出的两个工具算声明过的，照常由技能激活。金融智能体就这样写（`examples/agents/finance/src/agent.ts`）。
-- **`tools`、`admission` 是钩子。** 挂载时各调用一次，拿到 `host`（§1.3）。`tools` 用 `host.agentPath('assets/a2ui')` 找卡片模板、把 `host.a2ui` 交给工具出卡；部署输入 `LYTEBOAT_POLICY_DESK_BOOK` 也在这里读，这就是 `CLAUDE.md`「Agent design」说的「在边缘读」：挂载时读一次，改了它要重启进程。`admission` 用不到 `host`，直接返回准入函数（§2.11）。
+- **`tools`、`admission` 是钩子。** 挂载时各调用一次，拿到 `host`（§1.3）。`tools` 用 `host.agentPath('assets/a2ui')` 找卡片模板、把 `host.a2ui` 交给工具出卡；部署输入 `LYTEBOAT_POLICY_DESK_BOOK` 也在这里读，这就是 `.claude/rules/agent-design.md`说的「在边缘读」：挂载时读一次，改了它要重启进程。`admission` 用不到 `host`，直接返回准入函数（§2.11）。
 - **没写的字段。** `skillDirs` 不写就挂 `assets/skills`（§1.3）；`modelRequest` 不写就不改 loop 请求，金融智能体写了 `temperature: 0`（`examples/agents/finance/src/agent.ts`）；`a2uiRenderTool`、`eventListeners` 本例用不到（§2.10 末尾、§2.11 末尾）。
 - **监听顺序。** `lyteboatAgentDef` 那一行比宿主服务晚注册，所以声明的 `eventListeners` 里如果监听 `lyteboat/pre-assemble`，它位于 tool-policy 和 skill-router 之内；监听 `lyteboat/intake` 的话，它位于 intake-guard 之内（§1.4 第 2 步、§4.4）。声明里的各项按固定顺序挂上（§1.2）；它和 `agent.cordis.yml` 里其他行之间谁先谁后取决于激活的先后，不要依赖它。
 
@@ -562,7 +562,7 @@ metadata:
 
 ### 2.8 L4：`src/policies.ts`
 
-纯函数，不依赖任何框架服务，对应参考实现的 capability 层。文件是真实边界，所以要校验，坏文件直接抛错，而不是拿残缺数据回答（`CLAUDE.md`「Coding conventions」的 Validate at real boundaries only 和 Misconfiguration fails loud 两条）。
+纯函数，不依赖任何框架服务，对应参考实现的 capability 层。文件是真实边界，所以要校验，坏文件直接抛错，而不是拿残缺数据回答（`.claude/rules/typescript.md` 的 Validate at real boundaries only 和 `CLAUDE.md`「Coding conventions」的 Misconfiguration fails loud 两条）。
 
 ```ts
 /**
@@ -643,7 +643,7 @@ export function policySummary(policy: PolicyRecord): PolicySummary {
 
 ### 2.9 A2UI 卡片：`assets/a2ui/policy_card/`
 
-卡片分三部分：`template.json` 是设计稿，`manifest.yaml` 规定出卡模式和每个绑定怎么取值，`compute.js` 放 manifest 里 `computed` 取值要调用的函数。渲染结果由工具放进结果的 `meta.lyteboat.cards`，模型只看 digest（`CLAUDE.md`「Agent design」）。
+卡片分三部分：`template.json` 是设计稿，`manifest.yaml` 规定出卡模式和每个绑定怎么取值，`compute.js` 放 manifest 里 `computed` 取值要调用的函数。渲染结果由工具放进结果的 `meta.lyteboat.cards`，模型只看 digest（`.claude/rules/agent-design.md`）。
 
 `template.json`：
 
@@ -868,7 +868,7 @@ export function policyDeskTools(deps: PolicyDeskToolDeps): LyteboatAgentTool[] {
   - **`stateDelta` 的契约**：返回一个以点路径为键的 JSON 对象，或者 `undefined`（不写状态）。点路径展开成嵌套对象，嵌套对象深度合并，其他值直接替换（`lyteboat/plugins/tool-policy/src/state.ts` `deepMerge`、`assignPath`、`mergeStateDelta`）。返回非对象、或者路径里有空段，会在 `lyteboatState` 投影折叠时抛错（`state.ts` `mergeStateDelta`、`lyteboatStateProjectionDefinition.apply`）。这不是 warn，整次运行失败；实测输出见 §6。
 - **工具要的东西从参数来。** `policyDeskTools(deps)` 不碰框架的上下文：保单簿的路径、卡片模板的目录和出卡用的 `a2ui` 都由声明从 `host` 取来交给它（§2.4），单元测试也因此不用替它搭什么。`LyteboatAgentHost['a2ui']` 只有 `renderCard` 一个方法（`lyteboat/plugins/agent-def/src/index.ts`）。保单簿在每次调用时读，文件改了下一次调用就生效；读哪个文件在挂载时就定了。
 - **`defineTool`**（`dsh/core/tools/src/schema.ts` `DefineToolOptions`）：
-  - `parameters` 是逐属性的规格。`required` 只能写 `true`（`schema.ts` `runSchemaCompiler`），对象类型必须显式写 `additionalProperties`（`schema.ts` `runSchemaCompiler`）。包装后的 `execute` 先校验参数，不合格就抛 `ToolArgsError`（`schema.ts`）；但 `execute` 仍然要把参数当作不可信输入（`CLAUDE.md`「Coding conventions」的 Validate at real boundaries only）。
+  - `parameters` 是逐属性的规格。`required` 只能写 `true`（`schema.ts` `runSchemaCompiler`），对象类型必须显式写 `additionalProperties`（`schema.ts` `runSchemaCompiler`）。包装后的 `execute` 先校验参数，不合格就抛 `ToolArgsError`（`schema.ts`）；但 `execute` 仍然要把参数当作不可信输入（`.claude/rules/typescript.md`的 Validate at real boundaries only）。
   - `output.render(args, value)` 产出**模型看得到**的内容，这里就是 digest。
   - `output.presentationMeta(args, value)` 产出**持久化但模型看不到**的 meta。它只对模型直接发起的调用计算（`dsh/core/tools/src/index.ts` `ToolRuntime.createSuccessResult`）。带 `exec.parent` 的调用不计算：那是 `run_code`（PTC 模式）的 SDK 发出的子调度（`index.ts` `ToolExecutionInput`）。所以在打开 PTC 的组合里，经 `run_code` 调到的 `query_policy` 既不出卡也不写状态；业务底座关掉了 PTC（`ptc-runtime`、`workflow-ptc`），headless --agent、serve、eval 里没有这个问题。子 agent 里的工具调用对子 agent 来说是模型直接调用，会计算 meta，但写进子会话自己的日志，不会折进父会话的 `lyteboatState`。
   - 输出 schema 里给字符串写 `enum` 时，`execute` 返回的字面量 `'ok'` 会被推断成 `string`，`tsc -b` 在 `execute` 属性上报 TS2322，错误链的最后一行是 `Type 'string' is not assignable to type '"ok" | "not-found"'`（实测）。所以这里没有写 `enum`；给返回的字面量加 `as const` 也能通过。
@@ -927,7 +927,7 @@ export function policyDeskVerdict(text: string): Omit<LyteboatIntakeVerdict, 'by
 - 判定不记在请求上，日志里只有那条助手消息；
 - 它在**每一步**都派发，包括工具之后的续步，那时 `messages` 是 `[]`（`dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.preStep`），所以监听要自己只看 `source.kind === 'user'` 的文本；
 - 不命中时**必须** `return next()`，否则会挡住排在它后面的所有监听器（§4.4）；
-- 仓库外的插件如果用它，要声明 `inject: ['lyteboatDistro']`，这样在官方 dsh 上不会加载（`dsh-compat/COMPAT.md` §4，`CLAUDE.md`「Architecture boundaries」的 The contract only grows 一条）。intake-guard 自己就这样声明（`lyteboat/plugins/intake-guard/src/index.ts` `IntakeGuardService`），上面那个夹具也是。
+- 仓库外的插件如果用它，要声明 `inject: ['lyteboatDistro']`，这样在官方 dsh 上不会加载（`dsh-compat/COMPAT.md` §4，`.claude/rules/kernel.md`的 The contract only grows 一条）。intake-guard 自己就这样声明（`lyteboat/plugins/intake-guard/src/index.ts` `IntakeGuardService`），上面那个夹具也是。
 
 ### 2.12 构建
 
@@ -936,7 +936,7 @@ pnpm run build
 ls examples/agents/policy-desk/lib     # agent.js policies.js policy-desk-admission.js policy-desk-tools.js 及其 .d.ts / .map
 ```
 
-改了 `src/` 就要重新构建，因为 catalog 加载的是 `lib/agent.js`，CLI 和 composite 测试跑的都是 `lib/`（`CLAUDE.md`「Testing」的 Composition 一条）。没有构建时，这个 agent 加载失败，提示先构建（§6）。
+改了 `src/` 就要重新构建，因为 catalog 加载的是 `lib/agent.js`，CLI 和 composite 测试跑的都是 `lib/`（`.claude/rules/testing.md`的 Composition 一条）。没有构建时，这个 agent 加载失败，提示先构建（§6）。
 
 ### 2.13 从 CLI 运行
 
@@ -1142,7 +1142,7 @@ describe('policyDeskVerdict', () => {
 })
 ```
 
-`tests/policy-desk.spec.ts` 把整个 agent 挂在**单元宿主**上。`createLyteboatUnitHost(adapter)`（`@lyteboat/testing`）按 `CLAUDE.md`「Testing」的 Unit harness 一条搭好宿主：dsh 的不变量注册表、dsh 服务、内核的 agent loop，`adapter` 作为 `mock` provider 的模型，测试结束时自动释放（`lyteboat/tooling/testing/src/index.ts`）。测试再挂上声明要用的 lyteboat 服务，然后用 `mountAgentStandingScope(ctx, agentDir, agentRow)` 把 agent 的那一行挂上：它照 dsh 的 preset 注册表的做法建一个常驻作用域，以 agent 目录为 `baseUrl` 挂这一行，返回的 `createAgentInstance(sessionId)` 建一个挂在这个作用域下的 Agent 实例，就像这个 agent 的一个会话；这一行没有激活（挂载失败，或者一直等着单元宿主上没有的服务）时，它抛错，等服务时报出缺的服务名（`index.ts`）。`followUpAndWait(agent, text)` 发一条普通的用户消息并等到 agent 空闲（`index.ts`），它不经过 `submit`；要走 `lyteboat headless --agent` 那条路径，就调 `ctx.intakeGuard.submit` 再 `agent.whenIdle()`。
+`tests/policy-desk.spec.ts` 把整个 agent 挂在**单元宿主**上。`createLyteboatUnitHost(adapter)`（`@lyteboat/testing`）按 `.claude/rules/testing.md`的 Unit harness 一条搭好宿主：dsh 的不变量注册表、dsh 服务、内核的 agent loop，`adapter` 作为 `mock` provider 的模型，测试结束时自动释放（`lyteboat/tooling/testing/src/index.ts`）。测试再挂上声明要用的 lyteboat 服务，然后用 `mountAgentStandingScope(ctx, agentDir, agentRow)` 把 agent 的那一行挂上：它照 dsh 的 preset 注册表的做法建一个常驻作用域，以 agent 目录为 `baseUrl` 挂这一行，返回的 `createAgentInstance(sessionId)` 建一个挂在这个作用域下的 Agent 实例，就像这个 agent 的一个会话；这一行没有激活（挂载失败，或者一直等着单元宿主上没有的服务）时，它抛错，等服务时报出缺的服务名（`index.ts`）。`followUpAndWait(agent, text)` 发一条普通的用户消息并等到 agent 空闲（`index.ts`），它不经过 `submit`；要走 `lyteboat headless --agent` 那条路径，就调 `ctx.intakeGuard.submit` 再 `agent.whenIdle()`。
 
 ```ts
 /**
@@ -1272,7 +1272,7 @@ describe('the policy-desk agent on the unit host (MockAdapter)', () => {
 
 - **宿主上要挂什么，由声明决定。** 声明写了 `persona`、`skillRouting`、`toolPolicy`、`tools`、`admission`，`lyteboatAgentDef` 就注入 `systemPrompt`、`skills`、`skillRouter`、`toolPolicy`、`intakeGuard`，外加钩子的 `host` 背后的 `a2ui`、`auxLlm`、`requestContext`（`lyteboat/plugins/agent-def/src/index.ts` `injectedServicesOf`）。少挂一个，这一行就一直等那个服务，声明的东西一样也挂不上，`mountAgentStandingScope` 抛错并报出缺的服务（`lyteboat/tooling/testing/src/index.ts` `mountAgentStandingScope`）。实测去掉 `IntakeGuardService`，五个用例都失败在 `Error: mountAgentStandingScope: the agent row is not active; mount on the unit host the services it waits for: intakeGuard`。
 - **`skill` 工具要自己注册一个。** 声明的 `toolPolicy` 把 `skill` 声明成 `always`，而单元宿主上没有 dsh-tool-skill；没人注册它，第一步就以「声明了却没有行注册」失败（§4.9）。测试用 `defineContentToolFixture` 注册一个替身，金融智能体的单元测试也这样做（`examples/agents/finance/tests/finance.spec.ts`）。
-- **路由照常跑。** 声明打开了 dynamic 路由，每一轮的第一步都有一次路由的旁路调用，它和 loop 请求用同一个 `MockAdapter`。脚本靠系统文本里的 `skill 路由器` 认出它，不靠调用顺序（`CLAUDE.md`「Testing」的 Unit harness 一条）；路由到 `policy-lookup` 之后两个工具才可见，模型才调得到 `query_policy`。所以一次查询是三次模型调用：路由、调工具、作答。路由本身的细节由组合测试负责（§2.15）。
+- **路由照常跑。** 声明打开了 dynamic 路由，每一轮的第一步都有一次路由的旁路调用，它和 loop 请求用同一个 `MockAdapter`。脚本靠系统文本里的 `skill 路由器` 认出它，不靠调用顺序（`.claude/rules/testing.md`的 Unit harness 一条）；路由到 `policy-lookup` 之后两个工具才可见，模型才调得到 `query_policy`。所以一次查询是三次模型调用：路由、调工具、作答。路由本身的细节由组合测试负责（§2.15）。
 - `validateFullPayload(payload, { strict: true })` 按默认的领域中立目录做契约校验，`renderCard` 不做这一步（§2.9、§2.10）。
 - 最后两个用例对比准入的两条路径：`submit` 把判定记在请求上，`lyteboatRequest` 投影读得到；`followUpAndWait` 发的消息在循环里补做准入，回复一样，消息的 `source` 只有 `{ kind: 'user' }`，投影里的 `intake` 仍是 `null`。两条路径都不请求模型：`MockAdapter([])` 的脚本是空的，被调用就会报错。准入作答时这一步不派发 `lyteboat/pre-assemble`，所以也没有路由调用。
 
@@ -1470,18 +1470,18 @@ pnpm run build && npx vitest run examples/agents/policy-desk/tests/policy-desk.c
 
 写脚本的规矩：
 
-- 按**用途**应答，路由请求靠系统文本识别，不要靠调用顺序（`CLAUDE.md`「Testing」的 Unit harness 一条）。`withTitle` 替你回答标题请求（`scripted-model.ts`）；业务模式不发标题请求，打开了标题行（`session-title-llm`）的组合才用得上它。脚本模型只认得 loop、title、router 三种用途（`scripted-model.ts` `classify`）：agent 自己的旁路调用（例如用 `host.auxLlm` 做准入分类）到这里也是 `loop`，要靠它自己的系统文本认出来（金融智能体的组合测试用 `准入分类器` 这几个字认，`examples/agents/finance/tests/support/finance-model.ts` `isIntake`）。
+- 按**用途**应答，路由请求靠系统文本识别，不要靠调用顺序（`.claude/rules/testing.md`的 Unit harness 一条）。`withTitle` 替你回答标题请求（`scripted-model.ts`）；业务模式不发标题请求，打开了标题行（`session-title-llm`）的组合才用得上它。脚本模型只认得 loop、title、router 三种用途（`scripted-model.ts` `classify`）：agent 自己的旁路调用（例如用 `host.auxLlm` 做准入分类）到这里也是 `loop`，要靠它自己的系统文本认出来（金融智能体的组合测试用 `准入分类器` 这几个字认，`examples/agents/finance/tests/support/finance-model.ts` `isIntake`）。
 - 路由器 prompt 里会引用每个技能的 description，所以判断意图只看 `<latest_user_input>` 里的内容（金融智能体的组合测试也是这么做的，`finance-model.ts` `financeScript`）。
 - loop 请求里，第一个 user 块就是任务本身，因为 DeepSeek 适配器把连续的 user 节点合并成了一条消息（用户消息、runtime context、技能正文、技能目录）。续聊时它是第一轮的任务，所以续聊用例里 `wanted` 仍是 `query_policy`，而它已经在历史里调用过，脚本直接回答。
 - 回答写不写卡片标记，要看这次请求是不是紧跟在 `query_policy` 的结果后面：最后一条消息里有 `tool_result`，最后调用的工具是 `query_policy`。只看「历史里调用过」不够，续聊的那一轮也会满足。
 - 路由到的技能用 `invokedSkills` 从日志里认：dsh 的技能调用消息 `source.kind === 'skill-invocation'`，`name` 就是技能 id；路由请求本身是日志里唯一一条 `lyteboat/*` 记录，`ignorable` 为 `true`。
-- 请求里的工具顺序不是注册顺序，断言时用 `arrayContaining` 或先排序（`CLAUDE.md`「Testing」的 Scripted model and logs 一条）。第一个用例排序后断言整份工具表：业务模式里 agent 只看得到 `skill` 和它自己声明的工具，多出一个就说明有别的行往宿主上加了工具，而 `inherited: hidden` 没挡住它。
+- 请求里的工具顺序不是注册顺序，断言时用 `arrayContaining` 或先排序（`.claude/rules/testing.md`的 Scripted model and logs 一条）。第一个用例排序后断言整份工具表：业务模式里 agent 只看得到 `skill` 和它自己声明的工具，多出一个就说明有别的行往宿主上加了工具，而 `inherited: hidden` 没挡住它。
 - 第四个用例断言 `reply.source` 用的是 `toMatchObject`，只检查子集：日志里的 `source` 还带着 `kind: 'model'`（§2.11）。人类消息的 `source` 则用 `toEqual` 整个断言，发起者、agent 的身份和判定的每个字段都在里面；身份里的摘要随构建变化，只断言它的形状（写法同 `lyteboat/bundles/headless/tests/agent.composite.ts`，§4.15）。
 - 续聊用例用同一对 home 和工作区跑两次（续聊要求 `LYTEBOAT_HOME` 不变；带 `--agent` 时会话记在 agent 的工作目录里，启动目录换了也行，§4.10），会话 id 用 `printedSessionId` 从第一次的 stderr 里取；`reopenRefusal` 返回 `undefined`，说明这份路由过、续过的日志 dsh 能重开（§4.10）。
 
 ### 2.16 e2e 冒烟：`tests/policy-desk-smoke.e2e.ts`
 
-每个 agent 在构建好的可执行文件上跑一次冒烟，冒烟放在 agent 自己的 `tests/` 里（`CLAUDE.md`「Testing」的 Who tests what 和 E2E 两条）。它证明安装闭包、profile 和 agent 目录能在发布产物里一起加载；agent 的行为由上面的测试负责。
+每个 agent 在构建好的可执行文件上跑一次冒烟，冒烟放在 agent 自己的 `tests/` 里（`CLAUDE.md`「Testing」的 Who tests what 和 `.claude/rules/testing.md` 的 E2E 两条）。它证明安装闭包、profile 和 agent 目录能在发布产物里一起加载；agent 的行为由上面的测试负责。
 
 ```ts
 /**
@@ -1568,7 +1568,7 @@ pnpm run test        # build + G1 + source/dsh/composite 三个项目
 
 新 agent 属于 `CLAUDE.md`「Workflow」→「Task types」里的结构性任务：先按 C4 自顶向下做设计，设计交付物按那一节的形式交付，不提交进仓库。
 
-提交信息写成 `<type>: <package> — <交付了什么>`，type 用 conventional 前缀（`CLAUDE.md`「Unattended runs」）；正文写能跑什么、验收了什么，贴上在构建好的二进制上跑过的命令（`CLAUDE.md`「Workflow」→「Done criteria」第 4 条）；没有 eval 数据的 prompt 文本要写明是 working hypothesis（`CLAUDE.md`「Agent design」）；最后是会话给出的署名尾部和 `Co-authored-by: $GIT_COAUTHOR`（`CLAUDE.md`「Unattended runs」）；任何地方都不写模型标识（同一节）。例如：
+提交信息写成 `<type>: <package> — <交付了什么>`，type 用 conventional 前缀（`CLAUDE.md`「Unattended runs」）；正文写能跑什么、验收了什么，贴上在构建好的二进制上跑过的命令（`CLAUDE.md`「Workflow」→「Done criteria」第 4 条）；没有 eval 数据的 prompt 文本要写明是 working hypothesis（`.claude/rules/agent-design.md`）；最后是会话给出的署名尾部和 `Co-authored-by: $GIT_COAUTHOR`（`CLAUDE.md`「Unattended runs」）；任何地方都不写模型标识（同一节）。例如：
 
 ```text
 feat: @lyteboat/agent-policy-desk — a policy lookup agent: routed skill, policy card, e-policy copy, admission
@@ -1799,7 +1799,7 @@ model requests: router, loop
 
 ### 4.1 参考实现的 agent 设计原则同样适用
 
-`CLAUDE.md`「Agent design」要求设计、评审或移植 agent 之前先读参考实现的 `docs/agent_design_principles.md`：原则不变，只是机制换了。
+`.claude/rules/agent-design.md`要求设计、评审或移植 agent 之前先读参考实现的 `docs/agent_design_principles.md`：原则不变，只是机制换了。
 
 | 设计原则 | 在 policy-desk 里的落点 |
 |---|---|
@@ -1810,7 +1810,7 @@ model requests: router, loop
 | 超集工具，一次把状态落齐（§4） | 一次调用同时写状态、出卡 |
 | 业务阈值、常量都在 L4（§5） | 状态文案在 manifest 的 `switch` 里，金额格式在 `compute.js`，数据校验和状态摘要在 `policies.ts`，都不在 SKILL 正文里 |
 | 终态工具要 `always`（§4） | lyteboat 的 `render_a2ui` 默认 `always`，`terminalCards` 里的卡调用 `exec.concludeTurn()`（`lyteboat/plugins/a2ui/src/index.ts` `A2uiService.registerRenderTool`）；业务工具自己结束本轮也用 `exec.concludeTurn()`，金融智能体的未授权卡就是这样（`examples/agents/finance/src/tools/finance-tool-support.ts` `unauthorizedResult`） |
-| 改 prompt 要有 eval 数据（§8） | `CLAUDE.md`「Agent design」：没有 eval 数据的 prompt 改动是 working hypothesis，提交信息要写明（§2.17 的示例） |
+| 改 prompt 要有 eval 数据（§8） | `.claude/rules/agent-design.md`：没有 eval 数据的 prompt 改动是 working hypothesis，提交信息要写明（§2.17 的示例） |
 
 ### 4.2 业务词汇只出现在 `examples/agents/`
 
@@ -1818,13 +1818,13 @@ model requests: router, loop
 
 ### 4.3 技能命名与元数据
 
-名字必须匹配 `/^[a-z0-9]+(?:-[a-z0-9]+)*$/`（`dsh/skill/skill/src/index.ts` `SKILL_NAME`）。从参考实现迁过来的下划线 id 要改名（`CLAUDE.md`「Agent design」）。不合法的名字**不会报错**：skill-filesystem 只打一条 warn，然后忽略这个文件（上游 `packages/skill/skill-filesystem/src/index.ts:820-822`；缺 `name` 或 `description` 时同样只 warn，见 `:816-818`），而 `lyteboat headless` 默认不打印 warn（§6）。实测把 `name` 改成 `policy_lookup` 以后：退出码 0，stderr 只有 `lyteboat: session <id>` 那一行，**没有路由请求**（候选集为空），模型请求只有一个 `loop(1)`，工具只剩 `skill`。
+名字必须匹配 `/^[a-z0-9]+(?:-[a-z0-9]+)*$/`（`dsh/skill/skill/src/index.ts` `SKILL_NAME`）。从参考实现迁过来的下划线 id 要改名（`.claude/rules/agent-design.md`）。不合法的名字**不会报错**：skill-filesystem 只打一条 warn，然后忽略这个文件（上游 `packages/skill/skill-filesystem/src/index.ts:820-822`；缺 `name` 或 `description` 时同样只 warn，见 `:816-818`），而 `lyteboat headless` 默认不打印 warn（§6）。实测把 `name` 改成 `policy_lookup` 以后：退出码 0，stderr 只有 `lyteboat: session <id>` 那一行，**没有路由请求**（候选集为空），模型请求只有一个 `loop(1)`，工具只剩 `skill`。
 
 元数据正相反：`metadata.lyteboat` 按严格 schema 校验，写错一个键不会被静默忽略，而是在路由到这个技能的那一步让运行失败（§4.9）。参考实现迁过来的 `group`、`version`、`tags` 要删掉，只留 `requiredTools`。
 
 ### 4.4 waterfall 监听器必须调用 `next()`
 
-`lyteboat/intake`、`lyteboat/pre-assemble`、`tools/pre-execute`、`tools/post-execute` 都是 waterfall（`CLAUDE.md`「Architecture boundaries」的 Waterfall listeners MUST call `next()` 一条）。先注册的监听器在最外层；不调用 `next()` 的监听器会把后面的全部挡掉，连默认行为也挡掉（上游 `vendor/cordis/src/events.ts:224-243`）。一个 `lyteboat/intake` 监听（例如声明的 `eventListeners` 里的一个）返回 `{kind:'pass'}` 却不调 `next()`，排在它里面的拒识门就永远不会执行；intake-guard 在它外面，`next()` 返回后照样按记录的判定作答（§2.11）。
+`lyteboat/intake`、`lyteboat/pre-assemble`、`tools/pre-execute`、`tools/post-execute` 都是 waterfall（`.claude/rules/typescript.md`的 Waterfall listeners MUST call `next()` 一条）。先注册的监听器在最外层；不调用 `next()` 的监听器会把后面的全部挡掉，连默认行为也挡掉（上游 `vendor/cordis/src/events.ts:224-243`）。一个 `lyteboat/intake` 监听（例如声明的 `eventListeners` 里的一个）返回 `{kind:'pass'}` 却不调 `next()`，排在它里面的拒识门就永远不会执行；intake-guard 在它外面，`next()` 返回后照样按记录的判定作答（§2.11）。
 
 `next()` 的前后要有意识地选：
 
@@ -1844,13 +1844,13 @@ runtime context（每步作为 user 消息追加）和 system prompt 段是**两
 | section | `lyteboat:skills`（仅 full 模式） | 450 | `LYTEBOAT_SKILLS_SECTION_ORDER`，`lyteboat/core/contracts/src/index.ts` |
 | section | `PLAN_POLICY` … persona 后缀 | 500 … 10200 | `dsh/core/system-prompt/src/index.ts` `SECTION_ORDERS` |
 
-新的 prompt 文本要相对这些值选序号，并在 contracts 里登记成常量（`CLAUDE.md`「Agent design」）。dynamic 模式下路由到的技能正文不占序号：它是一条技能调用消息，不是段，也不是 runtime context（§3.1）。声明的 `persona` 设 `includeRuntimeContext: false` 会压掉这个作用域里**所有**的 runtime context 快照，`lyteboat:state` 也在内（上游 `packages/preset/persona/src/index.ts:44-45`、`:74`）；技能调用消息不是快照，不受它影响。
+新的 prompt 文本要相对这些值选序号，并在 contracts 里登记成常量（`CLAUDE.md`「Architecture boundaries」的 Prompt orders 一条）。dynamic 模式下路由到的技能正文不占序号：它是一条技能调用消息，不是段，也不是 runtime context（§3.1）。声明的 `persona` 设 `includeRuntimeContext: false` 会压掉这个作用域里**所有**的 runtime context 快照，`lyteboat:state` 也在内（上游 `packages/preset/persona/src/index.ts:44-45`、`:74`）；技能调用消息不是快照，不受它影响。
 
 ### 4.6 agent 行不向根 realm 发布服务
 
 agent 的行只能声明、注册（工具、准入函数）、监听：`lyteboatAgentDef` 那一行只做这些（§1.2），`agent.cordis.yml` 里你自己加的行也只能做这些。实测在 `agent.cordis.yml` 里 `./lib/agent.js` 之后加一行，它调用 `ctx.provide('helloService', …)`：启动时报 `dsh: agent-catalog: 1 agent(s) failed:`，下一行 `policy-desk: Preset services require isolate realms: helloService`，退出码 1（上游 `packages/preset/agent-preset-registry/src/mount.ts:267`；`CLAUDE.md`「Architecture boundaries」的 Composition is data 一条）。需要跨 agent 共享的能力，应该做成 `lyteboat/plugins/*` 里的宿主服务，由业务底座 `@lyteboat/base` 发布。
 
-同理，工具要注册在 preset 的常驻作用域里（声明的 `tools` 交出的工具就注册在那里），不能注册到 `agent.ctx` 上：`auto` 工具如果在 agent 自己那一层，`restrict()` 藏不住它，tool-policy 会抛错（`lyteboat/plugins/tool-policy/src/index.ts` `ToolPolicyService.reconcile`）。按实例的状态放进 `WeakMap<Agent, …>`，或者挂在作用域的 disposer 上，不要用模块级 Map（`CLAUDE.md`「Architecture boundaries」的 Registrations are effects 一条）。准入函数同理：声明的 `admission` 经 `ctx.intakeGuard.register` 登记在 agent 的常驻作用域里，它只管这个 agent 的会话，行卸载时一起撤销（`lyteboat/plugins/intake-guard/src/index.ts` `IntakeGuardService.register`）。
+同理，工具要注册在 preset 的常驻作用域里（声明的 `tools` 交出的工具就注册在那里），不能注册到 `agent.ctx` 上：`auto` 工具如果在 agent 自己那一层，`restrict()` 藏不住它，tool-policy 会抛错（`lyteboat/plugins/tool-policy/src/index.ts` `ToolPolicyService.reconcile`）。按实例的状态放进 `WeakMap<Agent, …>`，或者挂在作用域的 disposer 上，不要用模块级 Map（`.claude/rules/typescript.md`的 Registrations are effects 一条）。准入函数同理：声明的 `admission` 经 `ctx.intakeGuard.register` 登记在 agent 的常驻作用域里，它只管这个 agent 的会话，行卸载时一起撤销（`lyteboat/plugins/intake-guard/src/index.ts` `IntakeGuardService.register`）。
 
 ### 4.7 模型可见即已记录
 
@@ -2112,11 +2112,11 @@ node lyteboat/apps/cli/lib/bin.js eval --agents ./examples/agents --agent financ
 2. 读 `report.md`，确认每一轮都是你要的样子。
 3. 把运行目录拷成 `examples/agents/<id>/evals/baseline/`。录音里技能调用消息的 `Base directory for this skill:` 是 agent 根目录的绝对路径，把它换成 `<agents-root>`。回放只取录音里的模型回答和旁路调用记录，不读这些路径。
 4. 写一个免 key 回放基线的组合测试，照 `examples/agents/finance/tests/finance-eval.composite.ts` 写：`bootComposition` 起 `LYTEBOAT_EVAL_BUNDLES`，参数 `--agents <根> --agent <id> --model replay --from <基线目录>`，断言这次运行的 `results.jsonl` 与基线的完全相同，退出码与基线的结果一致（`finance-eval.composite.ts`）。`package.json` 的 devDependencies 加 `@lyteboat/eval`（金融智能体的 `package.json`）。之后任何改变了某一轮表现的改动，都会让这个测试失败。
-5. 改动就是要改变某一轮的表现时（技能、工具、卡片、准入规则、提示），照 1–3 重录，像审代码一样审 `evals/baseline/` 的 diff 和报告（`CLAUDE.md`「Testing」的 Fixtures 一条）。
+5. 改动就是要改变某一轮的表现时（技能、工具、卡片、准入规则、提示），照 1–3 重录，像审代码一样审 `evals/baseline/` 的 diff 和报告（`.claude/rules/testing.md`的 Fixtures 一条）。
 
 基线的 `run.json` 和录音里每条人类消息都记着录制时 agent 的身份，`evals/` 本身不算进摘要，所以把运行目录拷进 `evals/baseline/` 不会改变身份。要发布的 agent，基线得在清单写好 `version` 和 `model` 之后录，而且录完之后 agent 目录不能再改：`lyteboat release` 会逐条核对这些身份（§4.15）。
 
-**比较两次运行。** `lyteboat eval compare <前> <后>`（两个参数都是运行目录或运行 id）逐个用例、轮次、检查比较两次运行的 `results.jsonl`，列出结果变了的检查：`✗` 是回归，即之前通过、现在失败或没有了；`·` 是其它变化。末行是变化数和回归数，有回归就退出 1（`lyteboat/bundles/eval/src/index.ts` `compareRuns`，`lyteboat/plugins/eval-runner/src/eval-report.ts` `compareEvalResults`）。改提示要有 eval 数据（`CLAUDE.md`「Agent design」）：改完用新的一次 real 运行和基线比较，看哪些检查变了。
+**比较两次运行。** `lyteboat eval compare <前> <后>`（两个参数都是运行目录或运行 id）逐个用例、轮次、检查比较两次运行的 `results.jsonl`，列出结果变了的检查：`✗` 是回归，即之前通过、现在失败或没有了；`·` 是其它变化。末行是变化数和回归数，有回归就退出 1（`lyteboat/bundles/eval/src/index.ts` `compareRuns`，`lyteboat/plugins/eval-runner/src/eval-report.ts` `compareEvalResults`）。改提示要有 eval 数据（`.claude/rules/agent-design.md`）：改完用新的一次 real 运行和基线比较，看哪些检查变了。
 
 ### 4.15 版本、身份与发布：`agent.yml`、`lyteboat release`、`serve --release`
 

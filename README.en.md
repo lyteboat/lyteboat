@@ -219,7 +219,7 @@ The guides are written in Chinese.
 | [Agent development](docs/03-agent-development.md) | The agent-development guide: building a business agent from scratch, its directory, composition, skills, tools, policy, cards, admission, tests, and running it |
 | [Alignment with the reference implementation](docs/04-reference-alignment.md) | The reference-alignment analysis and forward plan: which capabilities of the reference implementation to bring in, and how they land on lyteboat while keeping dsh's capabilities |
 | [Compatibility promise](dsh-compat/COMPAT.md), [gate list](dsh-compat/README.md) | What lyteboat promises dsh plugins, and the gates G1–G6 that prove it |
-| [CLAUDE.md](CLAUDE.md) | How to work in this repository: layers, commits, tests, sync rules |
+| [CLAUDE.md](CLAUDE.md) | How to work in this repository: layers, commits, tests, writing; the rules for one part of the code are in [`.claude/rules/`](.claude/rules), loaded when matching files are opened; the upstream sync procedure is the [`dsh-sync`](.claude/skills/dsh-sync/SKILL.md) skill |
 | [CHANGELOG](CHANGELOG.md) | Everything lyteboat provides; it has no releases |
 
 ## Repository layout

@@ -91,7 +91,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 | 准入（admission） | `dsh-app-boot` 在启动时读每一行所属包的磁盘清单，`@deepseek-ai/dsh*` peer 与运行版本不匹配就禁用该行 | 这条规则让 lyteboat 包的非内核 dsh peer 必须写精确版本（§8.2） | `up:packages/boot/app-boot/src/plugin-compatibility.ts:61-88` |
 | Typert Host face、Remote client | 上游生成器从 TypeScript 类型生成的运行时反射产物：包导出 `./typert`（Host face）和 `./remote`（Remote client），文件是 `lib/typert.*` | dsh-llm 的 `lib/typert.host.{js,d.ts}`、`lib/typert.remote-client.{js,d.ts}`（§5.3） | `up:packages/typert/generator/README.md`；`up:packages/typert/protocol/README.md` |
 | 契约键 | 契约快照里一条 JSON 路径，用 `' › '` 连接 | `events › @deepseek-ai/dsh-agent-loop › lyteboat/intake` | `scripts/dist/contract-check.ts` 的 `KEY_SEPARATOR` |
-| 内核、原样层、晋升 | lyteboat 拥有源码的 dsh 包；从 npm 原样安装的其余 dsh 包；把原样层的包收进内核 | 见 §1、§5 | `dsh/kernel.json`；`CLAUDE.md`「Architecture boundaries」的 **Promotion** |
+| 内核、原样层、晋升 | lyteboat 拥有源码的 dsh 包；从 npm 原样安装的其余 dsh 包；把原样层的包收进内核 | 见 §1、§5 | `dsh/kernel.json`；`.claude/rules/kernel.md`的 **Promotion** |
 
 ---
 
@@ -105,7 +105,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 | **npm 原样层** | 上游其余的 dsh 包都不改源码；工作区只装用到的那部分：seam 与 provider、可选插件、基础设施、Web 产品等 | `pnpm-workspace.yaml` 的 `catalogs.dsh`、`catalogs.cordis`，`dsh.upstream.json` | `.pnpmfile.cjs` 把所有非内核的 `@deepseek-ai/dsh*` 依赖改写成 `dsh.upstream.json` 里的版本 | 改 catalog、版本钉文件和精确 peer（§7、§8） |
 | **lyteboat 层** `lyteboat/` | `@lyteboat/*`，每层一个目录，清单见 README 的[项目结构](../README.md#项目结构)；示例 agent `examples/agents/finance` 在这一层旁边 | 工作区 glob `lyteboat/*/*`（`pnpm-workspace.yaml`）；示例 agent 是 `examples/*/*` | `workspace:*` | 不适用 |
 
-**一个包归哪一层？** 规则见 `CLAUDE.md`「Architecture boundaries」的 **Promotion**，满足任一条就进内核：
+**一个包归哪一层？** 规则见 `.claude/rules/kernel.md`的 **Promotion**，满足任一条就进内核：
 
 - lyteboat 必须**改它的实现**。只是配置它，或用 provider 替换它，都不算。
 - 它是**每个 lyteboat 组合启动都离不开的能力**。llm、skill 与 tools、sessions 一样属于这一类。
@@ -190,7 +190,7 @@ $ xargs -a $SCRATCH/kernel-links.txt -n1 readlink -f | grep -vc "^$PWD/dsh/"
 
 ### 2.1 导入提交
 
-**规则**（`CLAUDE.md`「Upstream sync (the distribution)」的 **The upstream line.**）：
+**规则**（`.claude/skills/dsh-sync/SKILL.md`的 **The upstream line.**）：
 
 - 每个 tag 的内核是**一个导入提交**，由 `pnpm run dist:import <checkout>` 写出。
 - 它的树里只有 `dsh/<dir>/`：
@@ -334,7 +334,7 @@ flowchart TD
 
 它**不检查**的：
 
-- `Dist-Contract` 是否存在，`extend` 是否带 `Dist-Exit`。这两项是惯例（`CLAUDE.md`「Architecture boundaries」的 **The kernel changes only by classified commits**："wherever the contract or an exit condition is involved"）。
+- `Dist-Contract` 是否存在，`extend` 是否带 `Dist-Exit`。这两项是惯例（`.claude/rules/kernel.md`的 **The kernel changes only by classified commits**："wherever the contract or an exit condition is involved"）。
 - **合并提交**。同步或晋升的合并提交里如果夹带了 `dsh/<pkg>/` 下的 lyteboat 改动，这个检查看不见。核对办法：让 git 算出"干净合并"的树，再和实际的合并提交比：
 
   ```sh
@@ -407,9 +407,9 @@ lyteboat 在上游文件里的改动都以 `// lyteboat:` 注释开头，逻辑�
 
 为什么这样写：
 
-- git 的冲突只发生在上游和 lyteboat 都改过的同一段或相邻的行。lyteboat 在上游文件里只动这几行，冲突也就只会落在它们附近（`CLAUDE.md`「Architecture boundaries」："a smaller carried hunk is a cheaper sync"）。
+- git 的冲突只发生在上游和 lyteboat 都改过的同一段或相邻的行。lyteboat 在上游文件里只动这几行，冲突也就只会落在它们附近（`.claude/rules/kernel.md`："a smaller carried hunk is a cheaper sync"）。
 - `src/lyteboat/` 与 `tests/lyteboat/` 是上游不存在的目录，永远不会冲突。这是 Brave 的 `chromium_src` 手法在 TypeScript 里的样子。
-- 内核里的 lyteboat 测试只用内核和上游自己的测试辅助，不引 `@lyteboat/*`（`CLAUDE.md`「Testing」的 **Kernel tests**；`scripts/check-layers.ts` 的 `checkKernel` 强制"内核不认识任何 lyteboat 包"）。
+- 内核里的 lyteboat 测试只用内核和上游自己的测试辅助，不引 `@lyteboat/*`（`.claude/rules/testing.md`的 **Kernel tests**；`scripts/check-layers.ts` 的 `checkKernel` 强制"内核不认识任何 lyteboat 包"）。
 
 ---
 
@@ -569,7 +569,7 @@ stateDiagram-v2
 
 ### 5.1 规则
 
-`CLAUDE.md`「Architecture boundaries」的 **Promotion** 规定，npm 上的 dsh 包在以下任一情况下进入内核：
+`.claude/rules/kernel.md`的 **Promotion** 规定，npm 上的 dsh 包在以下任一情况下进入内核：
 
 - lyteboat 必须改它的实现（不是配置它，也不是用 provider 替换它）；
 - 它是每个 lyteboat 组合启动都需要的能力；
@@ -651,7 +651,7 @@ CI 用默认的浅克隆（`.github/workflows/ci.yml`），浅克隆里找不到
 
 ### 6.3 G2：上游测试怎么原样跑
 
-**原则**（`dsh-compat/tests/upstream-harness/README.md`；`CLAUDE.md`「Architecture boundaries」的 **Upstream's tests are never edited**）：测试文件逐字节来自最近一次导入，仓库里没有任何东西修改它们；环境差异只能在装置里加一行适配，并写进 README 的表格；实在无法不改就跑的测试就排除，写明理由，交给在上游仓库里运行的 overlay 闸门覆盖。
+**原则**（`dsh-compat/tests/upstream-harness/README.md`；`.claude/rules/kernel.md`的 **Upstream's tests are never edited**）：测试文件逐字节来自最近一次导入，仓库里没有任何东西修改它们；环境差异只能在装置里加一行适配，并写进 README 的表格；实在无法不改就跑的测试就排除，写明理由，交给在上游仓库里运行的 overlay 闸门覆盖。
 
 适配清单是 README 里的表格，要点是：内核包名与导出子路径解析到 `dsh/<dir>/src/…`，保证只有一个模块实例；其余 `@deepseek-ai/*` 包由 vite 内联，让它们对内核的导入走同一条路径；cordis 的 `declare const enum` 补运行时对象；四个垫片；标准装饰器先用 `ts.transpileModule` 降级（dsh-llm 的 `@Remote`）；测试在一个 `packages/` 链到 `dsh/` 的目录里运行；上游的不变量宿主 `test-invariants.ts` 改为在 `dsh/` 下找 companion。
 
@@ -753,7 +753,7 @@ typert vs dsh 0.2.0-rc.2: @deepseek-ai/dsh-llm, @deepseek-ai/dsh-api-session-con
 
   witness 挡住一种假通过：夹具没加载时，两棵树会写出同样的失败，四项断言照样相等。
 - **不比什么。** G4 不比较请求体。在声明 `toolUpdate` 的路由上，新可见的工具在请求里以 `defer_loading` 声明、由一个 `tool_addition` 块宣布；这一步序列化在 npm 上原样的 `dsh-llm-deepseek` 里（`up:packages/llm/llm-deepseek/src/serialize.ts`），两棵树用的是同一份。
-- **为什么 lyteboat 要这两个场景。** "开不开新序列"的条件里有 lyteboat 的一个子句：会话还没有 `request/header` 时开新序列（`dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.step`），与上游的 `toolUpdate` / `toolsChanged` 子句同在一个条件里。lyteboat 的 tool-policy 又恰好会在两次请求之间改变可见工具集（`visibility: 'auto'` 的工具随技能激活才可见，`CLAUDE.md`「Agent design」），而 dsh 默认的 `deepseek-flash` 路由声明了 `addition-only`（`up:packages/llm/llm-deepseek/src/models.ts:13`）。这两个场景证明，无论路由是否声明 `toolUpdate`，lyteboat 内核在工具集变化时写出的日志都与官方一致。
+- **为什么 lyteboat 要这两个场景。** "开不开新序列"的条件里有 lyteboat 的一个子句：会话还没有 `request/header` 时开新序列（`dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.step`），与上游的 `toolUpdate` / `toolsChanged` 子句同在一个条件里。lyteboat 的 tool-policy 又恰好会在两次请求之间改变可见工具集（`visibility: 'auto'` 的工具随技能激活才可见，`.claude/rules/agent-design.md`），而 dsh 默认的 `deepseek-flash` 路由声明了 `addition-only`（`up:packages/llm/llm-deepseek/src/models.ts:13`）。这两个场景证明，无论路由是否声明 `toolUpdate`，lyteboat 内核在工具集变化时写出的日志都与官方一致。
 
 **归一化做什么**（`lyteboat/tooling/testing/src/session-log.ts` 的 `normalizeSessionLog`）：
 
@@ -842,7 +842,7 @@ node lyteboat/apps/cli/lib/bin.js config dump --profile headless-agent > $SCRATC
 
 ## 7. 同步：一步一步
 
-规则原文是 `CLAUDE.md`「Upstream sync (the distribution)」的 **A sync, step by step**。节奏是一周一次，一次可以跨过期间所有 tag。`dsh.upstream.json` 跟踪的是 `0.2.0-rc.2`；下文用 `<新版本>` 表示要跟进的版本号，`<checkout>` 表示仓库旁的上游目录。
+规则原文是 `.claude/skills/dsh-sync/SKILL.md`的 **A sync, step by step**。节奏是一周一次，一次可以跨过期间所有 tag。`dsh.upstream.json` 跟踪的是 `0.2.0-rc.2`；下文用 `<新版本>` 表示要跟进的版本号，`<checkout>` 表示仓库旁的上游目录。
 
 **前置条件**（不满足时工具会在中途失败）：
 
@@ -859,7 +859,7 @@ node lyteboat/apps/cli/lib/bin.js config dump --profile headless-agent > $SCRATC
    git -C <checkout> describe --tags --exact-match HEAD                   # 必须输出 dsh-v<新版本>
    ```
 
-2. **快照与契约差异。** `pnpm run dist:snapshot <checkout>` 写出 `dsh-compat/contract/dsh-<新版本>/`，并打印 `contract <跟踪版本> → <新版本>: N removed, N changed, N added` 和逐键列表。removed 与 changed 是需要人判断的契约变化：dsh 的公开 API 还没稳定，一次同步可能改掉一个 seam 的名字，lyteboat 的消费者要在同一次同步里跟上；`compat` 只为金丝雀显示还在用它的社区插件保留上游删掉的接口，并且限期（`CLAUDE.md`「Upstream sync (the distribution)」末条）。读完差异，删掉旧版本的快照目录：`contract/` 只留跟踪版本的一份。
+2. **快照与契约差异。** `pnpm run dist:snapshot <checkout>` 写出 `dsh-compat/contract/dsh-<新版本>/`，并打印 `contract <跟踪版本> → <新版本>: N removed, N changed, N added` 和逐键列表。removed 与 changed 是需要人判断的契约变化：dsh 的公开 API 还没稳定，一次同步可能改掉一个 seam 的名字，lyteboat 的消费者要在同一次同步里跟上；`compat` 只为金丝雀显示还在用它的社区插件保留上游删掉的接口，并且限期（`.claude/skills/dsh-sync/SKILL.md`末条）。读完差异，删掉旧版本的快照目录：`contract/` 只留跟踪版本的一份。
 3. **导入并合并。** `pnpm run dist:import <checkout>`。按它的提示先 `git diff --stat <上一个导入> <新导入>` 看上游改了内核什么，再 `git merge --no-ff <新导入>`（先不提交，或者提交后在第 10 步补全提交信息）。若输出 `nothing to merge`，说明内核没变，跳到第 5 步。
 4. **解决冲突。** 冲突出现在上游和 lyteboat 都改过的同一段或相邻的行，也就是 §3.5 表里的那些钩子位置。`src/lyteboat/` 与 `tests/lyteboat/` 下的文件不会冲突。变成空改动的 hunk 按它的类别处理：backport、drop 删掉。
 5. **改版本钉。**
@@ -1086,4 +1086,4 @@ lyteboat release: finance 1.0.0 (sha256:a8261280…) released; lock: <仓库>/ex
 
 ## 11. 附录：命令表
 
-命令表见 [CLAUDE.md「Commands」](../CLAUDE.md#commands)；目录布局见 `CLAUDE.md`「Repository layout」。本文各节给出的命令：列出上游线（§2.2）、看 lyteboat 在内核上的全部差量（§2.3）、核对合并提交没有夹带内核改动（§3.3）、同步（§7）、按发布锁服务 agent（§9.3）。
+命令表见 [CLAUDE.md「Commands」](../CLAUDE.md#commands)，发行版专用的命令（G1、G2、差量、快照、导入、叠加闸门）在 `.claude/rules/kernel.md` 的 Commands 一节；目录布局见 README 的[项目结构](../README.md#项目结构)。本文各节给出的命令：列出上游线（§2.2）、看 lyteboat 在内核上的全部差量（§2.3）、核对合并提交没有夹带内核改动（§3.3）、同步（§7）、按发布锁服务 agent（§9.3）。
