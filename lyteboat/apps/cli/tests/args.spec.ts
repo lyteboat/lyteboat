@@ -35,6 +35,14 @@ describe('parseLyteboatArgs', () => {
       .toEqual({ mode: 'profile', profile: 'custom', plugins: [], patches: [], args: ['hello'] })
   })
 
+  it('boots the native profiles, dsh\'s own web and headless apps, with their arguments verbatim', () => {
+    expect(parse(['web', '--no-open', '--port', '0']))
+      .toEqual({ mode: 'profile', profile: 'web', plugins: [], patches: [], args: ['--no-open', '--port', '0'] })
+    expect(parse(['headless', '--json', 'run the tests']))
+      .toEqual({ mode: 'profile', profile: 'headless', plugins: [], patches: [], args: ['--json', 'run the tests'] })
+    expect(parse(['web', '--help'])).toEqual({ mode: 'profile', profile: 'web', plugins: [], patches: [], args: ['--help'] })
+  })
+
   it('ends the launcher flags at the first token it does not own', () => {
     expect(parse(['try', '-h'])).toEqual({ mode: 'profile', profile: 'try', plugins: [], patches: [], args: ['-h'] })
     expect(parse(['studio', '--agents', './agents', '--port', '0']))

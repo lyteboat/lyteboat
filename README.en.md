@@ -98,6 +98,8 @@ lyteboat studio --agents ./examples/agents                    # the Studio works
 
 | Command | What it does |
 |---|---|
+| `lyteboat web [options]` | The native base: dsh's own web app, dsh's coding agent and personal assistant, as the official dsh runs it (profile `web`, dsh's web template); `--no-open`, `--port`, and the rest are dsh web's own flags, `lyteboat web --help` |
+| `lyteboat headless [options] "task"` | The native base: answers one task with dsh's own agent and exits (profile `headless`, dsh's headless template); `--json` and `--session-id` are dsh headless's own flags |
 | `lyteboat try [options] "task"` | Answers one task, prints the result, and exits (profile `try`); without `--agent` the model has the `skill` tool only, for plugin smoke tests and quick checks, not as a coding assistant |
 | `lyteboat serve [options]` | Serves every agent of the `--agents` directories over HTTP (profile `serve`): `POST /chat`, `GET /agents`, `GET /health` |
 | `lyteboat eval [options]` | Runs an agent's eval cases and checks every turn (profile `eval`); `lyteboat eval compare <before> <after>` compares two runs |
@@ -106,7 +108,7 @@ lyteboat studio --agents ./examples/agents                    # the Studio works
 | `lyteboat studio [options]` | Serves the Studio workshop (profile `studio`): it inspects agents and never creates or continues a session; people sign in with Studio's own accounts and roles (admin, editor, viewer) or through an authorizing gateway; its pages are at `/studio/` (sign-in, the agent radar, Users, System, an agent's workspace with Overview, Skills, Tools, and Sessions, the Dashboard, and Evals in a window of their own at `/studio/evals`) and its API at `/api/studio`; `lyteboat studio account add \| set-password \| remove \| list` manages the accounts, reading a password from stdin; `lyteboat studio --help` |
 | `lyteboat config dump [options]` | Prints the composed plugin tree and exits; `--default` shows the bundle layers only |
 
-All seven accept:
+All nine accept:
 
 | Option | What it does |
 |---|---|
@@ -201,7 +203,7 @@ The [agent development guide](docs/03-agent-development.md) walks through every 
 
 ### Data and session logs
 
-- All lyteboat data lives under `$LYTEBOAT_HOME` (default `~/.lyteboat`). The launcher exports that directory as `DSH_HOME`, and its `.agents` as `DSH_AGENTS_HOME`, before any dsh package loads, so your own `~/.dsh` and `~/.agents` are never touched.
+- All lyteboat data lives under `$LYTEBOAT_HOME` (default `~/.lyteboat`). The launcher exports that directory as `DSH_HOME` before any dsh package loads, so your own `~/.dsh` is never touched. The shared agent root `~/.agents` (`DSH_AGENTS_HOME`) stays as you have it: the native base reads its skills as the official dsh does, and a business agent reads only the skills in its own directory.
 - Every agent has a working directory of its own, `$LYTEBOAT_HOME/agent-workdirs/<id>`: the sessions of `/chat`, of evals, and of `lyteboat try --agent` are recorded under it wherever the process started, so `lyteboat try --agent <id> --session-id <session>` continues a session from any directory; `lyteboat try` without `--agent` still runs in the directory it was started in.
 - Every request records who sent it: `/chat` records `user:<user_id>`, `lyteboat try` `operator:cli`, and an eval run `system:eval`.
 - The session log is the single source of truth. A card and a state delta sit on `tool/result.meta.lyteboat`, a request's context and admission verdict on the human message's `source.lyteboatRequest`, a routed skill is dsh's own skill-invocation message, an intake reply is an assistant message whose `source.provider` is `lyteboat`, and imported history is closed turns of ordinary nodes; the side-call audit `lyteboat/aux-llm-call` is marked ignorable. So these sessions reopen under dsh's own persistence.
@@ -300,7 +302,7 @@ Syncing a new dsh release, promoting a package into the kernel, and running G3 a
 ## Status and roadmap
 
 - Tracks dsh **0.2.0-rc.2** (`dsh.upstream.json`). The kernel is its import plus lyteboat's four registered extensions (`agent-loop-intake`, `agent-loop-pre-assemble`, `session-append-ignorable`, `session-controller-prompt-source`), and every gate above passes against it.
-- Provides seven commands: `lyteboat try` (a one-shot task), `serve` (the `/chat` service), `eval` (eval cases), `release` (the release gate and lock), `inspect` (what an agent is made of), `studio` (the Studio workshop), and `config dump` (the composed plugin tree), with the capability plugins behind them, the finance agent, the distribution tooling and the 16-package kernel, and the compatibility gates G1–G6. The [CHANGELOG](CHANGELOG.md) has the full list.
+- Provides nine commands: the native base's `lyteboat web` (dsh's web app) and `headless` (dsh's one-shot task); the business base's `try` (a one-shot task), `serve` (the `/chat` service), `eval` (eval cases), `release` (the release gate and lock), `inspect` (what an agent is made of), `studio` (the Studio workshop), and `config dump` (the composed plugin tree), with the capability plugins behind them, the finance agent, the distribution tooling and the 16-package kernel, and the compatibility gates G1–G6. The [CHANGELOG](CHANGELOG.md) has the full list.
 - Known limitations:
   - A business mode's model requests still carry a few traces of the host: dsh's skill-invocation message names the skill's absolute directory; the compaction summarizer's instructions are written for a coding assistant; `{{cwd}}` in a persona renders the server's path, so a business persona should not use it. The launcher also still reads a `.env` in the directory it starts in (kept for the operator's deployment settings).
   - There is no memory and there are no suggested questions. Side calls use the agent's own model by default; skill routing can name its own provider and model in `lyteboatAgentDef`'s `skillRouting`, intake classification cannot yet.

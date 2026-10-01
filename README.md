@@ -98,6 +98,8 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 
 | 命令 | 作用 |
 |---|---|
+| `lyteboat web [选项]` | 原生底座：dsh 自己的 web 应用，dsh 的编码 agent 和个人助理，和官方 dsh 一样（profile `web`，就是 dsh 的 web 模板）；`--no-open`、`--port` 等是 dsh web 自己的参数，`lyteboat web --help` |
+| `lyteboat headless [选项] "任务"` | 原生底座：用 dsh 自己的 agent 回答一个任务后退出（profile `headless`，就是 dsh 的 headless 模板）；`--json`、`--session-id` 是 dsh headless 自己的参数 |
 | `lyteboat try [选项] "任务"` | 回答一个任务，打印结果后退出（profile `try`）；不带 `--agent` 时模型只有 `skill` 工具，用来试插件、做快速检查，不是编码助手 |
 | `lyteboat serve [选项]` | 把 `--agents` 目录里的全部 agent 以 HTTP 服务出去（profile `serve`）：`POST /chat`、`GET /agents`、`GET /health` |
 | `lyteboat eval [选项]` | 跑一个 agent 的评测用例并逐轮检查（profile `eval`）；`lyteboat eval compare <前> <后>` 比较两次运行 |
@@ -106,7 +108,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 | `lyteboat studio [选项]` | 启动 Studio 工作台（profile `studio`）：只查看 agent，不建也不续会话；用自己的账户与角色（admin、editor、viewer）或经授权网关登录；页面在 `/studio/`（登录、agent 雷达、Users、System，agent 工作台的概览、技能、工具、会话，看板，以及在独立窗口 `/studio/evals` 里的评测），API 在 `/api/studio`；`lyteboat studio account add \| set-password \| remove \| list` 管账户，口令从标准输入读；`lyteboat studio --help` |
 | `lyteboat config dump [选项]` | 打印组合后的插件树并退出；`--default` 只看 bundle 层 |
 
-七个命令都接受：
+九个命令都接受：
 
 | 选项 | 作用 |
 |---|---|
@@ -201,7 +203,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 
 ### 数据与会话日志
 
-- 轻舟的全部数据在 `$LYTEBOAT_HOME` 下（默认 `~/.lyteboat`）。启动器在加载任何 dsh 包之前把它导出为 `DSH_HOME`、把其中的 `.agents` 导出为 `DSH_AGENTS_HOME`，不会碰你自己的 `~/.dsh` 和 `~/.agents`。
+- 轻舟的全部数据在 `$LYTEBOAT_HOME` 下（默认 `~/.lyteboat`）。启动器在加载任何 dsh 包之前把它导出为 `DSH_HOME`，不会碰你自己的 `~/.dsh`。共享的 agent 配置根 `~/.agents`（`DSH_AGENTS_HOME`）保持你自己的设置：原生底座和官方 dsh 一样从这里读 skill，业务 agent 只读自己目录里的 skill。
 - 每个 agent 有自己的工作目录 `$LYTEBOAT_HOME/agent-workdirs/<id>`：`/chat`、评测和 `lyteboat try --agent` 的会话都记在它下面，不管进程从哪个目录启动，所以 `lyteboat try --agent <id> --session-id <会话>` 在任何目录都能续聊；不带 `--agent` 的 `lyteboat try` 仍在启动它的目录里跑。
 - 每条请求记着是谁发的：`/chat` 记 `user:<user_id>`，`lyteboat try` 记 `operator:cli`，评测记 `system:eval`。
 - 会话日志是唯一的事实来源。卡片和状态增量记在 `tool/result.meta.lyteboat` 上，请求上下文和准入判定记在人类消息的 `source.lyteboatRequest` 上，路由选中的技能是 dsh 自己的技能调用消息，拒识回复是 `source.provider` 为 `lyteboat` 的助手消息，导入的历史是一串已关闭的普通 turn；旁路调用的审计 `lyteboat/aux-llm-call` 标为可忽略。所以这些会话可以被 dsh 自己的持久化层重新打开。
@@ -298,7 +300,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 ## 状态与路线图
 
 - 跟踪 dsh **0.2.0-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的四个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`），上面所有闸门都对它通过。
-- 提供七个命令：`lyteboat try`（一次性任务）、`serve`（`/chat` 服务）、`eval`（评测用例）、`release`（发布闸门与发布锁）、`inspect`（agent 由什么组成）、`studio`（Studio 工作台）、`config dump`（组合后的插件树），以及它们背后的能力插件、金融智能体、发行版工具与 14 包内核、兼容性闸门 G1–G6。完整清单见 [CHANGELOG](CHANGELOG.md)。
+- 提供九个命令：原生底座的 `lyteboat web`（dsh 的 web 应用）、`headless`（dsh 的一次性任务）；业务底座的 `try`（一次性任务）、`serve`（`/chat` 服务）、`eval`（评测用例）、`release`（发布闸门与发布锁）、`inspect`（agent 由什么组成）、`studio`（Studio 工作台）、`config dump`（组合后的插件树），以及它们背后的能力插件、金融智能体、发行版工具与 16 包内核、兼容性闸门 G1–G6。完整清单见 [CHANGELOG](CHANGELOG.md)。
 - 已知限制：
   - 业务模式的模型请求里还有几处宿主的痕迹：dsh 的技能调用消息带着技能目录的绝对路径；上下文压缩的摘要指令是按编码助手写的；persona 里的 `{{cwd}}` 渲染成服务器上的路径，业务 persona 不要用它。另外，启动器仍会读它启动目录里的 `.env`（留给运维放部署配置）。
   - 没有记忆和推荐问。旁路调用默认用 agent 自己的模型；技能路由可以在 `lyteboatAgentDef` 的 `skillRouting` 里另指 provider 和 model，准入分类还不能单独指定。

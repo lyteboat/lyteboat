@@ -84,6 +84,18 @@ describe('the session index', () => {
     expect((await index.ctx.sessionIndex.list('beta', { limit: 50, offset: 0 }))?.sessions.map(session => session.sessionId)).toEqual(['s-beta'])
   })
 
+  it('shows no native dsh session, even one run in the agent\'s working directory', async () => {
+    const index = await indexFixture()
+    await index.write('s-native', index.workdir('alpha'), log => log.turnStart().stepStart().user('fix the build').assistant('done').turnEnd())
+
+    const listed = await index.ctx.sessionIndex.list('alpha', { limit: 50, offset: 0 })
+    const found = await index.ctx.sessionIndex.find('alpha', 'fix the build', { limit: 50, offset: 0 })
+
+    expect(listed?.sessions).toEqual([])
+    expect(found?.sessions).toEqual([])
+    expect(await index.ctx.sessionIndex.detail('alpha', 's-native')).toBeUndefined()
+  })
+
   it('pages, windows by the last update, and filters by owner', async () => {
     const index = await indexFixture()
     await threeSessions(index)

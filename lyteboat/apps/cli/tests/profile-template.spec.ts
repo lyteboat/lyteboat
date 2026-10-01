@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { initProfile, resolveProfileDir } from '@deepseek-ai/dsh-app-boot'
+import { PROFILE_TEMPLATES as DSH_PROFILE_TEMPLATES, initProfile, resolveProfileDir } from '@deepseek-ai/dsh-app-boot'
 import { LYTEBOAT_EVAL_BUNDLES, LYTEBOAT_TRY_BUNDLES, LYTEBOAT_SERVE_BUNDLES, LYTEBOAT_STUDIO_BUNDLES } from '@lyteboat/testing/composition'
 import { lyteboatTempDir } from '@lyteboat/testing/scratch'
 import { afterEach, describe, expect, test, vi } from 'vitest'
@@ -28,6 +28,26 @@ describe('lyteboat profile templates', () => {
 
   test('a studio profile lists the layers the studio composition tests boot', () => {
     expect(LYTEBOAT_PROFILE_TEMPLATES['studio']?.bundles).toEqual(LYTEBOAT_STUDIO_BUNDLES)
+  })
+
+  test('a native profile is dsh\'s own template of that name, with no lyteboat bundle', () => {
+    for (const name of ['web', 'headless']) {
+      const bundles = LYTEBOAT_PROFILE_TEMPLATES[name]?.bundles
+      expect(bundles, name).toEqual(DSH_PROFILE_TEMPLATES[name]?.bundles)
+      expect(bundles?.some(bundle => bundle.startsWith('@lyteboat/')), name).toBe(false)
+    }
+  })
+
+  test('a business profile is dsh-base, any dsh app bundle it runs on, the business base, and one mode bundle last', () => {
+    const business = Object.entries(LYTEBOAT_PROFILE_TEMPLATES).filter(([, template]) => template.bundles.includes('@lyteboat/base'))
+    expect(business.map(([name]) => name).sort()).toEqual(['eval', 'inspect', 'serve', 'studio', 'try'])
+    for (const [name, { bundles }] of business) {
+      const base = bundles.indexOf('@lyteboat/base')
+      expect(bundles[0], name).toBe('@deepseek-ai/dsh-base')
+      expect(bundles.slice(1, base).every(bundle => bundle.startsWith('@deepseek-ai/')), name).toBe(true)
+      expect(bundles.slice(base + 1), name).toHaveLength(1)
+      expect(bundles.at(-1), name).toMatch(/^@lyteboat\//u)
+    }
   })
 
   test('an existing profile whose bundle list predates the template fails loud with the fix', () => {

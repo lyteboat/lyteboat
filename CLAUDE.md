@@ -277,6 +277,7 @@ Read the reference implementation's `docs/agent_design_principles.md` before des
 | G4–G6 against the official release | `pnpm run dsh-compat` |
 | Everything | `pnpm run check` (lint + test + dsh-compat) |
 | Show one test's console output | `npx vitest run <file> --silent=false --reporter=verbose` |
+| dsh's own web app and one-shot task (the native base) | `node lyteboat/apps/cli/lib/bin.js web --no-open` · `node lyteboat/apps/cli/lib/bin.js headless "task"` |
 | One-shot task | `node lyteboat/apps/cli/lib/bin.js try "task"` (needs `DEEPSEEK_API_KEY` or a scripted model via `DEEPSEEK_BASE_URL`; without `--agent` the model has the `skill` tool only: plugin smoke tests and quick checks) |
 | A plugin file | `node lyteboat/apps/cli/lib/bin.js try --plugin ./my-plugin.mjs "task"` |
 | An agent | `node lyteboat/apps/cli/lib/bin.js try --agents ./examples/agents --agent finance --context '{"customer":"young-idle-cash"}' "看看我的资产"` |
@@ -298,4 +299,4 @@ Read the reference implementation's `docs/agent_design_principles.md` before des
 | Persistence and G3 gates | `pnpm run dist:overlay <installed dsh checkout at the tracked tag> persistence` / `g3` |
 | Typert files against upstream's generator (`--write` regenerates) | `pnpm run dist:overlay <installed dsh checkout at the tracked tag> typert` |
 
-All lyteboat data lives under `$LYTEBOAT_HOME` (default `~/.lyteboat`); the launcher exports it as `DSH_HOME`, and its `.agents` as `DSH_AGENTS_HOME` (read only where dsh's default skill roots are on), before any dsh package loads, so a user's `~/.dsh` and `~/.agents` are never touched. Set `DSH_TELEMETRY_DISABLED=1` in tests and CI.
+All lyteboat data lives under `$LYTEBOAT_HOME` (default `~/.lyteboat`); the launcher exports it as `DSH_HOME` before any dsh package loads, so a user's `~/.dsh` is never touched. The shared agent root (`DSH_AGENTS_HOME`, default `~/.agents`) stays as the user has it: the native profiles read its skills as dsh does, and the business base turns dsh's default skill roots off. Set `DSH_TELEMETRY_DISABLED=1` in tests and CI.
