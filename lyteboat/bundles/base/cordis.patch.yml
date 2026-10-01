@@ -82,6 +82,11 @@
   disabled: true
 - id: ptc-runtime
   disabled: true
+# With no PTC runtime the registry presents tools natively, whatever mode the
+# environment asks dsh-headless for (DSH_TOOLS_MODE).
+- id: tools
+  config:
+    mode: native
 - id: workflow-ptc
   disabled: true
 - id: tool-workflow

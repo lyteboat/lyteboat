@@ -60,6 +60,9 @@ import { LYTEBOAT_PROFILE_TEMPLATES } from './templates.ts'
 /** The launcher's diagnostic prefix and the bin name env layers are read for. */
 export const NAME = 'lyteboat'
 
+/** A profile the launcher refuses to boot; its message is the whole diagnostic. */
+export class LyteboatProfileError extends Error {}
+
 /** Launcher-owned readiness signal committed only after boot and host setup succeed. */
 function createAppReady(): { service: AppReady; commit(): void } {
   let ready = false
@@ -128,7 +131,7 @@ export function ensureProfileInitialized(name: string, home: string = resolveDsh
   if (template === undefined) return
   const bundles = readProfileManifest(NAME, dir).dsh?.profile?.bundles ?? []
   if (template.bundles.every((bundle, index) => bundles[index] === bundle)) return
-  throw new Error(
+  throw new LyteboatProfileError(
     `${NAME}: profile "${name}" at ${dir} lists bundles [${bundles.join(', ')}], but this lyteboat's "${name}" template is [${template.bundles.join(', ')}]. `
     + `Set dsh.profile.bundles in ${join(dir, 'package.json')} to the template's list, or move the directory away to have it recreated (keep your cordis.patch.yml).`,
   )
@@ -149,7 +152,7 @@ export function checkSkippedProfileBundles(name: string, profile: Pick<Profile, 
   const required = profile.skippedBundles.filter(skipped => templateBundles.includes(skipped.packageName))
   reportSkippedBundles(NAME, { skippedBundles: profile.skippedBundles.filter(skipped => !required.includes(skipped)) })
   if (required.length === 0) return
-  throw new Error(
+  throw new LyteboatProfileError(
     `${NAME}: profile "${name}" cannot boot without the bundles its template lists; skipped: `
     + required.map(({ packageName, reason }) => `${packageName} (${reason})`).join('; '),
   )

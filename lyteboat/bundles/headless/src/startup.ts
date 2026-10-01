@@ -10,13 +10,13 @@
  * Modeled on deepseek-ai/deepseek-harness packages/bundle/headless/src/startup.ts
  * @ dsh-v0.2.0-rc.2 (639ed015), MIT — see THIRD_PARTY_NOTICES.md. Differences:
  * the agent, agent-root, history, context, and result flags, resolved and
- * checked here, and no JSON error event for a malformed `--json` invocation.
+ * checked here.
  * @module @lyteboat/headless/startup
  */
 
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { Command } from 'commander'
+import { Command, CommanderError } from 'commander'
 import type { Context } from '@deepseek-ai/cordis'
 import { parseCmdline } from '@deepseek-ai/dsh-cmdline'
 import type { JsonValue } from '@lyteboat/contracts'
@@ -52,6 +52,24 @@ declare module '@deepseek-ai/cordis' {
 }
 
 const collect = (value: string, previous: string[] = []): string[] => [...previous, value]
+
+/** The options whose next argument is their value, so a `--json` there is not the flag. */
+const VALUE_OPTIONS = new Set(['--agent', '--agents', '--history', '--session-id', '--context', '--result'])
+
+/**
+ * Whether the raw invocation asks for dsh's event stream. The scan stops at `--`
+ * and skips option values, so a literal `--json` used as a value or a task word
+ * never turns usage errors into events.
+ */
+function jsonRequested(argv: readonly string[]): boolean {
+  for (let index = 0; index < argv.length; index += 1) {
+    const argument = argv[index] ?? ''
+    if (argument === '--') return false
+    if (argument === '--json') return true
+    if (VALUE_OPTIONS.has(argument)) index += 1
+  }
+  return false
+}
 
 /**
  * The request context a `--context` value names: a JSON object written inline
@@ -107,6 +125,15 @@ export default class LyteboatHeadlessStartup {
    */
   constructor(ctx: Context) {
     const program = command()
+    // Commander rejects a grammar error before the action runs, and a `--json` caller is
+    // still owed it as an event: dsh's JSON contract keeps stdout to events and stderr
+    // to the runner's `dsh:` lines.
+    if (jsonRequested(ctx.get('cmdlineArgs')?.get() ?? [])) {
+      program.error = (message: string, errorOptions?: Parameters<Command['error']>[1]): never => {
+        process.stdout.write(`${JSON.stringify({ type: 'error', message: message.replace(/^error: /u, '') })}\n`)
+        throw new CommanderError(1, errorOptions?.code ?? 'commander.error', message)
+      }
+    }
     program.action(() => {
       const options = program.opts<{ agent?: string; agents?: string[]; history?: string; sessionId?: string; context?: string; result: string; json?: boolean }>()
       if (program.args.length > 1 && program.args.includes('-')) program.error('error: `-` must be the only task argument')

@@ -130,13 +130,17 @@ describe('lyteboat headless --agent output and input (built bin, scripted model)
     expect(model.requests.slice(before).some(request => request.lastUser.includes('STDIN-TASK-PROBE'))).toBe(true)
   })
 
-  it('refuses --json with --result json as a usage error without a model request', async () => {
-    const { home, workspace } = scratch.run('json-result')
+  it.each([
+    [['--result', 'json'], '--json streams run events; it cannot be combined with --result json'],
+    [['--bogus'], 'unknown option \'--bogus\''],
+  ])('answers a --json usage error (%j) with dsh\'s error event and no model request', async (extra, message) => {
+    const { home, workspace } = scratch.run(`json-usage${extra.join('')}`)
     const before = model.requests.length
-    const run = await runLyteboat(['headless', '--agents', AGENTS, '--agent', 'echo', '--json', '--result', 'json', 'hello'], { cwd: workspace, env: { LYTEBOAT_HOME: home, ...scriptedModelEnv(model) } })
+    const run = await runLyteboat(['headless', '--agents', AGENTS, '--agent', 'echo', '--json', ...extra, 'hello'], { cwd: workspace, env: { LYTEBOAT_HOME: home, ...scriptedModelEnv(model) } })
 
     expect(run.code).toBe(1)
-    expect(run.stderr).toContain('--json streams run events; it cannot be combined with --result json')
+    expect(run.stdout.trim().split('\n').map(line => JSON.parse(line) as unknown)).toEqual([{ type: 'error', message }])
+    expect(run.stderr).not.toContain(message)
     expect(model.requests.length).toBe(before)
   })
 })

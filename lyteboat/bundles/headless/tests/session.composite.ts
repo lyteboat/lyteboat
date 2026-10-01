@@ -60,7 +60,7 @@ describe('lyteboat headless --session-id (in process, scripted model)', () => {
     expect(types.at(-1)).toBe('turn/end')
   })
 
-  it('refuses an id that does not exist, a different agent, and --history', async () => {
+  it('refuses an id that does not exist, an agent\'s session continued without its agent, and --history', async () => {
     const target = fresh('refused')
     const unknown = await headlessComposition(['--session-id', 'session-nope', 'hello'], target)
     expect(unknown.code).not.toBe(0)

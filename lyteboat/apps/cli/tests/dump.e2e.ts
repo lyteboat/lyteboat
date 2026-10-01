@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { LYTEBOAT_HEADLESS_AGENT_BUNDLES } from '@lyteboat/testing/composition'
@@ -55,6 +55,29 @@ describe('lyteboat config dump (built bin)', () => {
         expect(dumpedRow(result.stdout, id), `${profile}: ${id}`).toMatch(/^ {2}disabled: true$/mu)
       }
     }
+  })
+
+  it('presents tools natively in every business profile, whatever mode DSH_TOOLS_MODE asks for', async () => {
+    const business = Object.entries(LYTEBOAT_PROFILE_TEMPLATES).filter(([, template]) => template.bundles.includes('@lyteboat/base')).map(([profile]) => profile)
+    expect(business).toEqual(['headless-agent', 'serve', 'eval', 'studio', 'inspect'])
+    for (const profile of business) {
+      const result = await runLyteboat(['config', 'dump', '--profile', profile], { env: { LYTEBOAT_HOME: home, DSH_TOOLS_MODE: 'ptc' } })
+      expect(result.code, `${profile}: ${result.stderr}`).toBe(0)
+      expect(dumpedRow(result.stdout, 'tools'), profile).toMatch(/^ {4}mode: native$/mu)
+    }
+  })
+
+  it('refuses a profile an older lyteboat created with one line naming the fix, and no stack', async () => {
+    const dir = join(home, 'profiles', 'serve')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'package.json'), JSON.stringify({ name: 'serve', private: true, dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@lyteboat/host', '@lyteboat/serve'] } } }))
+
+    const result = await runLyteboat(['config', 'dump', '--profile', 'serve'], { env: { LYTEBOAT_HOME: home } })
+
+    expect(result.code).toBe(1)
+    expect(result.stderr).toMatch(/^lyteboat: profile "serve" at .* lists bundles \[@deepseek-ai\/dsh-base, @lyteboat\/host, @lyteboat\/serve\].*\n$/u)
+    expect(result.stderr).not.toContain('    at ')
+    rmSync(dir, { recursive: true, force: true })
   })
 
   it('prints the version pair', async () => {
