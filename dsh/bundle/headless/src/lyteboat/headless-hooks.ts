@@ -2,10 +2,10 @@
  * lyteboat's extension of the one-shot runner (dsh-compat/contract/extensions.yml:
  * `headless-hooks`): the three waterfalls the runner dispatches around one
  * run (before it creates or adopts the Agent, when it submits the task, and
- * before it prints the outcome) and the plans they carry. A listener edits the
+ * before it prints the answer) and the plans they carry. A listener edits the
  * plan and calls `next()`; the runner carries out the plan the waterfall
- * leaves, so a listener never skips another one, and with no listener the plan
- * is the official runner's. A plugin that listens declares
+ * leaves, so replacing a default never takes skipping `next()`, and with no
+ * listener the plan is the official runner's. A plugin that listens declares
  * `inject: ['lyteboatDistro']`.
  * @module @deepseek-ai/dsh-headless/lyteboat/headless-hooks
  */
@@ -37,7 +37,11 @@ export interface LyteboatHeadlessSubmitPlan {
   readonly agent: Agent
   /** The task text, from the command line or stdin. */
   readonly task: string
-  /** Hands the task to the Agent. Default: follows up one user message whose source is `{ kind: 'user' }`. */
+  /**
+   * Hands the task to the Agent, resolving once the message is followed up: the
+   * runner then waits for the Agent to go idle. Default: follows up one user
+   * message whose source is `{ kind: 'user' }`.
+   */
   deliver: () => Promise<void>
 }
 
@@ -67,8 +71,9 @@ declare module '@deepseek-ai/cordis' {
      */
     'lyteboat/headless-submit'(plan: LyteboatHeadlessSubmitPlan, next: () => Promise<void>): Promise<void>
     /**
-     * Dispatched after the Session is flushed and the outcome read, before
-     * anything is printed.
+     * Dispatched after the Session is flushed and the outcome read, before the
+     * answer (with `--json`, the final event) is printed; reasoning lines and
+     * the event stream so far are already out.
      * @mode waterfall
      */
     'lyteboat/headless-report'(plan: LyteboatHeadlessReportPlan, next: () => Promise<void>): Promise<void>
@@ -83,7 +88,7 @@ declare module '@deepseek-ai/cordis' {
  */
 export async function planHeadlessStart(ctx: Context, plan: LyteboatHeadlessStartPlan): Promise<LyteboatHeadlessStartPlan> {
   await ctx.waterfall('lyteboat/headless-start', plan, () => Promise.resolve())
-  if (plan.resumeSessionId !== undefined && plan.seed !== undefined) {
+  if (plan.resumeSessionId !== undefined && plan.seed !== undefined && plan.seed.length > 0) {
     throw new Error(`session "${plan.resumeSessionId}" is continued, so it takes no seed; a seed starts a new Session`)
   }
   return plan

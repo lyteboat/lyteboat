@@ -215,6 +215,20 @@ describe('headless-hooks', () => {
     await bench.ctx.fiber.dispose()
   })
 
+  it('a continued Session takes an empty seed as no seed', async () => {
+    const bench = await hookBench({ cwd: CWD })
+    bench.ctx.sessions.create(brandString<SessionId>('session-stored'), { meta: { cwd: CWD } })
+    bench.ctx.on('lyteboat/headless-start', async (plan, next) => {
+      plan.seed = []
+      await next()
+    })
+
+    const result = await bench.run({ sessionId: 'session-stored' })
+
+    expect(result).toEqual({ code: 0, out: 'answer\n', err: '' })
+    await bench.ctx.fiber.dispose()
+  })
+
   it('lyteboat/headless-submit delivers the task in place of the official user message', async () => {
     const bench = await hookBench()
     bench.ctx.on('lyteboat/headless-submit', async (plan, next) => {
