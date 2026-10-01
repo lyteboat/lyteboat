@@ -527,3 +527,21 @@
 
     - id: llm-deepseek-account
       name: '@deepseek-ai/dsh-llm-deepseek-account'
+
+# lyteboat (Dist-Change: policy; dsh-compat/COMPAT.md §8): a lyteboat profile
+# sends nothing off the machine that its user did not send to a model. The rows
+# above stay as upstream wrote them; these entries turn three of them off.
+# session-log-deepseek attaches the session's canonical log to every official
+# DeepSeek request, and plugin-package-inventory-deepseek the installed plugin
+# packages; session-telemetry-otel exports a session-log prefix to upstream's
+# collector once a person gives feedback. Off rather than configured off:
+# session-log-deepseek's `enabled` is a live setting a settings write would turn
+# back on.
+- id: session-log-deepseek
+  disabled: true
+
+- id: plugin-package-inventory-deepseek
+  disabled: true
+
+- id: session-telemetry-otel
+  disabled: true
