@@ -15,6 +15,80 @@ lyteboat is a framework: teams build business agents on it and serve them to the
 - **Goal-driven.** Each step ends with something that runs from the built CLI, and the tests it needs follow from the task type ([Testing](#testing)).
 - **Framework, not application.** lyteboat is a vertical-agnostic foundation for business agents. `lyteboat/bundles/*`, `lyteboat/plugins/*`, and `lyteboat/core/*` stay domain-neutral: no business rules, industry vocabulary, or branches tied to one scenario. Business logic lives only in the agents (`examples/agents/*`), and a capability the framework adds is one any vertical could use.
 
+## 中文写作
+
+用户用中文提问，就用中文回答。本节适用于用户读到的所有中文：聊天回复、artifact（含设计文档）、中文的 PR 描述和评论，以及 `README.md`、`docs/` 里新写或改写的段落。代码、注释和 commit message 照旧用英文。
+
+读者是忙碌的工程师，读你的文字是为了尽快拿到结论、做下一步决定。所以要写得像一位文笔好的中国工程师，而不是翻译出来的英文。
+
+本文件的其他章节写得很密：长句、层层括号、分号串联。那是给你读的规格，不是文风范本。不要模仿它，也不要把它的句子直译成中文。
+
+### 句子
+
+- 用中文的自然语序。短句优先，一句话只讲一件事。
+- 动词直接用，不加"进行""实现""做出"这类空壳：写"优化了查询"，不写"对查询进行了优化"。
+- 少用被动句，少用"对于……来说""基于……""通过……的方式"。
+- 一个名词前最多挂一个"的"字结构，太长就拆成两句。
+- 一句话最多一个括号，括号里只放路径、缩写、英文原词这类短补充。要解释的内容另起一句。不用分号把几件事串成一句。
+- 每句话都要提供新信息。删掉后不影响理解的句子，就删掉。
+
+### 开头、结尾和篇幅
+
+- 第一句就是答案或结论。不复述问题，不写"好的，下面我来……"。
+- 结尾不做重复总结，不问"还需要什么帮助吗"。只有确实有需要用户决定的事，才问一个问题。
+- 篇幅跟着问题走。是非题第一句答"是"或"不是"，再补一两句理由就够了。
+- 聊天回复的正文一般不超过一屏。写不下，说明讲多了，先删。删完还长，就把细节放进 artifact，聊天里只留结论和链接。
+- 汇报任务结果按这个顺序：做成了什么，改了哪里，跑了哪些命令、结果如何，什么没做、为什么。不讲过程，比如读了哪些文件、试过哪些路子，除非用户问起，或者它会改变结论。
+- 确定的事直接说，不挂"可能""一般来说"。不确定的事只说一次，并说清缺什么依据，比如没跑测试、没读到源码。
+
+### 结构
+
+- 先说结论，再说理由和细节。
+- 段落之间要有逻辑衔接（因为、所以、但是、另一方面），让读者看出思路怎么推进。
+- 默认用段落写。只有并列、可独立阅读的项目（步骤、参数、选项对比）才用列表或表格。
+- 加粗只用于读者扫读时必须看到的一两处，不要每段都加。
+- 标题只在文档较长、读者需要跳读时用。聊天回复一般不用标题。
+
+### 用词
+
+- 用具体的词替代空泛的词：说清"快了多少""哪里出错"，不写"显著提升""存在一定问题"。
+- 代码里的名字原样写在反引号里，不翻译：包名、服务名、事件名、配置字段、命令、路径。
+- 概念词沿用 [docs/01-architecture.md §7.3](docs/01-architecture.md#73-术语表) 术语表的写法，如行、投影、信封、准入。表里没有的，保留常用英文原词（API、cache、commit、profile），不要硬翻。同一个概念全文只用一种写法。
+- 中英文之间加空格。
+- 不用"赋能""抓手""闭环""助力""打通"这类套话，也不用"值得注意的是""需要指出的是""总的来说""换句话说"这类垫话。
+
+### Artifact
+
+Artifact 和长文档同样先结论后细节。读者只看第一屏，就应该能决定下一步。
+
+- 标题下的第一段用三到五句话写清：这是什么，结论是什么，需要用户决定什么。待决定的事单独列出，每条写明选项和你的建议。
+- 每节第一句是本节的结论，依据放在后面。
+- 一张图能说清的，不写成段落。图下用一两句话告诉读者看哪里。
+- 同一个事实只写一处，别处链接过去。表格每格放一个短语或一句话，不放段落。
+- 设计文档的必备部分（[Task types](#task-types)）照写，但每部分写到够做决定为止。某一层没有变化，就写一行"无变化"，不为凑齐层级写空话。
+
+### 示例
+
+差：通过对数据库查询进行优化的方式，我们实现了系统整体性能的显著提升。
+
+好：优化数据库查询后，接口响应时间从 800ms 降到 120ms。
+
+差：值得注意的是，对于这个问题来说，存在多种可能的解决方案。
+
+好：这个问题有三种解法，推荐第二种，原因是……
+
+差：针对在 `DSH_TOOLS_MODE` 被设置为 `ptc` 的情况下业务 one-shot 无法正常启动的问题，我们通过在 `@lyteboat/base`（业务底座，即 headless-agent、serve、eval 等 profile 在 dsh-base 之后列出的 bundle）中对工具注册表的模式进行固定的方式，实现了对该问题的修复。
+
+好：设了 `DSH_TOOLS_MODE=ptc`，业务 one-shot 就起不来，因为业务底座没有 PTC 运行时。现在 `@lyteboat/base` 把工具注册表固定在 native 模式，同一条命令正常退出。
+
+差：好的，我已经完成了您要求的修改。首先，我阅读了 CLAUDE.md 和相关源码，了解了项目的整体结构；然后，我对相关插件进行了修改……总的来说，本次修改有效提升了代码质量。如果还有其他需要，请随时告诉我！
+
+好：已推送到 `<branch>`。工具策略里写错的工具名，现在加载时直接报错，原来会静默跳过。加了一条回归测试。`pnpm run lint` 和 `pnpm run test` 通过。G4–G6 没跑，这次改动碰不到它们。
+
+### 交付前自查
+
+写完通读一遍，检查：第一句是不是答案？有没有可以删掉的句子？有没有读起来像翻译、要读两遍才懂的句子？有没有括号套括号、分号串起的长句？列表能不能改写成一段更连贯的话？发现问题就改完再给出。
+
 ## Stack
 
 TypeScript 6 (`strict`, `exactOptionalPropertyTypes`, `noUncheckedIndexedAccess`), ESM only, Node ^22.19 || >=24 · pnpm 11 workspaces (`lyteboat/*/*`, `examples/*/*`, `dsh/*/*`; `overrides` route the kernel names to `dsh/`) · `tsc -b` with project references, then tsdown for the kernel bundles (upstream's own build) · vitest 4 (unit, composite, e2e, and upstream's kernel tests in one runner) · oxlint (`correctness` = error) · Cordis 4 IoC (`@deepseek-ai/cordis`) · dsh 0.2.0-rc.2: the kernel from `dsh/`, every other dsh package from npm as a peer dependency · `@deepseek-ai/schemastery` for plugin `Config`, zod for the JSON envelopes lyteboat writes and its projection states.
@@ -183,7 +257,7 @@ Work is delivered one runnable milestone at a time, and a large milestone is spl
 
 **Structural** (`feature` / `refactor` / a new plugin or agent): design top-down through the C4 layers before code: C1 system context (what lyteboat, dsh, the model, and the client see) → C2 containers (launcher, bundles, kernel, plugins, agents, tests) → C3 components (services, events, projections, prompt sections and their orders) → C4 code (types in contracts, hunks, log nodes, event ordering). The user reviews the design document before any code is written; confirm with them again when the implementation has to depart from it, touches a public contract, or crosses a layer boundary the design did not name.
 
-**Design deliverable** for a structural task: the design document is a self-contained HTML artifact (mermaid inlined, never a CDN), published through the artifact tool, and never committed under the repository. It must contain the C4 diagrams, the step-by-step flow (one agent-loop step with intake, pre-assemble, routing, activation, assembly; one tool call with state delta and card), the changes-and-impact table, and the acceptance log.
+**Design deliverable** for a structural task: the design document is a self-contained HTML artifact (mermaid inlined, never a CDN), published through the artifact tool, and never committed under the repository. It opens with a few sentences saying what changes, why, and what the user must decide, then contains the C4 diagrams, the step-by-step flow (one agent-loop step with intake, pre-assemble, routing, activation, assembly; one tool call with state delta and card), the changes-and-impact table, and the acceptance log. It is written by [中文写作](#中文写作): each part only as long as the decision needs.
 
 ### Scope of change
 
