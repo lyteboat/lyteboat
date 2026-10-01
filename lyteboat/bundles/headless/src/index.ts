@@ -108,8 +108,9 @@ export default class LyteboatHeadlessHooks {
       if (headlessConfig.history !== undefined) {
         const history = ctx.historyImport.readFile(headlessConfig.history)
         const seed = ctx.historyImport.seed(history.rounds)
-        // This row speaks for the business run on stderr, beside the runner's own `dsh:` lines.
-        process.stderr.write(`lyteboat: imported ${String(seed.imported.length)} history round(s) from ${history.source}\n`)
+        // This row speaks for the business run on stderr, beside the runner's own `dsh:` lines; under
+        // `--json` dsh keeps stderr to those alone.
+        if (headlessConfig.json !== true) process.stderr.write(`lyteboat: imported ${String(seed.imported.length)} history round(s) from ${history.source}\n`)
         if (seed.events.length > 0) plan.seed = seed.events
       }
       await next()
@@ -124,7 +125,8 @@ export default class LyteboatHeadlessHooks {
     ctx.on('lyteboat/headless-report', async (plan, next) => {
       const parts = ctx.a2ui.turnParts(plan.agent.session, plan.firstSeq)
       plan.text = headlessConfig.result === 'json' ? JSON.stringify(this.resultOf(plan, parts)) : renderTurn(parts)
-      process.stderr.write(`lyteboat: session ${plan.agent.session.id}\n`)
+      // The `--json` stream names the session in its own `session` event.
+      if (headlessConfig.json !== true) process.stderr.write(`lyteboat: session ${plan.agent.session.id}\n`)
       await next()
     })
     ctx.provide(HEADLESS_STARTUP_SERVICE, {

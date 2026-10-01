@@ -109,9 +109,10 @@ export const PROFILE_ROOT_FILENAME = 'cordis.yml'
 /**
  * Initialize a profile directory from lyteboat's template when it does not exist
  * yet. An existing directory is never rewritten, so one created by an earlier
- * lyteboat whose bundle list differs from today's template fails loud with the fix
- * instead of booting without the bundles this lyteboat relies on; a user's own
- * changes belong in the profile's `cordis.patch.yml`, not in its bundle list.
+ * lyteboat whose bundle list does not start with today's template fails loud with
+ * the fix instead of booting without the bundles this lyteboat relies on. Bundles
+ * after the template's are the user's: dsh's plugin manager (which `lyteboat web`
+ * offers) appends every bundle it installs to the list.
  * A name without a lyteboat template is handed to dsh's loader, which knows dsh's
  * own shipped templates and rejects anything else.
  * @param name - the profile name.
@@ -126,7 +127,7 @@ export function ensureProfileInitialized(name: string, home: string = resolveDsh
   }
   if (template === undefined) return
   const bundles = readProfileManifest(NAME, dir).dsh?.profile?.bundles ?? []
-  if (bundles.length === template.bundles.length && bundles.every((bundle, index) => bundle === template.bundles[index])) return
+  if (template.bundles.every((bundle, index) => bundles[index] === bundle)) return
   throw new Error(
     `${NAME}: profile "${name}" at ${dir} lists bundles [${bundles.join(', ')}], but this lyteboat's "${name}" template is [${template.bundles.join(', ')}]. `
     + `Set dsh.profile.bundles in ${join(dir, 'package.json')} to the template's list, or move the directory away to have it recreated (keep your cordis.patch.yml).`,

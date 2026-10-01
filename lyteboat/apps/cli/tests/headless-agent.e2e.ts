@@ -86,7 +86,7 @@ describe('lyteboat headless --agent (built bin, mock model)', () => {
   })
 })
 
-describe('lyteboat headless --agent --result json (built bin, scripted model)', () => {
+describe('lyteboat headless --agent output and input (built bin, scripted model)', () => {
   const scratch = createLyteboatScratch('headless-result')
   let model: ScriptedModel
 
@@ -107,5 +107,36 @@ describe('lyteboat headless --agent --result json (built bin, scripted model)', 
     const result = lyteboatHeadlessResultSchema.parse(JSON.parse(run.stdout))
     expect(result).toMatchObject({ outcome: 'completed', text: 'RESULT-OK', cards: [], tools: [], model: { provider: expect.any(String), model: expect.any(String) } })
     expect(run.stderr).toContain(`lyteboat: session ${result.sessionId}`)
+  })
+
+  it('streams dsh\'s run events with --json: the session in the agent\'s working directory, then the turn as the final event', async () => {
+    const { home, workspace } = scratch.run('json')
+    const run = await runLyteboat(['headless', '--agents', AGENTS, '--agent', 'echo', '--json', 'hello'], { cwd: workspace, env: { LYTEBOAT_HOME: home, ...scriptedModelEnv(model) } })
+
+    expect(run.code, run.stderr).toBe(0)
+    const events = run.stdout.trim().split('\n').map(line => JSON.parse(line) as { type: string; cwd?: string; text?: string })
+    expect(events[0]).toMatchObject({ type: 'session', cwd: join(home, 'agent-workdirs', 'echo') })
+    expect(events.at(-1)).toEqual({ type: 'final', text: 'RESULT-OK' })
+    expect(run.stderr).not.toContain('lyteboat:')
+  })
+
+  it('reads the task from stdin when none is given', async () => {
+    const { home, workspace } = scratch.run('stdin')
+    const before = model.requests.length
+    const run = await runLyteboat(['headless', '--agents', AGENTS, '--agent', 'echo'], { cwd: workspace, input: 'STDIN-TASK-PROBE', env: { LYTEBOAT_HOME: home, ...scriptedModelEnv(model) } })
+
+    expect(run.code, run.stderr).toBe(0)
+    expect(run.stdout).toBe('RESULT-OK\n')
+    expect(model.requests.slice(before).some(request => request.lastUser.includes('STDIN-TASK-PROBE'))).toBe(true)
+  })
+
+  it('refuses --json with --result json as a usage error without a model request', async () => {
+    const { home, workspace } = scratch.run('json-result')
+    const before = model.requests.length
+    const run = await runLyteboat(['headless', '--agents', AGENTS, '--agent', 'echo', '--json', '--result', 'json', 'hello'], { cwd: workspace, env: { LYTEBOAT_HOME: home, ...scriptedModelEnv(model) } })
+
+    expect(run.code).toBe(1)
+    expect(run.stderr).toContain('--json streams run events; it cannot be combined with --result json')
+    expect(model.requests.length).toBe(before)
   })
 })

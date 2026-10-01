@@ -56,6 +56,15 @@ describe('lyteboat profile templates', () => {
     expect(() => { ensureProfileInitialized('headless-agent', dir) }).toThrow(/profile "headless-agent" .* lists bundles \[@deepseek-ai\/dsh-base, @lyteboat\/headless\].*\[@deepseek-ai\/dsh-base, @deepseek-ai\/dsh-headless, @lyteboat\/base, @lyteboat\/headless\]/su)
   })
 
+  test('an existing profile whose bundles start with the template boots with the bundles installed after them', () => {
+    const dir = lyteboatTempDir('home')
+    const installed = [...LYTEBOAT_PROFILE_TEMPLATES['web']?.bundles ?? [], 'dsh-wenmai']
+    initProfile(resolveProfileDir('web', dir), installed)
+    expect(() => { ensureProfileInitialized('web', dir) }).not.toThrow()
+    const manifest = JSON.parse(readFileSync(join(resolveProfileDir('web', dir), 'package.json'), 'utf8')) as { dsh: { profile: { bundles: string[] } } }
+    expect(manifest.dsh.profile.bundles).toEqual(installed)
+  })
+
   test('an existing profile that matches the template boots unchanged', () => {
     const dir = lyteboatTempDir('home')
     ensureProfileInitialized('headless-agent', dir)

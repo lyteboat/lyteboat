@@ -64,6 +64,6 @@
     - id: lyteboat-serve
       name: '@lyteboat/serve'
 
-# A service applies the user layers at startup only, as the try mode does.
+# A service applies the user layers at startup only, as the one-shot does.
 - id: hmr
   disabled: true
