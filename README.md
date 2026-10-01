@@ -299,7 +299,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 
 ## 状态与路线图
 
-- 跟踪 dsh **0.2.0-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的四个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`），上面所有闸门都对它通过。
+- 跟踪 dsh **0.2.0-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的五个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`、`headless-hooks`），上面所有闸门都对它通过。
 - 提供九个命令：原生底座的 `lyteboat web`（dsh 的 web 应用）、`headless`（dsh 的一次性任务）；业务底座的 `try`（一次性任务）、`serve`（`/chat` 服务）、`eval`（评测用例）、`release`（发布闸门与发布锁）、`inspect`（agent 由什么组成）、`studio`（Studio 工作台）、`config dump`（组合后的插件树），以及它们背后的能力插件、金融智能体、发行版工具与 16 包内核、兼容性闸门 G1–G6。完整清单见 [CHANGELOG](CHANGELOG.md)。
 - 已知限制：
   - 业务模式的模型请求里还有几处宿主的痕迹：dsh 的技能调用消息带着技能目录的绝对路径；上下文压缩的摘要指令是按编码助手写的；persona 里的 `{{cwd}}` 渲染成服务器上的路径，业务 persona 不要用它。另外，启动器仍会读它启动目录里的 `.env`（留给运维放部署配置）。

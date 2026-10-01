@@ -301,7 +301,7 @@ Syncing a new dsh release, promoting a package into the kernel, and running G3 a
 
 ## Status and roadmap
 
-- Tracks dsh **0.2.0-rc.2** (`dsh.upstream.json`). The kernel is its import plus lyteboat's four registered extensions (`agent-loop-intake`, `agent-loop-pre-assemble`, `session-append-ignorable`, `session-controller-prompt-source`), and every gate above passes against it.
+- Tracks dsh **0.2.0-rc.2** (`dsh.upstream.json`). The kernel is its import plus lyteboat's five registered extensions (`agent-loop-intake`, `agent-loop-pre-assemble`, `session-append-ignorable`, `session-controller-prompt-source`, `headless-hooks`), and every gate above passes against it.
 - Provides nine commands: the native base's `lyteboat web` (dsh's web app) and `headless` (dsh's one-shot task); the business base's `try` (a one-shot task), `serve` (the `/chat` service), `eval` (eval cases), `release` (the release gate and lock), `inspect` (what an agent is made of), `studio` (the Studio workshop), and `config dump` (the composed plugin tree), with the capability plugins behind them, the finance agent, the distribution tooling and the 16-package kernel, and the compatibility gates G1–G6. The [CHANGELOG](CHANGELOG.md) has the full list.
 - Known limitations:
   - A business mode's model requests still carry a few traces of the host: dsh's skill-invocation message names the skill's absolute directory; the compaction summarizer's instructions are written for a coding assistant; `{{cwd}}` in a persona renders the server's path, so a business persona should not use it. The launcher also still reads a `.env` in the directory it starts in (kept for the operator's deployment settings).

@@ -15,7 +15,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { installModelSelection } from '@deepseek-ai/dsh-agent'
-import type { Agent, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
+import type { Agent, AgentSetup, ModelSelectionRef } from '@deepseek-ai/dsh-agent'
 import type {} from '@deepseek-ai/dsh-agent-default-model'
 import type {} from '@deepseek-ai/dsh-fs'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
@@ -31,6 +31,9 @@ import type {} from '@deepseek-ai/dsh-cmdline'
 import type {} from '@deepseek-ai/dsh-session-query'
 import { internals } from './runner-internals.ts'
 import { projectJsonRun, boundJsonLine } from './json-stream.ts'
+import { createOptionsOfStart, planHeadlessReport, planHeadlessStart, planHeadlessSubmit, presetMismatchOf } from './lyteboat/headless-hooks.ts'
+
+export type { LyteboatHeadlessReportPlan, LyteboatHeadlessStartPlan, LyteboatHeadlessSubmitPlan } from './lyteboat/headless-hooks.ts'
 
 /** Stable Cordis plugin name. */
 export const name = 'headless-runner'
@@ -208,9 +211,10 @@ function currentPreset(header: AdoptableHeader, events: Iterable<SessionEvent>, 
 }
 
 /** Reject a Session the one-shot runner must not adopt. */
-function assertAdoptable(header: AdoptableHeader, events: Iterable<SessionEvent>, sessionId: SessionId, cwd: string): void {
+function assertAdoptable(header: AdoptableHeader, events: Iterable<SessionEvent>, sessionId: SessionId, cwd: string, plannedPreset: string | undefined): void {
   const preset = currentPreset(header, events, sessionId)
-  if (preset !== undefined) {
+  if (preset !== plannedPreset) {
+    if (plannedPreset !== undefined) throw presetMismatchOf(sessionId, preset, plannedPreset)
     // This bundle composes no preset roster, so resuming the session here would
     // silently run it under the headless tools and prompts instead of the
     // composition its log records.
@@ -240,6 +244,7 @@ function assertAdoptable(header: AdoptableHeader, events: Iterable<SessionEvent>
  * @param agentOptions - provider/model pair for this run.
  * @param setup - per-Agent scope setup installing the model selection.
  * @param cwd - working directory resolved in the mounted filesystem.
+ * @param plannedPreset - the agent preset the start plan composes, if any.
  * @returns the resumed Agent.
  */
 async function resolveAgent(
@@ -247,8 +252,9 @@ async function resolveAgent(
   agents: Context['agents'],
   sessionId: SessionId,
   agentOptions: { provider: string; model: string },
-  setup: (agentCtx: Context) => void,
+  setup: AgentSetup,
   cwd: string,
+  plannedPreset: string | undefined,
 ): Promise<Agent> {
   // Resuming promises the caller a log a later process can continue. Without a
   // durable log the run would succeed, print the id, and still lose the whole
@@ -270,17 +276,17 @@ async function resolveAgent(
     // The runner cannot claim an exclusive interval over an Agent it did not
     // create, so it refuses the identity; the adoptability rules run first so a
     // real mismatch is named instead of the generic refusal.
-    assertAdoptable(live.session.header, liveEvents(live.session), sessionId, cwd)
+    assertAdoptable(live.session.header, liveEvents(live.session), sessionId, cwd, plannedPreset)
     throw new Error(`session "${sessionId}" is live in this process, so the one-shot runner cannot own an exclusive run interval`)
   }
   try {
     using observation = await query.observeSession(sessionId)
-    assertAdoptable(observation.header, observation.events, sessionId, cwd)
+    assertAdoptable(observation.header, observation.events, sessionId, cwd, plannedPreset)
     const { agent } = await agents.resume({ resumeSessionId: sessionId, agentOptions, setup })
     // The observation is a snapshot: another writer may have appended a preset
     // selection before this process took the write lease. Re-check the log
     // resume actually attached, now that no other process can append.
-    assertAdoptable(agent.session.header, liveEvents(agent.session), sessionId, cwd)
+    assertAdoptable(agent.session.header, liveEvents(agent.session), sessionId, cwd, plannedPreset)
     return agent
   } catch (error: unknown) {
     if (!(error instanceof SessionQueryError) || error.code !== 'SESSION_QUERY_SESSION_NOT_FOUND') throw error
@@ -341,39 +347,57 @@ async function run(ctx: Context, config: Config, io: HeadlessIo): Promise<void> 
   }
   const sessionId = brandString<SessionId>(config.sessionId ?? `session-${randomUUID()}`)
   const fs = ctx.get('fs')
-  const cwd = fs === undefined ? process.cwd() : fs.processPath(await fs.resolve('.'))
+  // lyteboat: a `lyteboat/headless-start` listener may place, compose, and seed the
+  // Agent (headless-hooks); without one the plan is the official runner's.
+  const start = await planHeadlessStart(ctx, {
+    resumeSessionId: config.sessionId === undefined ? undefined : sessionId,
+    cwd: fs === undefined ? process.cwd() : fs.processPath(await fs.resolve('.')),
+    agentPreset: undefined,
+    setup,
+    seed: undefined,
+  })
+  const cwd = start.cwd
   const agent = config.sessionId === undefined
     ? (await agents.create({
       sessionId,
-      meta: { cwd },
+      ...createOptionsOfStart(start),
       agentOptions,
-      setup,
+      setup: start.setup,
     })).agent
-    : await resolveAgent(ctx, agents, sessionId, agentOptions, setup, cwd)
+    : await resolveAgent(ctx, agents, sessionId, agentOptions, start.setup, cwd, start.agentPreset)
   await agent.whenIdle()
   if (config.sessionId !== undefined) {
     // The resume-time check read a snapshot; an overlay can still append a
     // preset selection between it and the interval this run now owns, so
     // re-read the log the runner holds before submitting the task.
-    assertAdoptable(agent.session.header, liveEvents(agent.session), sessionId, cwd)
+    assertAdoptable(agent.session.header, liveEvents(agent.session), sessionId, cwd, start.agentPreset)
   }
   const firstSeq = agent.session.seq
   const projection = config.json === true ? projectJsonRun(ctx, agent, io.stdout, { cwd }) : undefined
   const stopReasoning = projection === undefined ? streamReasoning(ctx, agent, io.stderr) : undefined
   try {
     try {
-      agent.followup(createUserMessage({
-        content: [{ type: 'text', text: task }],
-        source: { kind: 'user' },
-      }))
+      const submit = await planHeadlessSubmit(ctx, {
+        agent,
+        task,
+        deliver: () => {
+          agent.followup(createUserMessage({
+            content: [{ type: 'text', text: task }],
+            source: { kind: 'user' },
+          }))
+          return Promise.resolve()
+        },
+      })
+      await submit.deliver()
       await agent.whenIdle()
     } finally {
       stopReasoning?.()
     }
     await sessions.flush(agent.session)
     const outcome = summarize(agent.session, firstSeq)
-    if (projection === undefined) io.stdout.write(outcome.text + '\n')
-    else projection.finish(outcome.text)
+    const report = await planHeadlessReport(ctx, { agent, firstSeq, reason: outcome.reason, text: outcome.text })
+    if (projection === undefined) io.stdout.write(report.text + '\n')
+    else projection.finish(report.text)
     if (outcome.reason?.kind === 'error') {
       io.stderr.write(`dsh: ${outcome.reason.error.code}: ${outcome.reason.error.message}\n`)
     }

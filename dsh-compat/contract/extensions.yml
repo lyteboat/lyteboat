@@ -80,3 +80,26 @@ extensions:
       @lyteboat plugins pass them that way.
     tests:
       - dsh/api/session-controller/tests/lyteboat/prompt-source.host.spec.ts
+  - id: headless-hooks
+    package: '@deepseek-ai/dsh-headless'
+    kind: event
+    surface: >-
+      Three waterfalls around the one-shot runner's run, each carrying the runner's plan for that point:
+      `lyteboat/headless-start` (the working directory, the agent preset a new Session records and a
+      continued one must run under, the per-Agent setup, and a seed for a new Session) before it creates
+      or adopts the Agent; `lyteboat/headless-submit` (how the task reaches the Agent) before the task is
+      submitted; `lyteboat/headless-report` (the answer stdout carries) before anything is printed. A
+      listener edits the plan and calls `next()`; with no listener the plan is the official runner's.
+      Exports LyteboatHeadlessStartPlan, LyteboatHeadlessSubmitPlan, LyteboatHeadlessReportPlan.
+    contract:
+      - events › @deepseek-ai/dsh-headless › lyteboat/headless-start
+      - events › @deepseek-ai/dsh-headless › lyteboat/headless-submit
+      - events › @deepseek-ai/dsh-headless › lyteboat/headless-report
+      - api › @deepseek-ai/dsh-headless › exports › . › LyteboatHeadlessStartPlan
+      - api › @deepseek-ai/dsh-headless › exports › . › LyteboatHeadlessSubmitPlan
+      - api › @deepseek-ai/dsh-headless › exports › . › LyteboatHeadlessReportPlan
+    exit: >-
+      Upstream's one-shot runner lets a plugin compose and place the Agent it creates, submit the task,
+      and shape what it prints; then @lyteboat/headless uses those seams instead.
+    tests:
+      - dsh/bundle/headless/tests/lyteboat/headless-hooks.spec.ts
