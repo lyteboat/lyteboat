@@ -53,7 +53,7 @@
     "@lyteboat/agent-def": "workspace:*",
     "@lyteboat/base": "workspace:*",
     "@lyteboat/serve": "workspace:*",
-    "@lyteboat/testing": "workspace:*",
+    "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"
   }

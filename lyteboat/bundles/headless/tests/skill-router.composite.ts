@@ -1,10 +1,10 @@
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
-import { reopenRefusal } from '@lyteboat/testing/session-reopen'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
+import { reopenRefusal } from '@lyteboat/testkit/session-reopen'
 import { FIXTURES, headlessComposition } from './support/headless-composition.ts'
-import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 
 const AGENTS = join(FIXTURES, 'agents')
 const ANSWER = 'SKILL-ROUTER-OK'

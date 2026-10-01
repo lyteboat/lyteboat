@@ -10,7 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import WebServer from '@deepseek-ai/dsh-host-webserver'
 import StudioWebPages from '@lyteboat/studio-web'
-import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
+import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testkit'
 
 const WEB = fileURLToPath(new URL('./fixtures/web', import.meta.url))
 

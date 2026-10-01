@@ -1,11 +1,11 @@
 import { join } from 'node:path'
 import { afterAll, describe, expect, it } from 'vitest'
-import { pluginFileRow } from '@lyteboat/testing/composition'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
-import { reopenRefusal } from '@lyteboat/testing/session-reopen'
+import { pluginFileRow } from '@lyteboat/testkit/composition'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
+import { reopenRefusal } from '@lyteboat/testkit/session-reopen'
 import { FIXTURES, headlessComposition } from './support/headless-composition.ts'
-import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest } from '@lyteboat/testing/scripted-model'
+import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest } from '@lyteboat/testkit/scripted-model'
 
 const PLUGIN = join(FIXTURES, 'plugins', 'tools.mjs')
 const AGENTS = join(FIXTURES, 'agents')

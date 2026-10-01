@@ -4,7 +4,7 @@
 import { mkdirSync, utimesSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { lyteboatTempDir } from '@lyteboat/testing/scratch'
+import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
 import { loadBundle, type TemplateBundle } from '../src/loader.ts'
 
 const TEMPLATE = '{"rootComponentId":"root","components":[{"id":"root","component":{"Column":{}}}]}'

@@ -4,7 +4,7 @@
  * tool, then answers with a marker for every card the tool prepared.
  */
 import { fileURLToPath } from 'node:url'
-import type { ChatBlock, RecordedRequest, ScriptedReply } from '@lyteboat/testing/scripted-model'
+import type { ChatBlock, RecordedRequest, ScriptedReply } from '@lyteboat/testkit/scripted-model'
 
 /** The examples/agents root this package lives in, as `--agents ./examples/agents` names it. */
 export const AGENTS = fileURLToPath(new URL('../../..', import.meta.url))

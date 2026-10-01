@@ -17,8 +17,8 @@ import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import AgentCatalogService from '@lyteboat/agent-catalog'
 import type { LyteboatRequest } from '@lyteboat/contracts'
 import SessionIndexService from '@lyteboat/session-index'
-import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
-import { lyteboatTempDir } from '@lyteboat/testing/scratch'
+import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testkit'
+import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
 import { SessionLogBuilder } from './session-log-builder.ts'
 
 afterEach(() => { vi.useRealTimers() })

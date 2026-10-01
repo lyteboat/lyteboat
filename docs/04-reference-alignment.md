@@ -15,7 +15,7 @@
 > **数据说明**
 > - 仓库里的代码按文件加符号名引用，不写行号；`dsh:` 路径钉在上游 tag 上，保留行号。
 > - 标「推断」的结论来自读代码，没有测试证实。
-> - 标「实跑」的输出来自构建好的 CLI（`node lyteboat/apps/cli/lib/bin.js`，下文记作 `lyteboat`），模型是 `@lyteboat/testing/scripted-model` 的脚本化模型，`DSH_TELEMETRY_DISABLED=1`，`LYTEBOAT_HOME` 和工作目录都在 `<临时目录>` 下。命令写成从仓库根目录跑（`--agents ./examples/agents`）；会话 id、surfaceId 这类随机值写成 `…`。
+> - 标「实跑」的输出来自构建好的 CLI（`node lyteboat/apps/cli/lib/bin.js`，下文记作 `lyteboat`），模型是 `@lyteboat/testkit/scripted-model` 的脚本化模型，`DSH_TELEMETRY_DISABLED=1`，`LYTEBOAT_HOME` 和工作目录都在 `<临时目录>` 下。命令写成从仓库根目录跑（`--agents ./examples/agents`）；会话 id、surfaceId 这类随机值写成 `…`。
 
 ---
 
@@ -80,7 +80,7 @@
 
 ### 1.3 兼容承诺（`dsh-compat/README.md`）
 
-闸门 G1–G6 和两道叠加闸门（persistence、typert）各证明什么、怎么跑，见 [dsh-compat/README.md](../dsh-compat/README.md)；承诺本身见 [COMPAT.md](../dsh-compat/COMPAT.md)。和本文有关的两点：G4 包括工具集在会话中途变化的两个场景，一个在 `addition-only` 路由上，一个在不带工具更新的路由上（`dsh-compat/tests/scenarios/scenarios.ts`）；契约只能以登记的方式增长（`CLAUDE.md`「Architecture boundaries」的 "The contract only grows, by registration"）。G6 跑的是两棵树上的官方 headless 组合，不带 lyteboat 插件；带 lyteboat 记录的会话能不能被 dsh 的持久层重开，由各组合测试用 `@lyteboat/testing/session-reopen` 的 `reopenRefusal`（它调用内核的 `validateStoredEvents`）逐份检查。
+闸门 G1–G6 和两道叠加闸门（persistence、typert）各证明什么、怎么跑，见 [dsh-compat/README.md](../dsh-compat/README.md)；承诺本身见 [COMPAT.md](../dsh-compat/COMPAT.md)。和本文有关的两点：G4 包括工具集在会话中途变化的两个场景，一个在 `addition-only` 路由上，一个在不带工具更新的路由上（`dsh-compat/tests/scenarios/scenarios.ts`）；契约只能以登记的方式增长（`CLAUDE.md`「Architecture boundaries」的 "The contract only grows, by registration"）。G6 跑的是两棵树上的官方 headless 组合，不带 lyteboat 插件；带 lyteboat 记录的会话能不能被 dsh 的持久层重开，由各组合测试用 `@lyteboat/testkit/session-reopen` 的 `reopenRefusal`（它调用内核的 `validateStoredEvents`）逐份检查。
 
 ---
 
@@ -882,7 +882,7 @@ sequenceDiagram
 
 ### 6.5 多实例部署
 
-- **存储。** `@lyteboat/session-persistence-sql` 继承 `SessionPersistence`：租约、心跳和 fencing 都在 provider 内部，append 要求首个 seq 等于 next_seq，这一条同时起 fencing 作用；丢了租约的旧句柄抛 `SessionOwnershipLostError`。dsh 的持久化契约套件 `runPersistenceContract`（`dsh/session/session-persistence/tests/contract.ts`）是上游的测试文件，不对外导出；复制一份到 `@lyteboat/testing`（测试不按相对路径伸进别的包的 `tests/`，`CLAUDE.md`「Testing」），provider 在 sqlite 和 mysql 上都跑它。
+- **存储。** `@lyteboat/session-persistence-sql` 继承 `SessionPersistence`：租约、心跳和 fencing 都在 provider 内部，append 要求首个 seq 等于 next_seq，这一条同时起 fencing 作用；丢了租约的旧句柄抛 `SessionOwnershipLostError`。dsh 的持久化契约套件 `runPersistenceContract`（`dsh/session/session-persistence/tests/contract.ts`）是上游的测试文件，不对外导出；复制一份到 `@lyteboat/testkit`（测试不按相对路径伸进别的包的 `tests/`，`CLAUDE.md`「Testing」），provider 在 sqlite 和 mysql 上都跑它。
 - **数据源。** `@lyteboat/datasource-sql`：方言、迁移、DDL 导出、托管密码经 credentials seam。
 - **SQL 版的其他 seam。** 会话目录、记忆存储各出一个 SQL provider；SQL 模式下，归属列和会话行在同一个事务里写入。`@lyteboat/lease` 给需要单实例的后台任务选主。
 - **会话删除与保留期。** 会话目录的 purge，覆盖子代理产生的子会话。

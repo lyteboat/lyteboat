@@ -8,9 +8,9 @@ import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { postChat, streamChat } from '@lyteboat/testing/chat-client'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { postChat, streamChat } from '@lyteboat/testkit/chat-client'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 import { runLyteboat, startLyteboat } from './support/lyteboat-process.ts'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))

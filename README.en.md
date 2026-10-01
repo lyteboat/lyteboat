@@ -231,7 +231,7 @@ lyteboat/             lyteboat's 27 packages, one directory per layer
   bundles/            compositions: base (the business base, in every business profile) and one each behind lyteboat headless --agent, serve, eval, studio, and inspect
   plugins/            capability plugins
   core/               declarations
-  tooling/            test infrastructure
+  test-support/       test infrastructure (testkit)
 examples/agents/      example business agents, built on the distribution
 dsh-compat/           the compatibility promise and its proof: contract snapshot, extension registry, G2/G4/G5/G6 tests
 scripts/              layer, pin, and sensitive-word checks; dist/ holds the distribution tooling
@@ -239,7 +239,7 @@ docs/                 the guides
 dsh.upstream.json     the tracked dsh release
 ```
 
-Dependencies point down only: `apps` → `bundles` → `plugins` → `core`; `examples` depend on `plugins` and `core` only (their tests may also reach `apps`, `bundles`, `tooling`), and nothing in the distribution depends on them; `tooling` is for tests. `pnpm run lint` checks it.
+Dependencies point down only: `apps` → `bundles` → `plugins` → `core`; `examples` depend on `plugins` and `core` only (their tests may also reach `apps`, `bundles`, `test-support`), and nothing in the distribution depends on them; `test-support` is for tests. `pnpm run lint` checks it.
 
 | Path | Package | Role |
 |---|---|---|
@@ -270,7 +270,7 @@ Dependencies point down only: `apps` → `bundles` → `plugins` → `core`; `ex
 | `lyteboat/plugins/studio-api` | `@lyteboat/studio-api` | Studio's HTTP API at `/api/studio` on the host web server: a Host allowlist, role checks, and request bodies checked strictly against the contracts' schemas; it serves sign-in, users and roles, the System page, the agent radar and workspace, sessions, the Dashboard, and Evals (a run is a `lyteboat eval` process), and an admin's hot-fix of an existing skill's SKILL.md; every change is appended to an audit log |
 | `lyteboat/core/contracts` | `@lyteboat/contracts` | lyteboat's declarations over the dsh seams: tool and skill metadata, the kernel's `lyteboat/*` events (re-exported), log nodes, projection keys, prompt orders, `LyteboatDistro`, and the zod schemas of the JSON types it declares; `./studio` holds the Studio API's requests and answers, and `./cli` the types and schemas of what `lyteboat inspect` and `lyteboat headless --agent … --result json` print, and the mode runner ids |
 | `examples/agents/finance` | `@lyteboat/agent-finance` | The finance agent, kept deliberately minimal and built from public financial knowledge only: an asset overview, an allocation diagnosis by the 100-minus-age rule (two cards), investor education on three concepts; three routed skills; requests are admitted before the loop (the unauthorized card, an out-of-scope reply, investor education and small talk always in), and the request context names the customer |
-| `lyteboat/tooling/testing` | `@lyteboat/testing` | Test infrastructure: the unit host (dsh's invariants, the dsh services, the kernel's agent loop) and `MockAdapter`, in-process composition boots (a one-shot run until it exits, a service while the test talks to it), per-file scratch homes and workspaces, the session-log reader and its reopen check, a JSON Lines reader, the scripted model, a `/chat` test client, launcher processes |
+| `lyteboat/test-support/testkit` | `@lyteboat/testkit` | Test infrastructure: the unit host (dsh's invariants, the dsh services, the kernel's agent loop) and `MockAdapter`, in-process composition boots (a one-shot run until it exits, a service while the test talks to it), per-file scratch homes and workspaces, the session-log reader and its reopen check, a JSON Lines reader, the scripted model, a `/chat` test client, launcher processes |
 
 ## Development
 

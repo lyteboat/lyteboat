@@ -9,8 +9,8 @@ import { describe, expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { LyteboatEvalRunRecord } from '@lyteboat/contracts'
 import EvalRecordsService from '@lyteboat/eval-runner/records'
-import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testing'
-import { lyteboatTempDir } from '@lyteboat/testing/scratch'
+import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testkit'
+import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
 import type { EvalTurnResult } from '../src/eval-report.ts'
 
 const RECORD: LyteboatEvalRunRecord = {

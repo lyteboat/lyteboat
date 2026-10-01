@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@lyteboat/distro": "workspace:*",
-    "@lyteboat/testing": "workspace:*",
+    "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-agent": "workspace:*",
     "@deepseek-ai/dsh-agent-loop": "workspace:*",

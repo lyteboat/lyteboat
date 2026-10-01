@@ -49,7 +49,7 @@
   "devDependencies": {
     "@lyteboat/eval": "workspace:*",
     "@lyteboat/base": "workspace:*",
-    "@lyteboat/testing": "workspace:*",
+    "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"
   }

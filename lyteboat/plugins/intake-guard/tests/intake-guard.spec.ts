@@ -10,7 +10,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
 import LyteboatDistroService from '@lyteboat/distro'
 import RequestContextService from '@lyteboat/request-context'
-import { MockAdapter, createLyteboatUnitHost, followUpAndWait as sendAndWait, textResponse } from '@lyteboat/testing'
+import { MockAdapter, createLyteboatUnitHost, followUpAndWait as sendAndWait, textResponse } from '@lyteboat/testkit'
 import IntakeGuardService, { type LyteboatAdmission } from '@lyteboat/intake-guard'
 import type { JsonValue } from '@lyteboat/contracts'
 

@@ -10,11 +10,11 @@ import { cpSync, mkdirSync, readFileSync, symlinkSync, writeFileSync } from 'nod
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { postChat } from '@lyteboat/testing/chat-client'
-import { LYTEBOAT_EVAL_BUNDLES, LYTEBOAT_SERVE_BUNDLES, bootComposition, startComposition } from '@lyteboat/testing/composition'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testing/session-log'
-import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { postChat } from '@lyteboat/testkit/chat-client'
+import { LYTEBOAT_EVAL_BUNDLES, LYTEBOAT_SERVE_BUNDLES, bootComposition, startComposition } from '@lyteboat/testkit/composition'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testkit/session-log'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
 const WORKSPACE_MODULES = fileURLToPath(new URL('../../../../node_modules', import.meta.url))

@@ -17,7 +17,7 @@
  * environment, and the working directory, captures stdout and stderr, and
  * restores all of them when the run settles. vitest's default `forks` pool
  * gives every test file its own process.
- * @module @lyteboat/testing/composition
+ * @module @lyteboat/testkit/composition
  */
 
 import { mkdtempSync, writeFileSync } from 'node:fs'

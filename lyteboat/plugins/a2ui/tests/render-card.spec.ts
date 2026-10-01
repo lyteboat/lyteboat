@@ -11,7 +11,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import LyteboatDistroService from '@lyteboat/distro'
-import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testing'
+import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testkit'
 import ToolPolicyService from '@lyteboat/tool-policy'
 import A2uiService, { cardsPresentationMeta } from '@lyteboat/a2ui'
 

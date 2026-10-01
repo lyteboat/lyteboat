@@ -12,11 +12,11 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, writeFileSync } from 'no
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { LYTEBOAT_EVAL_BUNDLES, bootComposition, type CompositionRun } from '@lyteboat/testing/composition'
-import { readJsonLines } from '@lyteboat/testing/json-lines'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
-import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
+import { LYTEBOAT_EVAL_BUNDLES, bootComposition, type CompositionRun } from '@lyteboat/testkit/composition'
+import { readJsonLines } from '@lyteboat/testkit/json-lines'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
+import { findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
 
 const FIXTURES = fileURLToPath(new URL('./fixtures', import.meta.url))
 const AGENTS = join(FIXTURES, 'agents')

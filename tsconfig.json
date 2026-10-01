@@ -129,7 +129,7 @@
       "path": "./examples/agents/finance"
     },
     {
-      "path": "./lyteboat/tooling/testing"
+      "path": "./lyteboat/test-support/testkit"
     }
   ]
 }

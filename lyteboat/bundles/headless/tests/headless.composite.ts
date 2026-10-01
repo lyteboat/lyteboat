@@ -1,7 +1,7 @@
 import { startMockLlmServer, type MockLlmServer } from '@deepseek-ai/dsh-llm-mock-server'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { scriptedModelEnv } from '@lyteboat/testing/scripted-model'
-import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { scriptedModelEnv } from '@lyteboat/testkit/scripted-model'
+import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { headlessComposition, type RunTarget } from './support/headless-composition.ts'
 

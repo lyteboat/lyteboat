@@ -50,7 +50,7 @@
     "@lyteboat/request-context": "workspace:*",
     "@lyteboat/serve": "workspace:*",
     "@lyteboat/skill-router": "workspace:*",
-    "@lyteboat/testing": "workspace:*",
+    "@lyteboat/testkit": "workspace:*",
     "@lyteboat/tool-policy": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-agent": "workspace:*",

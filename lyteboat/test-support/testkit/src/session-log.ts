@@ -12,7 +12,7 @@
  *
  * `waitForSessionLog` polls a running service's store, which writes in batches,
  * until a session's log holds what a test asserts on.
- * @module @lyteboat/testing/session-log
+ * @module @lyteboat/testkit/session-log
  */
 
 import { readdirSync, readFileSync } from 'node:fs'

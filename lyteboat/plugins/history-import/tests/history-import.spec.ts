@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { GenerateOptions } from '@deepseek-ai/dsh-llm'
 import { SessionId, SessionLogOffset, type SessionEvent } from '@deepseek-ai/dsh-session'
-import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse } from '@lyteboat/testing'
+import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse } from '@lyteboat/testkit'
 import HistoryImportService from '@lyteboat/history-import'
 import { historyEntriesOf, type HistoryRound } from '../src/round-history.ts'
 

@@ -6,11 +6,11 @@
  */
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { printedSessionId } from '@lyteboat/testing/composition'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
+import { printedSessionId } from '@lyteboat/testkit/composition'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { eventTypes, findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
 import { FIXTURES, headlessComposition, type RunTarget } from './support/headless-composition.ts'
-import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 
 const AGENTS = join(FIXTURES, 'agents')
 

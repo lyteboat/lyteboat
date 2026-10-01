@@ -9,8 +9,8 @@
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { lyteboatInspectResultSchema, type LyteboatInspectResult } from '@lyteboat/contracts/cli'
-import { LYTEBOAT_INSPECT_BUNDLES, bootComposition, type CompositionRun } from '@lyteboat/testing/composition'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
+import { LYTEBOAT_INSPECT_BUNDLES, bootComposition, type CompositionRun } from '@lyteboat/testkit/composition'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
 

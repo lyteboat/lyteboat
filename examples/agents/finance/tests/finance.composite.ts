@@ -11,11 +11,11 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { LYTEBOAT_HEADLESS_AGENT_BUNDLES, bootComposition, printedSessionId } from '@lyteboat/testing/composition'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
-import { reopenRefusal } from '@lyteboat/testing/session-reopen'
-import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { LYTEBOAT_HEADLESS_AGENT_BUNDLES, bootComposition, printedSessionId } from '@lyteboat/testkit/composition'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
+import { reopenRefusal } from '@lyteboat/testkit/session-reopen'
+import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 import { AGENTS, FINANCE_TOOLS, blockText, financeScript, isIntake, isLoop, lastToolResult } from './support/finance-model.ts'
 
 type LogRecord = { type: string; ignorable?: true; data?: Record<string, unknown> }

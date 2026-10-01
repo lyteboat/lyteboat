@@ -16,7 +16,7 @@ import type { ContentBlock, GenerateOptions, StreamChunk } from '@deepseek-ai/ds
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
 import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
-import { MockAdapter, createLyteboatUnitHost, mountAgentStandingScope, textResponse, toolCallResponse, type AgentStandingScope } from '@lyteboat/testing'
+import { MockAdapter, createLyteboatUnitHost, mountAgentStandingScope, textResponse, toolCallResponse, type AgentStandingScope } from '@lyteboat/testkit'
 import ToolPolicyService from '@lyteboat/tool-policy'
 import AuxLlmService from '@lyteboat/aux-llm'
 import LyteboatDistroService from '@lyteboat/distro'

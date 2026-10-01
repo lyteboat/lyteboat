@@ -9,8 +9,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
-import { LYTEBOAT_EVAL_BUNDLES, bootComposition } from '@lyteboat/testing/composition'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
+import { LYTEBOAT_EVAL_BUNDLES, bootComposition } from '@lyteboat/testkit/composition'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
 import { AGENTS } from './support/finance-model.ts'
 
 const BASELINE = fileURLToPath(new URL('../evals/baseline', import.meta.url))

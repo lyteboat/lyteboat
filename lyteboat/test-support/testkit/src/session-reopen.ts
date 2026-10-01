@@ -1,10 +1,10 @@
 /**
  * Whether dsh's persistence would reopen a stored session log: the records a
- * test decoded (`@lyteboat/testing/session-log`) run through the kernel's own
+ * test decoded (`@lyteboat/testkit/session-log`) run through the kernel's own
  * validator, the check a reopen makes before it interprets a log. A lyteboat
  * fact that rides a dsh envelope passes; an event type outside dsh's catalog
  * passes only when it is marked ignorable.
- * @module @lyteboat/testing/session-reopen
+ * @module @lyteboat/testkit/session-reopen
  */
 
 import { SESSION_FORMAT_VERSION, SessionId, type SessionEvent, type SessionHeader } from '@deepseek-ai/dsh-session'

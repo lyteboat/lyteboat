@@ -23,7 +23,7 @@
     "contract:check": "node --import tsx scripts/dist/contract-check.ts"
   },
   "devDependencies": {
-    "@lyteboat/testing": "workspace:*",
+    "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis",
     "@deepseek-ai/dsh-invariants": "catalog:dsh",

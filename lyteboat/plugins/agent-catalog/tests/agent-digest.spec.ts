@@ -5,7 +5,7 @@
 import { mkdirSync, symlinkSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { lyteboatTempDir } from '@lyteboat/testing/scratch'
+import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
 import { agentDigest } from '../src/agent-digest.ts'
 
 describe('agentDigest', () => {

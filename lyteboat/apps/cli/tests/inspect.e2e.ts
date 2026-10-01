@@ -6,7 +6,7 @@
 import { fileURLToPath } from 'node:url'
 import { afterAll, describe, expect, it } from 'vitest'
 import { lyteboatInspectResultSchema } from '@lyteboat/contracts/cli'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
 import { runLyteboat } from './support/lyteboat-process.ts'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))

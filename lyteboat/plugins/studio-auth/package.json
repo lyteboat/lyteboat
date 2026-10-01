@@ -29,7 +29,7 @@
     "@deepseek-ai/cordis": "catalog:cordis"
   },
   "devDependencies": {
-    "@lyteboat/testing": "workspace:*",
+    "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis"
   }
 }

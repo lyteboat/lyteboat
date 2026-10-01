@@ -7,11 +7,11 @@
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { pluginFileRow, printedSessionId } from '@lyteboat/testing/composition'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { findSessionLogs, readSessionLog } from '@lyteboat/testing/session-log'
+import { pluginFileRow, printedSessionId } from '@lyteboat/testkit/composition'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
 import { FIXTURES, headlessComposition, type RunTarget } from './support/headless-composition.ts'
-import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 
 const ADMISSION = pluginFileRow(join(FIXTURES, 'plugins', 'admission.mjs'))
 

@@ -4,7 +4,7 @@
  * in-process MockAdapter, and the follow-up step every agent-loop test takes. Tests
  * mount the lyteboat services under test on the host themselves, so their load
  * order stays the test's decision.
- * @module @lyteboat/testing
+ * @module @lyteboat/testkit
  */
 
 import { join, sep } from 'node:path'

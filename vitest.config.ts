@@ -9,7 +9,7 @@ import { UPSTREAM_TEST_EXCLUDES, upstreamTestsPlugin } from './dsh-compat/tests/
 // plugin rows natively and must get lib/, which Node can load (src uses TypeScript
 // parameter properties, which Node's type stripping rejects).
 const conditions = ['@lyteboat/source']
-const layers = '{lyteboat/{apps,bundles,plugins,core,tooling},examples/*}'
+const layers = '{lyteboat/{apps,bundles,plugins,core,test-support},examples/*}'
 
 export default defineConfig({
   test: {

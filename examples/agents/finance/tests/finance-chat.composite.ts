@@ -7,12 +7,12 @@
  * education without a card, and a request the admission answers in the loop.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { postChat, streamChat, type ChatWireFrame } from '@lyteboat/testing/chat-client'
-import { LYTEBOAT_SERVE_BUNDLES, startComposition, type RunningComposition } from '@lyteboat/testing/composition'
-import { createLyteboatScratch } from '@lyteboat/testing/scratch'
-import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testing/session-log'
-import { reopenRefusal } from '@lyteboat/testing/session-reopen'
-import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testing/scripted-model'
+import { postChat, streamChat, type ChatWireFrame } from '@lyteboat/testkit/chat-client'
+import { LYTEBOAT_SERVE_BUNDLES, startComposition, type RunningComposition } from '@lyteboat/testkit/composition'
+import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
+import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testkit/session-log'
+import { reopenRefusal } from '@lyteboat/testkit/session-reopen'
+import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
 import { AGENTS, isLoop, lastToolResult, financeScript } from './support/finance-model.ts'
 
 type LogRecord = SessionLogRecord & { type: string; data?: { [key: string]: unknown } }
