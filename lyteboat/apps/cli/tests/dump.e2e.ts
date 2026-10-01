@@ -29,7 +29,7 @@ describe('lyteboat config dump (built bin)', () => {
     const result = await runLyteboat(['config', 'dump', '--profile', 'try'], { env: { LYTEBOAT_HOME: home } })
     expect(result.code, result.stderr).toBe(0)
     expect(result.stdout).toContain('@deepseek-ai/dsh-base')
-    expect(result.stdout).toContain('@lyteboat/host')
+    expect(result.stdout).toContain('@lyteboat/base')
     expect(result.stdout).toContain('@lyteboat/try')
     expect(result.stdout).toContain('id: agent-loop')
     const manifest = JSON.parse(readFileSync(join(home, 'profiles', 'try', 'package.json'), 'utf8')) as { dsh: { profile: { bundles: string[] } } }

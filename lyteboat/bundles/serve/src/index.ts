@@ -1,6 +1,6 @@
 /**
  * @lyteboat/serve — lyteboat's service mode. The bundle patch rides over
- * dsh-base and @lyteboat/host: it declares every agent of the `--agents`
+ * dsh-base and @lyteboat/base: it declares every agent of the `--agents`
  * directories (`@lyteboat/agent-catalog`), mounts dsh's session controller
  * without the web UI (workspace, connection, file upload), and serves `/chat`
  * (`@lyteboat/chat-api`) on the host web server. This row waits for the

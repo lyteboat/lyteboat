@@ -23,11 +23,7 @@
       "project": ["src/**/*.ts", "tests/**/*.ts"]
     },
     // Data only: package.json and cordis.patch.yml.
-    "lyteboat/bundles/host": {
-      "entry": [],
-      "project": []
-    },
-    "lyteboat/bundles/business-base": {
+    "lyteboat/bundles/base": {
       "entry": [],
       "project": []
     },

@@ -2,7 +2,7 @@
   "agent": {
     "id": "finance",
     "version": "1.0.0",
-    "digest": "sha256:97d6bed76d7cf940f37e034948674d808f1cd60e9555f531c36127b66f4078f6"
+    "digest": "sha256:aa2fa9050ac48065de6c2f8ca1f460813296f2f7486fdf3de41efd74f7079f51"
   },
   "model": {
     "provider": "deepseek-official",
@@ -43,6 +43,6 @@
     "total": 30,
     "passed": 30
   },
-  "startedAt": "2026-09-27T02:08:33.996Z",
-  "durationMs": 26657
+  "startedAt": "2026-10-01T06:34:05.171Z",
+  "durationMs": 26393
 }

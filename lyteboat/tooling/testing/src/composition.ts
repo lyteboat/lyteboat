@@ -64,19 +64,19 @@ function inactiveModeRunner(ctx: Context): string | undefined {
 const QUIET: readonly PatchOptions[] = [{ id: 'session-telemetry-otel', disabled: true }]
 
 /** The `try` profile's bundle layers, in the order the launcher's profile template lists them. */
-export const LYTEBOAT_TRY_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/host', '@lyteboat/business-base', '@lyteboat/try']
+export const LYTEBOAT_TRY_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/base', '@lyteboat/try']
 
 /** The `serve` profile's bundle layers, in the order the launcher's profile template lists them. */
-export const LYTEBOAT_SERVE_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/host', '@lyteboat/business-base', '@lyteboat/serve']
+export const LYTEBOAT_SERVE_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/base', '@lyteboat/serve']
 
 /** The `eval` profile's bundle layers, in the order the launcher's profile template lists them. */
-export const LYTEBOAT_EVAL_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/host', '@lyteboat/business-base', '@lyteboat/eval']
+export const LYTEBOAT_EVAL_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/base', '@lyteboat/eval']
 
 /** The `studio` profile's bundle layers, in the order the launcher's profile template lists them. */
-export const LYTEBOAT_STUDIO_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/host', '@lyteboat/business-base', '@lyteboat/studio']
+export const LYTEBOAT_STUDIO_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/base', '@lyteboat/studio']
 
 /** The `inspect` profile's bundle layers, in the order the launcher's profile template lists them. */
-export const LYTEBOAT_INSPECT_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/host', '@lyteboat/business-base', '@lyteboat/inspect']
+export const LYTEBOAT_INSPECT_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/base', '@lyteboat/inspect']
 
 /** What to boot and how. */
 export interface CompositionOptions {

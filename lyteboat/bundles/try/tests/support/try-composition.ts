@@ -12,7 +12,7 @@ export interface RunTarget {
 }
 
 /**
- * Boot dsh-base + @lyteboat/host + @lyteboat/try in process with `args` as the one-shot
+ * Boot dsh-base + @lyteboat/base + @lyteboat/try in process with `args` as the one-shot
  * app's arguments, as `lyteboat try <args>` would.
  * @param args - the arguments after `lyteboat try`.
  * @param target - working directory, harness home, and environment.

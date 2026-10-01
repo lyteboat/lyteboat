@@ -1000,7 +1000,7 @@ lyteboat-next 与 lyteboat-stable 的规则见 [dsh-compat/COMPAT.md §7](../dsh
 
 ```console
 $ node lyteboat/apps/cli/lib/bin.js release --agents ./examples/agents --agent finance
-lyteboat release: finance 1.0.0 (sha256:97d6bed7…) released; lock: <仓库>/examples/agents/finance/agent.release.json; replay: <LYTEBOAT_HOME>/evals/<运行>/report.md
+lyteboat release: finance 1.0.0 (sha256:aa2fa905…) released; lock: <仓库>/examples/agents/finance/agent.release.json; replay: <LYTEBOAT_HOME>/evals/<运行>/report.md
 ```
 
 退出码 0，这一行写在 stdout。拒绝时退出 1，stderr 是 `lyteboat release: refused at <步骤>: <原因>`，不写锁（`lyteboat/bundles/eval/src/index.ts`）：录完基线之后 agent 目录又改过（源码、清单或构建出的 `lib/`），摘要就不再是基线记下的那个，在 stamps 这一步被拒，例如 `refused at stamps: the baseline ran finance 1.0.0 (sha256:<基线的摘要>…), but the agent is now finance 1.0.0 (sha256:<现在的摘要>…); record the baseline again`；照 [03-agent-development.md](03-agent-development.md) §4.14 重录基线之后放行。锁的 `files` 是摘要覆盖的每一个文件（`agent.yml`、`package.json`、`tsconfig.json`、`assets/`、`src/`，以及构建出的 `lib/`；有 `agent.cordis.yml` 的 agent 还有它），finance 现在是 98 个，其中 `lib/` 下 60 个；`baseline` 记下基线的开始时间，用例、轮次、检查的个数（6、7、30）和 `results.jsonl` 的哈希。摘要随本机构建出的 `lib/` 而定。示例 agent 不提交锁。

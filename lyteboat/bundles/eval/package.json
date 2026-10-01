@@ -46,8 +46,7 @@
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"
   },
   "devDependencies": {
-    "@lyteboat/host": "workspace:*",
-    "@lyteboat/business-base": "workspace:*",
+    "@lyteboat/base": "workspace:*",
     "@lyteboat/testing": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"

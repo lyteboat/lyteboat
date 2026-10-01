@@ -39,7 +39,7 @@
   - 旁路模型调用留痕：路由、分类这类旁路调用在会话里留下完整的 prompt 和回答（`@lyteboat/aux-llm`）。
   - 外部对话历史导入（`@lyteboat/history-import`）。
 - **一个业务 agent 就是一个目录。** 在 `examples/agents/<id>/` 下写组合文件、技能、工具和卡片模板即可。
-- **业务 agent 只拿到它自己声明的能力。** `lyteboat try`、`serve`、`eval` 三种业务模式都带业务底座（`@lyteboat/business-base`）：没有编码工具，没有沙箱和人工审批；模型请求里没有宿主的 persona、工作目录的 AGENTS.md 和本机装了哪些包。agent 要用的 dsh 工具和它的技能，写在它自己的组合里。
+- **业务 agent 只拿到它自己声明的能力。** `lyteboat try`、`serve`、`eval` 三种业务模式都带业务底座（`@lyteboat/base`）：没有编码工具，没有沙箱和人工审批；模型请求里没有宿主的 persona、工作目录的 AGENTS.md 和本机装了哪些包。agent 要用的 dsh 工具和它的技能，写在它自己的组合里。
 - **与 dsh 生态兼容。** 轻舟是 dsh 的一个发行版：它以原包名接管 dsh 内核 14 个包的源码（`dsh/`），官方包和社区插件不改一行就跑在轻舟的实现上。与所跟踪的 dsh 版本在协议、接口、行为上保持兼容，由 G1–G6 六道闸门证明（[`dsh-compat/`](dsh-compat/README.md)）。
 - **有迹可查。** 模型看到的一切都能从会话日志还原；轻舟记录的事实都放在 dsh 已有的日志信封里。
 
@@ -205,7 +205,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 - 每个 agent 有自己的工作目录 `$LYTEBOAT_HOME/agent-workdirs/<id>`：`/chat`、评测和 `lyteboat try --agent` 的会话都记在它下面，不管进程从哪个目录启动，所以 `lyteboat try --agent <id> --session-id <会话>` 在任何目录都能续聊；不带 `--agent` 的 `lyteboat try` 仍在启动它的目录里跑。
 - 每条请求记着是谁发的：`/chat` 记 `user:<user_id>`，`lyteboat try` 记 `operator:cli`，评测记 `system:eval`。
 - 会话日志是唯一的事实来源。卡片和状态增量记在 `tool/result.meta.lyteboat` 上，请求上下文和准入判定记在人类消息的 `source.lyteboatRequest` 上，路由选中的技能是 dsh 自己的技能调用消息，拒识回复是 `source.provider` 为 `lyteboat` 的助手消息，导入的历史是一串已关闭的普通 turn；旁路调用的审计 `lyteboat/aux-llm-call` 标为可忽略。所以这些会话可以被 dsh 自己的持久化层重新打开。
-- `@lyteboat/host` 关掉了 dsh-base 的 `session-log-deepseek` 行：模型服务只收到请求本身。
+- `@lyteboat/base` 关掉了 dsh-base 的 `session-log-deepseek` 行：模型服务只收到请求本身。
 
 ## 文档
 
@@ -223,9 +223,9 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 
 ```
 dsh/                  内核：dsh/kernel.json 列出的 14 个 dsh 包，沿用 @deepseek-ai/* 包名
-lyteboat/             轻舟自己的 28 个包，每层一个目录
+lyteboat/             轻舟自己的 27 个包，每层一个目录
   apps/               进程：lyteboat 启动器
-  bundles/            组合：每个 profile 都带的 host，业务模式、Studio 与 inspect 共用的 business-base，lyteboat try、serve、eval、studio、inspect 各自的 bundle
+  bundles/            组合：每个 profile 都带的业务底座 base，lyteboat try、serve、eval、studio、inspect 各自的 bundle
   plugins/            能力插件
   core/               声明
   tooling/            测试支撑
@@ -241,8 +241,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | 路径 | 包 | 作用 |
 |---|---|---|
 | `lyteboat/apps/cli` | `@lyteboat/cli` | `lyteboat` 启动器：profile 模板、patch 叠加、启动（改编自 dsh 的 CLI） |
-| `lyteboat/bundles/host` | `@lyteboat/host` | 每个 profile 都带的宿主 bundle：发行版标记与各能力插件的服务行 |
-| `lyteboat/bundles/business-base` | `@lyteboat/business-base` | 业务模式的底座，try、serve、eval、studio、inspect 五个 profile 都带，只有一个 patch：关掉编码工具和只为它们服务的行，关掉沙箱、审批与权限，关掉工作区 AGENTS.md、本机包清单、插件管理、会话标题的旁路请求；不挂宿主的默认技能目录，不加宿主的 persona 和 harness 身份段 |
+| `lyteboat/bundles/base` | `@lyteboat/base` | 业务底座，try、serve、eval、studio、inspect 五个 profile 都带，只有一个 patch：发行版标记与各能力插件的服务行；关掉 dsh-base 的会话上传；关掉编码工具和只为它们服务的行，关掉沙箱、审批与权限，关掉工作区 AGENTS.md、本机包清单、插件管理、会话标题的旁路请求；不挂宿主的默认技能目录，不加宿主的 persona 和 harness 身份段 |
 | `lyteboat/bundles/try` | `@lyteboat/try` | `lyteboat try` 背后的一次性 bundle：任务、`--agent`、`--agents`、`--history`、`--session-id`、`--context`；请求进循环前先准入，输出按轮组合卡片 |
 | `lyteboat/bundles/eval` | `@lyteboat/eval` | `lyteboat eval` 背后的 bundle：只声明选中的 agent，挂上 session-controller（不带 Web 界面）和 eval-runner，跑完按结果退出 |
 | `lyteboat/bundles/serve` | `@lyteboat/serve` | `lyteboat serve` 背后的服务 bundle：声明 `--agents` 里的全部 agent，挂上 dsh 的 session-controller（不带 Web 界面）、`/chat` 和运行指标记录器 |

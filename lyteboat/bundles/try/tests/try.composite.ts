@@ -48,7 +48,7 @@ describe('@lyteboat/try composition (in process, mock model)', () => {
     expect(types.at(-1)).toBe('turn/end')
   })
 
-  it('sends the model no session log: @lyteboat/host keeps dsh-base\'s session-log upload off', async () => {
+  it('sends the model no session log: @lyteboat/base keeps dsh-base\'s session-log upload off', async () => {
     const before = mock.requests.length
     const result = await tryComposition(['read the readme and report'], fresh('no-upload'), NO_TITLE_LLM)
     expect(result.code, result.stderr).toBe(0)

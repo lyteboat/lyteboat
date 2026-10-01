@@ -1,6 +1,6 @@
 /**
  * @lyteboat/eval — lyteboat's eval mode. The bundle patch rides over dsh-base
- * and @lyteboat/host: it declares the agent the cases talk to
+ * and @lyteboat/base: it declares the agent the cases talk to
  * (`@lyteboat/agent-catalog`), mounts dsh's session controller without the
  * web UI (workspace, connection, file upload), and runs
  * `@lyteboat/eval-runner`. This row runs the invocation once the tree has

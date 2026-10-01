@@ -13,8 +13,7 @@
   ],
   "scripts": {},
   "dependencies": {
-    "@lyteboat/host": "workspace:*",
-    "@lyteboat/business-base": "workspace:*",
+    "@lyteboat/base": "workspace:*",
     "@lyteboat/eval": "workspace:*",
     "@lyteboat/inspect": "workspace:*",
     "@lyteboat/try": "workspace:*",

@@ -41,11 +41,10 @@
   "devDependencies": {
     "@lyteboat/a2ui": "workspace:*",
     "@lyteboat/aux-llm": "workspace:*",
-    "@lyteboat/business-base": "workspace:*",
+    "@lyteboat/base": "workspace:*",
     "@lyteboat/cli": "workspace:*",
     "@lyteboat/distro": "workspace:*",
     "@lyteboat/eval": "workspace:*",
-    "@lyteboat/host": "workspace:*",
     "@lyteboat/intake-guard": "workspace:*",
     "@lyteboat/request-context": "workspace:*",
     "@lyteboat/serve": "workspace:*",

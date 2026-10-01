@@ -10,7 +10,7 @@ import { LYTEBOAT_PROFILE_TEMPLATES } from '../src/templates.ts'
 describe('lyteboat profile templates', () => {
   afterEach(() => { vi.restoreAllMocks() })
 
-  test('a new try profile lists dsh-base, the host bundle, and the try bundle', () => {
+  test('a new try profile lists dsh-base, the business base, and the try bundle', () => {
     const dir = lyteboatTempDir('home')
     ensureProfileInitialized('try', dir)
     const manifest = JSON.parse(readFileSync(join(resolveProfileDir('try', dir), 'package.json'), 'utf8')) as { dsh: { profile: { bundles: string[] } } }
@@ -33,7 +33,7 @@ describe('lyteboat profile templates', () => {
   test('an existing profile whose bundle list predates the template fails loud with the fix', () => {
     const dir = lyteboatTempDir('home')
     initProfile(resolveProfileDir('try', dir), ['@deepseek-ai/dsh-base', '@lyteboat/try'])
-    expect(() => { ensureProfileInitialized('try', dir) }).toThrow(/profile "try" .* lists bundles \[@deepseek-ai\/dsh-base, @lyteboat\/try\].*\[@deepseek-ai\/dsh-base, @lyteboat\/host, @lyteboat\/business-base, @lyteboat\/try\]/su)
+    expect(() => { ensureProfileInitialized('try', dir) }).toThrow(/profile "try" .* lists bundles \[@deepseek-ai\/dsh-base, @lyteboat\/try\].*\[@deepseek-ai\/dsh-base, @lyteboat\/base, @lyteboat\/try\]/su)
   })
 
   test('an existing profile that matches the template boots unchanged', () => {
@@ -46,9 +46,9 @@ describe('lyteboat profile templates', () => {
   })
 
   test('a profile that dsh loaded without a bundle its template lists fails with the bundle and the reason', () => {
-    const profile = { skippedBundles: [{ packageName: '@lyteboat/host', reason: 'Error: incompatible dsh peers' }] }
+    const profile = { skippedBundles: [{ packageName: '@lyteboat/base', reason: 'Error: incompatible dsh peers' }] }
     expect(() => { checkSkippedProfileBundles('try', profile) })
-      .toThrow('lyteboat: profile "try" cannot boot without the bundles its template lists; skipped: @lyteboat/host (Error: incompatible dsh peers)')
+      .toThrow('lyteboat: profile "try" cannot boot without the bundles its template lists; skipped: @lyteboat/base (Error: incompatible dsh peers)')
   })
 
   test('a profile without a lyteboat template reports a skipped bundle and boots on', () => {

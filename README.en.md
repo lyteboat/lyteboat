@@ -39,7 +39,7 @@ lyteboat turns that last mile into a reusable chassis for vertical agents. A tea
   - Audited side calls: routing and classification calls leave their full prompt and answer in the session (`@lyteboat/aux-llm`).
   - Import of external conversation history (`@lyteboat/history-import`).
 - **One business agent is one directory.** Write its composition file, skills, tools, and card templates under `examples/agents/<id>/`.
-- **A business agent gets only what it declares.** The three business modes, `lyteboat try`, `serve`, and `eval`, all list the business base (`@lyteboat/business-base`): no coding tools, no sandbox, no human approval; no host persona, no working-directory AGENTS.md, and no list of the installed packages in model requests. The dsh tools an agent uses, and its skills, are written in its own composition.
+- **A business agent gets only what it declares.** The three business modes, `lyteboat try`, `serve`, and `eval`, all list the business base (`@lyteboat/base`): no coding tools, no sandbox, no human approval; no host persona, no working-directory AGENTS.md, and no list of the installed packages in model requests. The dsh tools an agent uses, and its skills, are written in its own composition.
 - **Compatible with the dsh ecosystem.** lyteboat is a distribution of dsh: it owns the source of dsh's 14 kernel packages under their published names (`dsh/`), so official packages and community plugins run on lyteboat's implementation unchanged. It keeps the protocol, interfaces, and behavior of the dsh release it tracks, and six gates, G1–G6, prove it ([`dsh-compat/`](dsh-compat/README.md)).
 - **Traceable.** Everything a model sees is reconstructable from the session log, and every fact lyteboat records rides an envelope dsh already knows.
 
@@ -205,7 +205,7 @@ The [agent development guide](docs/03-agent-development.md) walks through every 
 - Every agent has a working directory of its own, `$LYTEBOAT_HOME/agent-workdirs/<id>`: the sessions of `/chat`, of evals, and of `lyteboat try --agent` are recorded under it wherever the process started, so `lyteboat try --agent <id> --session-id <session>` continues a session from any directory; `lyteboat try` without `--agent` still runs in the directory it was started in.
 - Every request records who sent it: `/chat` records `user:<user_id>`, `lyteboat try` `operator:cli`, and an eval run `system:eval`.
 - The session log is the single source of truth. A card and a state delta sit on `tool/result.meta.lyteboat`, a request's context and admission verdict on the human message's `source.lyteboatRequest`, a routed skill is dsh's own skill-invocation message, an intake reply is an assistant message whose `source.provider` is `lyteboat`, and imported history is closed turns of ordinary nodes; the side-call audit `lyteboat/aux-llm-call` is marked ignorable. So these sessions reopen under dsh's own persistence.
-- `@lyteboat/host` turns off dsh-base's `session-log-deepseek` row: the model provider receives the request and nothing else.
+- `@lyteboat/base` turns off dsh-base's `session-log-deepseek` row: the model provider receives the request and nothing else.
 
 ## Documentation
 
@@ -225,9 +225,9 @@ The guides are written in Chinese.
 
 ```
 dsh/                  the kernel: the 14 dsh packages dsh/kernel.json lists, under their @deepseek-ai/* names
-lyteboat/             lyteboat's 28 packages, one directory per layer
+lyteboat/             lyteboat's 27 packages, one directory per layer
   apps/               processes: the lyteboat launcher
-  bundles/            compositions: host (in every profile), business-base (in the business modes, the Studio, and inspect), and one each behind lyteboat try, serve, eval, studio, and inspect
+  bundles/            compositions: base (the business base, in every profile) and one each behind lyteboat try, serve, eval, studio, and inspect
   plugins/            capability plugins
   core/               declarations
   tooling/            test infrastructure
@@ -243,8 +243,7 @@ Dependencies point down only: `apps` → `bundles` → `plugins` → `core`; `ex
 | Path | Package | Role |
 |---|---|---|
 | `lyteboat/apps/cli` | `@lyteboat/cli` | The `lyteboat` launcher: profile templates, patch stack, boot (adapted from dsh's CLI) |
-| `lyteboat/bundles/host` | `@lyteboat/host` | The host bundle every profile lists: the distribution marker and the capability plugins' service rows |
-| `lyteboat/bundles/business-base` | `@lyteboat/business-base` | The business modes' base, listed by the try, serve, eval, studio, and inspect profiles, one patch and nothing else: the coding tools and the rows only they use off; sandbox, approval, and permissions off; the workspace's AGENTS.md, the package inventory, the plugin manager, and the session-title side call off; no default skill roots of the host, and no host persona or harness identity |
+| `lyteboat/bundles/base` | `@lyteboat/base` | The business base, listed by the try, serve, eval, studio, and inspect profiles, one patch and nothing else: the distribution marker and the capability plugins' service rows; dsh-base's session uploads off; the coding tools and the rows only they use off; sandbox, approval, and permissions off; the workspace's AGENTS.md, the package inventory, the plugin manager, and the session-title side call off; no default skill roots of the host, and no host persona or harness identity |
 | `lyteboat/bundles/try` | `@lyteboat/try` | The one-shot bundle behind `lyteboat try`: task, `--agent`, `--agents`, `--history`, `--session-id`, `--context`; a request is admitted before the loop, and the output composes the turn's cards |
 | `lyteboat/bundles/eval` | `@lyteboat/eval` | The bundle behind `lyteboat eval`: declares the one agent the cases talk to, mounts the session controller (without the web UI) and the eval runner, and exits with the run's result |
 | `lyteboat/bundles/serve` | `@lyteboat/serve` | The service bundle behind `lyteboat serve`: declares every agent of the `--agents` directories, mounts dsh's session controller (without the web UI), `/chat`, and the run-metrics recorder |

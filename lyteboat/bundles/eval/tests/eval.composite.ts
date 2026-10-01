@@ -1,5 +1,5 @@
 /**
- * The eval composition in process (dsh-base, @lyteboat/host, @lyteboat/eval)
+ * The eval composition in process (dsh-base, @lyteboat/base, @lyteboat/eval)
  * over a fixture agent and the scripted model: a real run sends the agent's
  * own cases through dsh's session controller, checks every turn, writes the
  * run, and records the sessions; a replay of that run needs no model and

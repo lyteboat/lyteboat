@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "license": "MIT",
-  "description": "lyteboat's Studio workshop bundle over dsh-base, @lyteboat/host, and @lyteboat/business-base: the agents of the --agents directories inspected without running a session, behind Studio's own sign-in and roles, on /api/studio; `lyteboat studio account` manages the accounts",
+  "description": "lyteboat's Studio workshop bundle over dsh-base and @lyteboat/base: the agents of the --agents directories inspected without running a session, behind Studio's own sign-in and roles, on /api/studio; `lyteboat studio account` manages the accounts",
   "type": "module",
   "exports": {
     ".": {
@@ -51,8 +51,7 @@
   },
   "devDependencies": {
     "@lyteboat/agent-def": "workspace:*",
-    "@lyteboat/host": "workspace:*",
-    "@lyteboat/business-base": "workspace:*",
+    "@lyteboat/base": "workspace:*",
     "@lyteboat/serve": "workspace:*",
     "@lyteboat/testing": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",

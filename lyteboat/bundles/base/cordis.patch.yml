@@ -1,10 +1,57 @@
-# The @lyteboat/business-base bundle patch: the business modes' base, applied
-# after dsh-base and @lyteboat/host and before the mode bundle (try,
-# serve, eval). A business agent gets only the capabilities its own
-# composition declares: an agent that needs a dsh tool lists the tool's row
-# in its agent.cordis.yml, where it runs in the agent's standing scope; the
+# The @lyteboat/base bundle patch: the business base, applied right after
+# dsh-base and before the mode bundle (try, serve, eval, studio, inspect).
+# dsh-base's own agent-loop row stays: its package resolves to lyteboat's
+# kernel (dsh/core/agent-loop), which dispatches lyteboat/intake and
+# lyteboat/pre-assemble. lyteboat's service rows sit on the host plane, where
+# agent rows inject them. A business agent gets only the capabilities its own
+# composition declares: an agent that needs a dsh tool lists the tool's row in
+# its agent.cordis.yml, where it runs in the agent's standing scope; the
 # services behind a tool (web) stay on the host, since an agent row never
 # publishes a service.
+
+# dsh-base's session-log-deepseek row attaches each session's canonical log
+# (`dsh_session_log`) to every official DeepSeek request; lyteboat sends the
+# provider the model request only. The row is off rather than configured off:
+# its `enabled` is a live setting, and a settings write would turn the upload
+# back on, from the session's start. Nothing injects the row.
+- id: session-log-deepseek
+  disabled: true
+
+# dsh-base's session-telemetry-otel row exports a session-log prefix to the
+# upstream collector once a user gives feedback. lyteboat sessions carry business
+# conversations, so no lyteboat profile ships them off the machine, whether or not
+# DSH_TELEMETRY_DISABLED is set.
+- id: session-telemetry-otel
+  disabled: true
+
+- insert:
+    # Marks the tree as lyteboat's: plugins that use a kernel extension inject it.
+    - id: lyteboat-distro
+      name: '@lyteboat/distro'
+
+    - id: lyteboat-tool-policy
+      name: '@lyteboat/tool-policy'
+
+    # Side model calls (the router's, an intake classifier's), each recorded ignorable.
+    - id: lyteboat-aux-llm
+      name: '@lyteboat/aux-llm'
+
+    # The request a human message answers to, carried on its source; then the
+    # admission registry that records its verdict there and replies from it.
+    - id: lyteboat-request-context
+      name: '@lyteboat/request-context'
+
+    - id: lyteboat-intake-guard
+      name: '@lyteboat/intake-guard'
+
+    - id: lyteboat-skill-router
+      name: '@lyteboat/skill-router'
+
+    - id: lyteboat-a2ui
+      name: '@lyteboat/a2ui'
+
+    - id: lyteboat-history-import
+      name: '@lyteboat/history-import'
 
 # The coding tools, and the services only they use.
 - id: tool-bash
