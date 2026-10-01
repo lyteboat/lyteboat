@@ -2,8 +2,8 @@
  * lyteboat's contract extensions over the dsh seams. Types, constants,
  * declaration merging, and the zod schemas of the JSON types declared here; no
  * other runtime behavior: the tool and skill metadata lyteboat plugins consume, the
- * `lyteboat/*` step events (declared by lyteboat's kernel agent loop, re-exported
- * here), the log nodes lyteboat plugins append, the envelopes their facts ride,
+ * `lyteboat/*` step and one-shot events (declared by lyteboat's kernel agent loop
+ * and one-shot runner, re-exported here), the log nodes lyteboat plugins append, the envelopes their facts ride,
  * and the projection keys they publish. Declared here, by declaration merging onto
  * the dsh maps, so that providers and consumers depend on this package and
  * never on each other — the same rule dsh applies to its own seams. A reader
@@ -48,6 +48,7 @@ const lyteboatJsonObjectSchema = z.record(z.string(), lyteboatJsonValueSchema)
  */
 export { LYTEBOAT_ASSISTANT_PROVIDER } from '@deepseek-ai/dsh-agent-loop'
 export type { LyteboatIntakeDecision, LyteboatIntakeReply, LyteboatStepPayload } from '@deepseek-ai/dsh-agent-loop'
+export type { LyteboatHeadlessReportPlan, LyteboatHeadlessStartPlan, LyteboatHeadlessSubmitPlan } from '@deepseek-ai/dsh-headless'
 
 /** One extension of the kernel contract that this lyteboat build carries, as dsh-compat/contract/extensions.yml registers it. */
 export interface LyteboatDistroExtension {

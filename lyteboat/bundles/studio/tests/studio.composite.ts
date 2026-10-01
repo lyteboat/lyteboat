@@ -1,6 +1,6 @@
 /**
- * The studio composition in process (dsh-base, @lyteboat/host,
- * @lyteboat/business-base, @lyteboat/studio) over fixture agents: an operator's
+ * The studio composition in process (dsh-base, @lyteboat/base,
+ * @lyteboat/studio) over fixture agents: an operator's
  * accounts sign in, the radar lists the agents that mounted and the one that
  * failed, roles gate the Users endpoints and a reload, the System page answers,
  * an agent's workspace shows its tools as the business base leaves them, its

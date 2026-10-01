@@ -31,6 +31,7 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-agent-loop": "workspace:*",
+    "@deepseek-ai/dsh-headless": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-session-projection": "workspace:*"
@@ -38,6 +39,7 @@
   "devDependencies": {
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-agent-loop": "workspace:*",
+    "@deepseek-ai/dsh-headless": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-session-projection": "workspace:*"

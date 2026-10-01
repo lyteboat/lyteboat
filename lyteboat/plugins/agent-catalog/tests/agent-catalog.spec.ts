@@ -1,7 +1,8 @@
 /**
  * The agent catalog: scan the roots, declare each agent to the preset
  * registry, and report the ones that cannot be served. A row that fails to
- * mount needs the host's loader tree; the try composition covers it.
+ * mount needs the host's loader tree; the business one-shot composition
+ * (headless-agent) covers it.
  */
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'

@@ -1,6 +1,5 @@
-# The @lyteboat/studio bundle patch: the Studio workshop over dsh-base,
-# @lyteboat/host, and @lyteboat/business-base (the studio profile lists them in
-# that order), so an agent's tools and skills mount as `lyteboat serve` mounts
+# The @lyteboat/studio bundle patch: the Studio workshop over dsh-base and
+# @lyteboat/base (the studio profile lists them in that order), so an agent's tools and skills mount as `lyteboat serve` mounts
 # them. The startup row parses `lyteboat studio` into the
 # `lyteboatStudioStartup` service, or does one `account` command and exits
 # before any row below starts. The agent catalog declares every agent of the

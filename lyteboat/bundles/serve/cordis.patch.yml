@@ -1,5 +1,5 @@
 # The @lyteboat/serve bundle patch: lyteboat's service mode over dsh-base and
-# @lyteboat/host. The startup row parses `--agents` or `--release` / `--host` /
+# @lyteboat/base. The startup row parses `--agents` or `--release` / `--host` /
 # `--port` / `--auth` / `--secret-env` into the `lyteboatServeStartup`
 # service; the agent catalog declares every agent of the roots, or the
 # released agents pinned to their locks; dsh's session
@@ -8,10 +8,10 @@
 # serves /chat, /agents, and /health on it. The run-metrics recorder writes one
 # line per turn and a heartbeat of the running turns under
 # $LYTEBOAT_HOME/run-metrics, which the Studio's Dashboard reads. The last row
-# reports the service once the catalog is ready, or stops it. lyteboat's
-# service rows come from @lyteboat/host, the agent loop (lyteboat's kernel)
-# from dsh-base, and the business base from @lyteboat/business-base, all
-# listed before this bundle in the serve profile.
+# reports the service once the catalog is ready, or stops it. The agent loop
+# (lyteboat's kernel) comes from dsh-base, and lyteboat's service rows and the
+# business base from @lyteboat/base, both listed before this bundle in the
+# serve profile.
 
 - insert:
     - id: lyteboat-serve-startup
@@ -64,6 +64,6 @@
     - id: lyteboat-serve
       name: '@lyteboat/serve'
 
-# A service applies the user layers at startup only, as the try mode does.
+# A service applies the user layers at startup only, as the one-shot does.
 - id: hmr
   disabled: true

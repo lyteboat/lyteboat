@@ -4,7 +4,7 @@ lyteboat is a distribution of [DeepSeek Harness](https://github.com/deepseek-ai/
 
 ## 1. Scope
 
-For the dsh release pinned in `dsh.upstream.json` (`0.2.0-rc.2`), lyteboat promises that a plugin written against that release observes the same **protocol, interface, and behavior** from lyteboat's kernel as from the official packages, except where §4 lists an addition. Packages outside the kernel are installed from npm at the pinned version, unchanged; lyteboat's promise about them is only that it does not patch them.
+For the dsh release pinned in `dsh.upstream.json` (`0.2.0-rc.2`), lyteboat promises that a plugin written against that release observes the same **protocol, interface, and behavior** from lyteboat's kernel as from the official packages, except where §4 lists an addition or §8 a distribution policy. Packages outside the kernel are installed from npm at the pinned version, unchanged; lyteboat's promise about them is only that it does not patch them.
 
 ## 2. Stable surface
 
@@ -34,7 +34,7 @@ Every invariant is held by a test that runs against lyteboat's kernel. Upstream'
 | Waterfall events (`agent/pre-step`, `agent/request`, `tools/pre-execute`, …) short-circuit when a listener does not call `next()`, and see rewritten payloads in listener order | G2 `dsh/core/agent-loop/tests/interception.spec.ts` |
 | A projection that ignores an event returns the same state reference | G2 `dsh/session/session-projection/tests/registry.spec.ts` |
 | Persistence refuses a stored log with an event type outside the compiled catalog unless the event is `ignorable` | G2 `dsh/session/session-persistence-jsonl/tests`, overlay `persistence` |
-| For the same scripted model and the same plugins, a session log written on lyteboat equals one written on the official release, event by event after normalization | G4 `dsh-compat/tests/scenarios` |
+| For the same scripted model, the same plugins, and the same default composition (the official release run with §8's policy), a session log written on lyteboat equals one written on the official release, event by event after normalization | G4 `dsh-compat/tests/scenarios` |
 | Pinned community plugins that run on the official release run on lyteboat and write the same log | G5 `dsh-compat/tests/canaries` |
 | A session lyteboat writes opens on the official release, and the reverse | G6 `dsh-compat/tests/roundtrip` |
 | Official packages that depend on the kernel keep passing their own tests on lyteboat's kernel | G3 (overlay `g3`) |
@@ -43,7 +43,7 @@ Every invariant is held by a test that runs against lyteboat's kernel. Upstream'
 
 `dsh-compat/contract/extensions.yml` is the registry; this section is its reading guide. An extension only adds: a new export, event, option, or service. A plugin that does not use it cannot tell it exists. Each entry names the contract keys it adds (G1 accepts exactly those), the tests that prove it, and its exit condition: the upstream change that makes it redundant, after which the extension is removed at the next sync.
 
-A third-party plugin that wants a lyteboat extension declares `inject: ['lyteboatDistro']` (the service `@lyteboat/distro` provides, listing this build's extensions by id) and imports the extension's types from `@lyteboat/contracts` (the step events) or from the kernel package that carries it (`LyteboatAppendOptions` from `@deepseek-ai/dsh-session`). On the official release that service does not exist, so the plugin waits instead of calling an option that is not there.
+A third-party plugin that wants a lyteboat extension declares `inject: ['lyteboatDistro']` (the service `@lyteboat/distro` provides, listing this build's extensions by id) and imports the extension's types from `@lyteboat/contracts` (the step events and the one-shot's plans) or from the kernel package that carries it (`LyteboatAppendOptions` from `@deepseek-ai/dsh-session`, the `LyteboatHeadless*Plan` types from `@deepseek-ai/dsh-headless`). On the official release that service does not exist, so the plugin waits instead of calling an option that is not there. The marker is a row of the business base (`@lyteboat/base`), so the native profiles (`lyteboat web`, `lyteboat headless` without `--agent`) do not provide it either: there such a plugin waits as it does on the official release, though the kernel underneath carries the extensions.
 
 ## 5. Transitional interfaces
 
@@ -61,3 +61,15 @@ A third-party plugin that wants a lyteboat extension declares `inject: ['lyteboa
 
 - **lyteboat-next** follows every sync: a sync merges the import of the tag it moves to and must pass G1–G6. Syncs are batched weekly; one sync may cross several tags.
 - **lyteboat-stable** is cut only when lyteboat makes a release, and only from a sync onto a dsh release candidate (`-rc.N`) that passes G1–G6; afterwards it takes backports only. No stable channel has been cut: lyteboat has made no release.
+
+## 8. Distribution policy
+
+lyteboat sends nothing off the machine that its user did not send to a model. Where an upstream bundle's default composition does, the kernel's copy of that bundle turns the row off (`Dist-Change: policy`, a `cordis.patch.yml` edit and nothing else). A plugin sees the same interfaces; what changes is only which rows the default composition starts. A deployment that wants a row back lists it again in its own patch.
+
+| Bundle | Row | What upstream sends, and where | Since |
+|---|---|---|---|
+| `@deepseek-ai/dsh-base` | `session-log-deepseek` | The session's canonical log, as the `dsh_session_log` field of every request to the official DeepSeek API | 0.2.0-rc.2 |
+| `@deepseek-ai/dsh-base` | `plugin-package-inventory-deepseek` | The installed plugin packages, as the `dsh_plugin_packages` field of every request to the official DeepSeek API | 0.2.0-rc.2 |
+| `@deepseek-ai/dsh-base` | `session-telemetry-otel` | A session-log prefix with an anonymous user id, to upstream's OpenTelemetry collector once a person gives feedback | 0.2.0-rc.2 |
+
+The rows are turned off by patch entries appended after upstream's insert list in `dsh/bundle/base/cordis.patch.yml`; upstream's rows stay as written. `session-telemetry-otel` is OpenTelemetry's standard log export with a configurable endpoint (`exporter.url`, or `DSH_TELEMETRY_OTLP_URL`); when lyteboat runs a collector of its own, the row comes back pointed there.

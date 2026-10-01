@@ -45,6 +45,12 @@
       "path": "./dsh/api/session-controller"
     },
     {
+      "path": "./dsh/bundle/base"
+    },
+    {
+      "path": "./dsh/bundle/headless"
+    },
+    {
       "path": "./lyteboat/core/contracts"
     },
     {
@@ -102,7 +108,7 @@
       "path": "./lyteboat/plugins/studio-web"
     },
     {
-      "path": "./lyteboat/bundles/try"
+      "path": "./lyteboat/bundles/headless"
     },
     {
       "path": "./lyteboat/bundles/serve"

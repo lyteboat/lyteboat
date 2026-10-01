@@ -1,0 +1,163 @@
+# The @lyteboat/base bundle patch: the business base, applied right after
+# dsh-base (and dsh-headless in the one-shot) and before the mode bundle
+# (headless, serve, eval, studio, inspect).
+# dsh-base's own agent-loop row stays: its package resolves to lyteboat's
+# kernel (dsh/core/agent-loop), which dispatches lyteboat/intake and
+# lyteboat/pre-assemble. lyteboat's service rows sit on the host plane, where
+# agent rows inject them. A business agent gets only the capabilities its own
+# composition declares: an agent that needs a dsh tool lists the tool's row in
+# its agent.cordis.yml, where it runs in the agent's standing scope; the
+# services behind a tool (web) stay on the host, since an agent row never
+# publishes a service.
+
+- insert:
+    # Marks the tree as lyteboat's: plugins that use a kernel extension inject it.
+    - id: lyteboat-distro
+      name: '@lyteboat/distro'
+
+    - id: lyteboat-tool-policy
+      name: '@lyteboat/tool-policy'
+
+    # Side model calls (the router's, an intake classifier's), each recorded ignorable.
+    - id: lyteboat-aux-llm
+      name: '@lyteboat/aux-llm'
+
+    # The request a human message answers to, carried on its source; then the
+    # admission registry that records its verdict there and replies from it.
+    - id: lyteboat-request-context
+      name: '@lyteboat/request-context'
+
+    - id: lyteboat-intake-guard
+      name: '@lyteboat/intake-guard'
+
+    - id: lyteboat-skill-router
+      name: '@lyteboat/skill-router'
+
+    - id: lyteboat-a2ui
+      name: '@lyteboat/a2ui'
+
+    - id: lyteboat-history-import
+      name: '@lyteboat/history-import'
+
+# The coding tools, and the services only they use.
+- id: tool-bash
+  disabled: true
+- id: tool-pwsh
+  disabled: true
+- id: tool-jobs
+  disabled: true
+- id: jobs
+  disabled: true
+- id: tool-fs
+  disabled: true
+- id: tool-fs-search
+  disabled: true
+- id: fs-observation-policy
+  disabled: true
+- id: tool-todo
+  disabled: true
+- id: goal
+  disabled: true
+- id: goal-round-driver
+  disabled: true
+- id: command-goal
+  disabled: true
+- id: tool-goal
+  disabled: true
+- id: plan-mode
+  disabled: true
+- id: subagent
+  disabled: true
+- id: subagent-spawn-in-process
+  disabled: true
+- id: subagent-fork-in-process
+  disabled: true
+- id: tool-subagent-control
+  disabled: true
+- id: tool-subagent-list-agents
+  disabled: true
+- id: tool-subagent
+  disabled: true
+- id: tool-subagent-fork
+  disabled: true
+- id: ptc-runtime
+  disabled: true
+# With no PTC runtime the registry presents tools natively, whatever mode the
+# environment asks dsh-headless for (DSH_TOOLS_MODE).
+- id: tools
+  config:
+    mode: native
+- id: workflow-ptc
+  disabled: true
+- id: tool-workflow
+  disabled: true
+- id: tool-web
+  disabled: true
+- id: mcp-resources
+  disabled: true
+
+# No sandbox and no human approval: without them no `sandbox:policy` or
+# `approval:policy` text reaches the model, and a session starts without the
+# three permission events. `fs` (the session controller needs it) comes from
+# dsh-fs-local instead of the sandboxed backend.
+- id: sandbox
+  disabled: true
+- id: sandbox-policy
+  disabled: true
+- id: bash-sandbox
+  disabled: true
+- id: pwsh-sandbox
+  disabled: true
+- id: fs-sandbox
+  disabled: true
+- id: shell-env
+  disabled: true
+- id: subprocess
+  disabled: true
+- id: approval
+  disabled: true
+- id: permission
+  disabled: true
+
+- insert:
+    - id: fs-local
+      name: '@deepseek-ai/dsh-fs-local'
+
+# Large tool results are pruned, not spilled: a spill points the model at a
+# file under the system temp directory and at coding tools a business agent
+# does not have.
+- id: spill-local
+  disabled: true
+- id: spill-policy
+  disabled: true
+
+# The machine stays out of model requests (the working directory's AGENTS.md;
+# the kernel's dsh-base already keeps the installed package list and the session
+# uploads off), a running business mode cannot install plugins or rewrite its
+# composition, and a user's first message goes to no side call for a session
+# title.
+- id: agent-instructions
+  disabled: true
+- id: plugin-manager
+  disabled: true
+- id: config-editor
+  disabled: true
+- id: settings
+  disabled: true
+- id: session-title-llm
+  disabled: true
+
+# Skills come from the agent's own directory only, never from the host's
+# default roots.
+- id: skill-filesystem
+  config:
+    includeDefaultRoots: false
+
+# The persona is the agent's; the host adds none, not even the harness's name
+# (dsh-headless, listed before this bundle in the one-shot, sets a coding
+# agent's prefix and suffix).
+- id: system-prompt
+  config:
+    personaPrefix: ''
+    personaSuffix: ''
+    includeHarnessIdentity: false

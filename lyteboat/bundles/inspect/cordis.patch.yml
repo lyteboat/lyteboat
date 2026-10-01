@@ -1,13 +1,13 @@
 # The @lyteboat/inspect bundle patch: lyteboat's inspect mode over dsh-base and
-# @lyteboat/host. The startup row parses `lyteboat inspect` into the
+# @lyteboat/base. The startup row parses `lyteboat inspect` into the
 # `lyteboatInspectStartup` service; the agent catalog declares the one agent
 # from its root, reporting a failure instead of refusing the tree; the agent
 # inspector reads it from its standing scope and the eval records read its
 # case files; the last row prints what it found and exits. No agent instance
-# is created and no model is called. lyteboat's service rows come from
-# @lyteboat/host, the agent loop from dsh-base, and the business base from
-# @lyteboat/business-base, all listed before this bundle in the inspect
-# profile, so the agent is mounted exactly as try, serve, and eval mount it.
+# is created and no model is called. The agent loop comes from dsh-base, and
+# lyteboat's service rows and the business base from @lyteboat/base, both
+# listed before this bundle in the inspect profile, so the agent is mounted
+# exactly as headless --agent, serve, and eval mount it.
 
 - insert:
     - id: lyteboat-inspect-startup
@@ -35,6 +35,6 @@
     - id: lyteboat-inspect
       name: '@lyteboat/inspect'
 
-# An inspection applies the user layers at startup only, as the try mode does.
+# An inspection applies the user layers at startup only, as the one-shot does.
 - id: hmr
   disabled: true

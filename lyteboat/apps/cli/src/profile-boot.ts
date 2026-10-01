@@ -60,6 +60,9 @@ import { LYTEBOAT_PROFILE_TEMPLATES } from './templates.ts'
 /** The launcher's diagnostic prefix and the bin name env layers are read for. */
 export const NAME = 'lyteboat'
 
+/** A profile the launcher refuses to boot; its message is the whole diagnostic. */
+export class LyteboatProfileError extends Error {}
+
 /** Launcher-owned readiness signal committed only after boot and host setup succeed. */
 function createAppReady(): { service: AppReady; commit(): void } {
   let ready = false
@@ -109,9 +112,10 @@ export const PROFILE_ROOT_FILENAME = 'cordis.yml'
 /**
  * Initialize a profile directory from lyteboat's template when it does not exist
  * yet. An existing directory is never rewritten, so one created by an earlier
- * lyteboat whose bundle list differs from today's template fails loud with the fix
- * instead of booting without the bundles this lyteboat relies on; a user's own
- * changes belong in the profile's `cordis.patch.yml`, not in its bundle list.
+ * lyteboat whose bundle list does not start with today's template fails loud with
+ * the fix instead of booting without the bundles this lyteboat relies on. Bundles
+ * after the template's are the user's: dsh's plugin manager (which `lyteboat web`
+ * offers) appends every bundle it installs to the list.
  * A name without a lyteboat template is handed to dsh's loader, which knows dsh's
  * own shipped templates and rejects anything else.
  * @param name - the profile name.
@@ -126,8 +130,8 @@ export function ensureProfileInitialized(name: string, home: string = resolveDsh
   }
   if (template === undefined) return
   const bundles = readProfileManifest(NAME, dir).dsh?.profile?.bundles ?? []
-  if (bundles.length === template.bundles.length && bundles.every((bundle, index) => bundle === template.bundles[index])) return
-  throw new Error(
+  if (template.bundles.every((bundle, index) => bundles[index] === bundle)) return
+  throw new LyteboatProfileError(
     `${NAME}: profile "${name}" at ${dir} lists bundles [${bundles.join(', ')}], but this lyteboat's "${name}" template is [${template.bundles.join(', ')}]. `
     + `Set dsh.profile.bundles in ${join(dir, 'package.json')} to the template's list, or move the directory away to have it recreated (keep your cordis.patch.yml).`,
   )
@@ -137,8 +141,8 @@ export function ensureProfileInitialized(name: string, home: string = resolveDsh
  * Refuse a profile that dsh loaded without a bundle its lyteboat template
  * lists, and report every other skipped bundle the way dsh's launcher does.
  * dsh skips a bundle it cannot resolve, or whose dsh peers the running
- * release does not satisfy, and boots the rest; without `@lyteboat/host` or
- * `@lyteboat/try` that is a different application than the profile names.
+ * release does not satisfy, and boots the rest; without `@lyteboat/base` or
+ * its mode bundle (`@lyteboat/headless`, `@lyteboat/serve`, …) that is a different application than the profile names.
  * @param name - the profile name.
  * @param profile - the bundles dsh skipped while loading it.
  * @throws when a skipped bundle is one the profile's lyteboat template lists.
@@ -148,7 +152,7 @@ export function checkSkippedProfileBundles(name: string, profile: Pick<Profile, 
   const required = profile.skippedBundles.filter(skipped => templateBundles.includes(skipped.packageName))
   reportSkippedBundles(NAME, { skippedBundles: profile.skippedBundles.filter(skipped => !required.includes(skipped)) })
   if (required.length === 0) return
-  throw new Error(
+  throw new LyteboatProfileError(
     `${NAME}: profile "${name}" cannot boot without the bundles its template lists; skipped: `
     + required.map(({ packageName, reason }) => `${packageName} (${reason})`).join('; '),
   )

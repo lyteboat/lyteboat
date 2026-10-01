@@ -1,6 +1,6 @@
 /**
  * @lyteboat/inspect — lyteboat's inspect mode. The bundle patch rides over
- * dsh-base, @lyteboat/host, and the business base: it declares one agent
+ * dsh-base and the business base (@lyteboat/base): it declares one agent
  * (`@lyteboat/agent-catalog`, reporting a failure rather than refusing the
  * tree) and mounts the agent inspector and the eval records. This row runs
  * once the tree has settled: it reads what the agent is made of (its tools

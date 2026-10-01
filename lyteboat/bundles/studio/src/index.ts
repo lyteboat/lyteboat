@@ -1,7 +1,7 @@
 /**
  * @lyteboat/studio — the Studio workshop. The bundle patch rides over
- * dsh-base, @lyteboat/host, and @lyteboat/business-base, so an agent's tools
- * and skills mount as they do in `lyteboat serve`: its startup row takes
+ * dsh-base and @lyteboat/base, so an agent's tools and skills mount as they
+ * do in `lyteboat serve`: its startup row takes
  * `--agents` and the Studio's flags, the agent catalog declares every agent
  * of those directories and reloads them when they change, and the web server
  * carries studio-auth's sign-in, studio-api's `/api/studio`, and studio-web's

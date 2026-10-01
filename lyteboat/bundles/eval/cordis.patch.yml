@@ -1,12 +1,12 @@
 # The @lyteboat/eval bundle patch: lyteboat's eval mode over dsh-base and
-# @lyteboat/host. The startup row parses `lyteboat eval` into the
+# @lyteboat/base. The startup row parses `lyteboat eval` into the
 # `lyteboatEvalStartup` service; the agent catalog declares the one agent the
 # cases talk to; dsh's session controller runs without the web UI (workspace,
 # connection, and file upload are its host services); the eval runner sends
 # every case's turns through it, and the last row runs the invocation and
-# exits with its result. lyteboat's service rows come from @lyteboat/host and
-# the agent loop (lyteboat's kernel) from dsh-base, and the business base from
-# @lyteboat/business-base, all listed before this bundle in the eval profile.
+# exits with its result. The agent loop (lyteboat's kernel) comes from
+# dsh-base, and lyteboat's service rows and the business base from
+# @lyteboat/base, both listed before this bundle in the eval profile.
 
 - insert:
     - id: lyteboat-eval-startup
@@ -44,6 +44,6 @@
     - id: lyteboat-eval
       name: '@lyteboat/eval'
 
-# An eval run applies the user layers at startup only, as the try mode does.
+# An eval run applies the user layers at startup only, as the one-shot does.
 - id: hmr
   disabled: true

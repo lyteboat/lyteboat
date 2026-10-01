@@ -1,5 +1,5 @@
 /**
- * The serve composition in process (dsh-base, @lyteboat/host, @lyteboat/business-base, @lyteboat/serve)
+ * The serve composition in process (dsh-base, @lyteboat/base, @lyteboat/serve)
  * over two fixture agents and the scripted model: `/chat` answers in one JSON
  * body or as the enterprise stream through dsh's session controller, records
  * the request on the human message, continues and queues within a session,

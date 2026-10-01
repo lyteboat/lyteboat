@@ -14,7 +14,7 @@
 
 ### 0.1 lyteboat 作为发行版承诺什么
 
-- **内核归 lyteboat。** lyteboat 拥有 dsh 14 个核心包的源码，放在 `dsh/`，清单是 `dsh/kernel.json`。这些包保留上游发布时的 `@deepseek-ai/dsh-*` 包名。
+- **内核归 lyteboat。** lyteboat 拥有 dsh 16 个包的源码，放在 `dsh/`，清单是 `dsh/kernel.json`。这些包保留上游发布时的 `@deepseek-ai/dsh-*` 包名。
 - **其余原样。** 内核之外的 dsh 包 lyteboat 不改源码。工作区从 npm 安装其中 lyteboat 用到的那部分（它的依赖闭包），全部是 `dsh.upstream.json` 钉住的 `0.2.0-rc.2`（§0.4）。
 - **承诺范围**（`dsh-compat/COMPAT.md` §1）：
   - 针对 `dsh.upstream.json` 钉住的版本，即 `0.2.0-rc.2`。
@@ -39,7 +39,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 | 机制 | 在仓库里是什么 | 本文 |
 |---|---|---|
 | 原样上游 + 显式差量 | 每个上游 tag 一个导入提交（带 `Dist-Import` trailer），第一个导入就是整段历史的根；lyteboat 的改动是其上的提交，靠三方合并跟进新 tag | §2 |
-| 差量分类 | 七类 `Dist-Change` + 每类必需的 trailer；`pnpm run dist:delta -- --check` 校验 | §3 |
+| 差量分类 | 八类 `Dist-Change` + 每类必需的 trailer；`pnpm run dist:delta -- --check` 校验 | §3 |
 | 稳定面清单 + 机器检查 | `dsh-compat/contract/dsh-0.2.0-rc.2/` 契约快照 + `extensions.yml` 登记表；每次 `pnpm run test` 在构建之后跑 G1 | §4 |
 | 兼容性由测试定义 | G1–G6 六道兼容闸门，加上 persistence、typert 两道叠加闸门 | §6 |
 | 扩展点优先于补丁 | 上游文件只加几行 `// lyteboat:` 钩子，逻辑放在上游没有的 `src/lyteboat/` | §3.5 |
@@ -49,10 +49,10 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 | 项 | 值 | 出处 |
 |---|---|---|
 | 跟踪的上游 | dsh `0.2.0-rc.2`，tag `dsh-v0.2.0-rc.2`，上游提交 `639ed015` | `dsh.upstream.json` |
-| 内核包数 | 14 | `dsh/kernel.json` |
+| 内核包数 | 16 | `dsh/kernel.json` |
 | 工作区实际装的 npm dsh 包 | 全部是跟踪的版本 | **[实跑]** `ls node_modules/.pnpm \| grep '^@deepseek-ai+dsh'` |
-| lyteboat 在内核上的差量 | agent-loop、session、session-controller 三个包的上游文件有改动（session-controller 的改动里有重新生成的 Typert 文件），session-persistence 只多了 lyteboat 自己的测试，其余包没有差量；逐包的文件数与行数看 `pnpm run dist:delta` | `pnpm run dist:delta` |
-| 登记的扩展 | 4 个：`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`，共 10 个契约键 | `dsh-compat/contract/extensions.yml` |
+| lyteboat 在内核上的差量 | agent-loop、session、session-controller、dsh-headless 四个包的上游文件有改动（session-controller 的改动里有重新生成的 Typert 文件），dsh-base 只改了 `cordis.patch.yml`（`policy`），session-persistence 只多了 lyteboat 自己的测试，其余包没有差量；逐包的文件数与行数看 `pnpm run dist:delta` | `pnpm run dist:delta` |
+| 登记的扩展 | 5 个：`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`、`headless-hooks`，共 16 个契约键 | `dsh-compat/contract/extensions.yml` |
 | G1 | 每处差异都已登记：`… registered difference(s), 0 failure(s)` | `pnpm run contract:check` |
 | G2 | 上游的内核测试，加上 lyteboat 放在内核包 `tests/lyteboat/` 下的测试 | `vitest.config.ts` 的 glob 与排除表 |
 | `pnpm run dsh-compat` | G4、G5、G6 全部通过；第一次要装两棵树，要联网 | `pnpm run dsh-compat` |
@@ -73,7 +73,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 
 | 话题 | 参考实现 | lyteboat |
 |---|---|---|
-| 引擎代码的归属 | `core/` 是自己写的引擎，规则是 core 自包含（参考实现 `CLAUDE.md`「Architecture boundaries」） | 引擎是 dsh 的 14 个包。源码在 `dsh/`，但包名和契约属于上游；lyteboat 的改动都是登记过的差量 |
+| 引擎代码的归属 | `core/` 是自己写的引擎，规则是 core 自包含（参考实现 `CLAUDE.md`「Architecture boundaries」） | 引擎是 dsh 的 16 个包。源码在 `dsh/`，但包名和契约属于上游；lyteboat 的改动都是登记过的差量 |
 | 组件怎么接起来 | `Lifecycle` / `Plugin` 协议 + `AppContext`，由组装根装配（参考实现 `CLAUDE.md`「Lifecycle vs Plugin」） | cordis 插件 + `ctx` 上的服务 + `inject`；组合是 YAML 数据（profile、bundle、patch） |
 | 版本号 | `x.y.z.n`，用 release commit 的短 SHA 作下次发版的边界（参考实现 `docs/RELEASING.md`） | 仓库里保持上游版本号，打包时才盖 `+lyteboat.<commit>`（§8.1）；差量的边界是最近一次 `Dist-Import` 提交 |
 | "兼容"指什么 | wheel 使用方看到的公开 API（发版说明里的 Breaking Changes） | 与同版本官方 dsh 在协议、接口、行为上一致，由 G1–G6 机器证明 |
@@ -87,7 +87,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 | 事件与派发模式 | 服务用声明合并声明事件名，按 `emit`、`waterfall`、`parallel`、`serial`、`bail` 之一派发；**派发模式是事件公开契约的一部分** | 契约快照 `events.json` 为每个事件记下模式，G1 比对它（§4.1） | `up:docs/cordis-primer.md`「Dispatch Modes」 |
 | waterfall 与 `next()` | 环绕式中间件：监听器收到 `(...args, next)`，调 `next()` 交给下一个，不调就短路后面所有监听器 | 内核在 `dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.preStep` 派发 `lyteboat/intake`，链尾的默认值是 `{ kind: 'pass' }` | `up:docs/cordis-primer.md`「Cordis Waterfall Semantics」 |
 | seam、provider | seam 是一个可替换的能力：一个服务定义（占 `ctx.<key>`）、一个或多个 provider、一个或多个消费方 | `ctx.llm` 由内核 `dsh-llm` 定义，npm 上的 `dsh-llm-deepseek` 是 provider（它对 `dsh-llm` 是 peer 依赖） | `up:docs/glossary.md`「capability-seam」 |
-| profile、bundle、patch、行（row） | bundle 是作者分发的组合，profile 是用户用 `--profile <名字>` 启动的东西；patch 是一个 YAML 数组，里面是插件"行"（`id` + 包名 `name` + 可选 `config`/`disabled`），或按 `id` 覆盖已有行、用 `- insert:` 插入新行的操作 | `lyteboat/bundles/host/cordis.patch.yml` 先按 `id` 覆盖 dsh-base 的两行，再用 `- insert:` 插入以 `lyteboat-distro` 开头的 lyteboat 服务行 | `up:docs/user/develop/basic/publish.md`「Two concepts, two manifests」「The loading order」 |
+| profile、bundle、patch、行（row） | bundle 是作者分发的组合，profile 是用户用 `--profile <名字>` 启动的东西；patch 是一个 YAML 数组，里面是插件"行"（`id` + 包名 `name` + 可选 `config`/`disabled`），或按 `id` 覆盖已有行、用 `- insert:` 插入新行的操作 | `lyteboat/bundles/base/cordis.patch.yml` 先用 `- insert:` 插入以 `lyteboat-distro` 开头的 lyteboat 服务行，再按 `id` 覆盖 dsh-base 的行（关掉业务 agent 没声明的能力，改 `skill-filesystem`、`system-prompt` 的 `config`） | `up:docs/user/develop/basic/publish.md`「Two concepts, two manifests」「The loading order」 |
 | 准入（admission） | `dsh-app-boot` 在启动时读每一行所属包的磁盘清单，`@deepseek-ai/dsh*` peer 与运行版本不匹配就禁用该行 | 这条规则让 lyteboat 包的非内核 dsh peer 必须写精确版本（§8.2） | `up:packages/boot/app-boot/src/plugin-compatibility.ts:61-88` |
 | Typert Host face、Remote client | 上游生成器从 TypeScript 类型生成的运行时反射产物：包导出 `./typert`（Host face）和 `./remote`（Remote client），文件是 `lib/typert.*` | dsh-llm 的 `lib/typert.host.{js,d.ts}`、`lib/typert.remote-client.{js,d.ts}`（§5.3） | `up:packages/typert/generator/README.md`；`up:packages/typert/protocol/README.md` |
 | 契约键 | 契约快照里一条 JSON 路径，用 `' › '` 连接 | `events › @deepseek-ai/dsh-agent-loop › lyteboat/intake` | `scripts/dist/contract-check.ts` 的 `KEY_SEPARATOR` |
@@ -101,7 +101,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 
 | 层 | 是什么 | 在哪里声明 | 怎么解析 | 怎么跟上游 |
 |---|---|---|---|---|
-| **内核** `dsh/` | lyteboat 拥有的 14 个 dsh 包，保留 `@deepseek-ai/dsh-*` 包名：`llm/llm`、`core/session`、`core/system-prompt`、`core/tools`、`skill/skill`、`core/agent`、`core/agent-loop`、`session/session-projection`、`session/session-persistence`、`session/session-persistence-jsonl`、`compaction/compaction`、`compaction/compaction-basic`、`test-support/agent-loop-testkit`、`api/session-controller` | 权威清单是 `dsh/kernel.json`。`pnpm-workspace.yaml` 的 overrides 和根 `tsconfig.json` 的 references 是它的镜像；`scripts/upstream-pins.spec.ts` 核对 overrides 与清单一致 | overrides 把每个内核包名改写成 `workspace:*`；lyteboat 自己的清单也写 `workspace:*` | 每个 tag 一个导入提交，三方合并（§2） |
+| **内核** `dsh/` | lyteboat 拥有的 16 个 dsh 包，保留 `@deepseek-ai/dsh-*` 包名：`llm/llm`、`core/session`、`core/system-prompt`、`core/tools`、`skill/skill`、`core/agent`、`core/agent-loop`、`session/session-projection`、`session/session-persistence`、`session/session-persistence-jsonl`、`compaction/compaction`、`compaction/compaction-basic`、`test-support/agent-loop-testkit`、`api/session-controller`、`bundle/base`、`bundle/headless` | 权威清单是 `dsh/kernel.json`。`pnpm-workspace.yaml` 的 overrides 和根 `tsconfig.json` 的 references 是它的镜像；`scripts/upstream-pins.spec.ts` 核对 overrides 与清单一致 | overrides 把每个内核包名改写成 `workspace:*`；lyteboat 自己的清单也写 `workspace:*` | 每个 tag 一个导入提交，三方合并（§2） |
 | **npm 原样层** | 上游其余的 dsh 包都不改源码；工作区只装用到的那部分：seam 与 provider、可选插件、基础设施、Web 产品等 | `pnpm-workspace.yaml` 的 `catalogs.dsh`、`catalogs.cordis`，`dsh.upstream.json` | `.pnpmfile.cjs` 把所有非内核的 `@deepseek-ai/dsh*` 依赖改写成 `dsh.upstream.json` 里的版本 | 改 catalog、版本钉文件和精确 peer（§7、§8） |
 | **lyteboat 层** `lyteboat/` | `@lyteboat/*`，每层一个目录，清单见 README 的[项目结构](../README.md#项目结构)；示例 agent `examples/agents/finance` 在这一层旁边 | 工作区 glob `lyteboat/*/*`（`pnpm-workspace.yaml`）；示例 agent 是 `examples/*/*` | `workspace:*` | 不适用 |
 
@@ -109,6 +109,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 
 - lyteboat 必须**改它的实现**。只是配置它，或用 provider 替换它，都不算。
 - 它是**每个 lyteboat 组合启动都离不开的能力**。llm、skill 与 tools、sessions 一样属于这一类。
+- 它是上游的 **bundle**，lyteboat 作为发行版要改它的默认组合（`policy`，§3.2）。dsh-base 属于这一类。
 
 原样层要定制时，只走配置、provider、bundle 与 patch 层或 lyteboat 插件，永远不改源码。晋升的做法见 §5。
 
@@ -116,7 +117,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 
 同名接管靠四个机制配合。
 
-**机制一：`overrides`**（`pnpm-workspace.yaml`）把 14 个内核包名都改写成 `workspace:*`，而且作用于整张依赖图。
+**机制一：`overrides`**（`pnpm-workspace.yaml`）把 16 个内核包名都改写成 `workspace:*`，而且作用于整张依赖图。
 
 为什么必须是 override，而不是 lyteboat 自己在 dependencies 里写 `workspace:*`？因为引用内核的不只是 lyteboat 的包：
 
@@ -131,7 +132,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 
 **机制三：公开提升**（`pnpm-workspace.yaml`）。`publicHoistPattern` 把 `@deepseek-ai/*` 和 `@lyteboat/*` 提升到根 `node_modules`，原因有两个：
 
-- agent 目录（`lyteboat try`、`serve`、`eval`、`inspect`、`studio` 的 `--agents`）里的行用裸包名，从 agent 目录向上查找；
+- agent 目录（`lyteboat headless`、`serve`、`eval`、`inspect`、`studio` 的 `--agents`）里的行用裸包名，从 agent 目录向上查找；
 - 组合测试从仓库根解析行。
 
 pnpm 的隔离布局下，只有提升到根的包才能被这两种查找找到。所有包都被机制二钉在同一个版本，所以提升不会产生版本冲突。
@@ -153,7 +154,7 @@ pnpm 的隔离布局下，只有提升到根的包才能被这两种查找找到
 $ readlink node_modules/@deepseek-ai/dsh-llm node_modules/@deepseek-ai/dsh-agent-loop
 ../../dsh/llm/llm
 ../../dsh/core/agent-loop
-$ ls node_modules/.pnpm | grep -cE '^@deepseek-ai\+dsh-(llm|session|system-prompt|tools|skill|agent|agent-loop|session-projection|session-persistence|session-persistence-jsonl|compaction|compaction-basic|agent-loop-testkit|api-session-controller)@'
+$ ls node_modules/.pnpm | grep -cE '^@deepseek-ai\+dsh-(llm|session|system-prompt|tools|skill|agent|agent-loop|session-projection|session-persistence|session-persistence-jsonl|compaction|compaction-basic|agent-loop-testkit|api-session-controller|base|headless)@'
 0
 ```
 
@@ -176,7 +177,7 @@ $ xargs -a $SCRATCH/kernel-links.txt -n1 readlink -f | grep -vc "^$PWD/dsh/"
 
 | | 社区插件（不认识 lyteboat） | lyteboat 自己的插件 | 想用 lyteboat 扩展的第三方插件 |
 |---|---|---|---|
-| 怎么写 | 按官方 dsh 写，peer 依赖 `@deepseek-ai/*` | 工作区包，内核 peer 写 `workspace:*`；类型直接来自 `dsh/` 源码 | 同社区插件，另加 `inject: ['lyteboatDistro']`；agent-loop 两个扩展的类型从 `@lyteboat/contracts` 引，`LyteboatAppendOptions` 从 `@deepseek-ai/dsh-session` 引（`dsh-compat/COMPAT.md` §4） |
+| 怎么写 | 按官方 dsh 写，peer 依赖 `@deepseek-ai/*` | 工作区包，内核 peer 写 `workspace:*`；类型直接来自 `dsh/` 源码 | 同社区插件，另加 `inject: ['lyteboatDistro']`；agent-loop 两个扩展的类型从 `@lyteboat/contracts` 引，`LyteboatAppendOptions` 从 `@deepseek-ai/dsh-session` 引，`headless-hooks` 的三个计划类型从 `@deepseek-ai/dsh-headless` 引（`dsh-compat/COMPAT.md` §4） |
 | 自动得到 lyteboat 的内部改进（fix、redesign、compat） | 是 | 是 | 是 |
 | 能用追加能力（extend） | 不用，也不受影响 | 能 | 能 |
 | 放到官方 dsh 上 | 照常工作 | 不能（本来就是 lyteboat 的一部分） | 停在 `pending (waiting for service: lyteboatDistro)`，不会半工作 |
@@ -223,7 +224,7 @@ $ xargs -a $SCRATCH/kernel-links.txt -n1 readlink -f | grep -vc "^$PWD/dsh/"
 ```text
 dist(import): dsh-v0.2.0-rc.2 kernel
 
-The 14 kernel packages of deepseek-ai/deepseek-harness at dsh-v0.2.0-rc.2, as
+The 16 kernel packages of deepseek-ai/deepseek-harness at dsh-v0.2.0-rc.2, as
 scripts/dist/import-upstream.ts writes them: every file byte for byte, except
 package.json (the manifest npm publishes for this version) and the tsconfig
 files (references limited to kernel packages and the package's own Node-face
@@ -297,12 +298,14 @@ flowchart TD
   Q4 -->|"只增加或放宽"| EX["extend<br/>Dist-Extension 并登记"]
   Q4 -->|"要收窄或删已有的"| Q5{"为接住上游已删、<br/>社区还在用的接口？"}
   Q5 -->|"是"| CP["compat<br/>Dist-Exit，限期"]
-  Q5 -->|"否"| NO["不做<br/>违反发行版契约"]
+  Q5 -->|"否"| Q6{"只关掉上游默认组合里<br/>把数据送出本机的行？"}
+  Q6 -->|"是"| PL["policy<br/>Dist-Policy，只改 cordis.patch.yml"]
+  Q6 -->|"否"| NO["不做<br/>违反发行版契约"]
   TMP["临时改动<br/>下次同步前必须删"] --> DR["drop<br/>Dist-Exit"]
   PKG["打包或装置适配<br/>只改注释"] --> BD["build<br/>无额外 trailer"]
 ```
 
-### 3.2 七类改动
+### 3.2 八类改动
 
 机器可读的定义是 `scripts/dist/delta-report.ts` 的 `CHANGE_CLASSES`。
 
@@ -314,18 +317,20 @@ flowchart TD
 | `redesign` | 内部重写：几行钩子加一个 `src/lyteboat/` 模块 | 无，由 G1–G6 证明 | 保留；上游对被替换逻辑的改动要移植过来 | `Dist-Tests` | — |
 | `compat` | 为还在用的社区插件保留上游已删的接口 | 追加（旧接口） | 到期删除 | `Dist-Exit` | 在 `COMPAT.md` §5 与 `Dist-Exit` 写到期版本，即某个 dsh release |
 | `drop` | 临时改动（生成物、试验开关） | 无 | 下次同步前必须删除 | `Dist-Exit` | — |
+| `policy` | 发行版策略：关掉上游 bundle 默认组合里把数据送出本机的行，只改 `cordis.patch.yml`，不改代码 | 无（行为差异在 `COMPAT.md` §8 登记） | 永久保留；上游改了那几行，合并时保留关闭 | `Dist-Policy`（关掉什么、为什么） | `COMPAT.md` §8 同步更新 |
 | `build` | 打包与装置适配、内核里只改注释 | 无 | — | 无 | — |
 
 适配工作几乎都在内核外（根配置、`dsh-compat/tests/upstream-harness`），所以 `build` 类很少碰 `dsh/`。`COMPAT.md` §5 没有列出任何 `compat` 改动。
 
 ### 3.3 trailer：哪些是机器强制，哪些是惯例
 
-`pnpm run dist:delta -- --check`（`scripts/dist/delta-report.ts` `violations`）强制以下四条：
+`pnpm run dist:delta -- --check`（`scripts/dist/delta-report.ts` `violations`）强制以下五条：
 
 1. 第一个导入之后，每个碰内核包目录的**非合并**提交都带 `Dist-Change`，而且是已知类别（`readCommits` 用 `--no-merges`）。导入提交本身跳过。
 2. 该类别要求的 trailer 存在。
 3. 每个 `Dist-Extension` 的 id 都在 `extensions.yml` 里。
-4. `extensions.yml` 里每个 id 至少被一个提交点名，所以不会有从未落地的登记。它读的范围是"第一个导入..HEAD"（`main`），点名过某条登记的提交永远在范围内；代码删掉而登记还留着的情况由 G1 的 stale 规则拦住（§4.2）。
+4. `policy` 提交只改内核包里的 `cordis.patch.yml`（`scripts/dist/delta-report.spec.ts`）。
+5. `extensions.yml` 里每个 id 至少被一个提交点名，所以不会有从未落地的登记。它读的范围是"第一个导入..HEAD"（`main`），点名过某条登记的提交永远在范围内；代码删掉而登记还留着的情况由 G1 的 stale 规则拦住（§4.2）。
 
 它**不检查**的：
 
@@ -363,11 +368,12 @@ Dist-Tests: dsh/<group>/<pkg>/tests/lyteboat/<name>.spec.ts
 | trailer | 回答的问题 | 谁读它 |
 |---|---|---|
 | `Dist-Change` | 这是哪类改动，同步时怎么处理？ | `delta-report` 按类统计与校验 |
-| `Dist-Extension` | 它对应登记表里哪一条？ | `delta-report` 双向校验（上面第 3、4 条） |
+| `Dist-Extension` | 它对应登记表里哪一条？ | `delta-report` 双向校验（上面第 3、5 条） |
 | `Dist-Contract` | 契约上多了什么？ | 人；机器侧由 G1 按登记表比对 |
 | `Dist-Exit` | 上游做了什么之后它就该删？ | 同步的人，以及报告的 exit 列 |
 | `Dist-Upstream` | 回馈上游了吗？ | 人；dsh 不接受外部 PR（`up:CONTRIBUTING.md:9`："we cannot accept external pull requests at the moment"），所以写明原因 |
 | `Dist-Tests` | 什么测试证明它？ | 人；该测试跑在 G2 项目里 |
+| `Dist-Policy` | 这条发行版策略关掉了什么，为什么？ | `delta-report` 校验存在；人对照 `COMPAT.md` §8 |
 
 一个提交若既碰内核又碰内核外的文件，而内核里那部分只是跟着改注释（例如登记表的路径），就拆成两个提交：内核外的改动一个，内核里的注释改动一个 `Dist-Change: build`。否则 `--check` 会把整件改动当成未分类的内核提交拒绝。
 
@@ -479,7 +485,7 @@ G1 stale registration: <extension> lists <key>, which does not differ from upstr
 | `exit` | 让它变得多余的上游变化 | 同步的人、差量报告 | 扩展默认是**临时**的；这是删除它的触发条件 |
 | `tests` | 证明它的测试 | 人；这些测试跑在 G2 项目里 | 追加的行为也要有测试兜住 |
 
-四条登记：
+五条登记：
 
 | id | 包 · kind | 插件看到什么 | 退出条件 | 测试 | lyteboat 里的使用者 |
 |---|---|---|---|---|---|
@@ -487,17 +493,18 @@ G1 stale registration: <extension> lists <key>, which does not differ from upstr
 | `agent-loop-pre-assemble` | `@deepseek-ai/dsh-agent-loop` · `event` | `lyteboat/pre-assemble` waterfall：`lyteboat/intake` 放行之后、装配提示词之前派发，所以技能路由和工具激活能影响同一步的请求 | 上游在 `systemPrompt.assemble` 之前派发一个还能改这一步提示词与工具集的事件 | `dsh/core/agent-loop/tests/lyteboat/pre-assemble.spec.ts` | `@lyteboat/tool-policy`、`@lyteboat/skill-router` |
 | `session-append-ignorable` | `@deepseek-ai/dsh-session` · `api-option` | `Session.append(type, data, { ignorable: true })` 给本构建不认识的非 surface 类型写 `ignorable: true`，读者不认识这个类型就跳过它，而不是拒绝整份日志；本构建认识的类型（含 surface 类型）要求标记一律拒绝 | 上游给 `Session.append`（或别的写入口）一个设置 `SessionEvent.ignorable` 的办法 | `dsh/core/session/tests/lyteboat/append-ignorable.spec.ts`、`dsh/session/session-persistence/tests/lyteboat/reopen-ignorable.spec.ts` | `@lyteboat/aux-llm`（`lyteboat/aux-llm-call` 记录） |
 | `session-controller-prompt-source` | `@deepseek-ai/dsh-api-session-controller` · `api-option` | `SessionPromptRequest.sourceFields`：`prompt` 把调用方的字段并进它追加的用户消息的 source，与控制器自己写的 `kind`、`rpcId`、`clientTimeZone` 并列；设置这三个字段的请求以 `gateway/bad-request` 拒绝，消息不到 agent。Typert 的 Host face 和 Remote client 认这个字段 | 上游让 prompt 能把调用方的字段带到用户消息的 source 上 | `dsh/api/session-controller/tests/lyteboat/prompt-source.host.spec.ts` | `@lyteboat/request-context` 的 `sourceFields()`（`/chat` 和 `lyteboat eval` 经它送请求） |
+| `headless-hooks` | `@deepseek-ai/dsh-headless` · `event` | 一次性运行器在一次运行周围派发三个 waterfall，各带运行器在那一点的计划：`lyteboat/headless-start`（工作目录、新会话记下且续写的会话必须沿用的 agent preset、每个 Agent 的 setup、新会话的 seed），在创建或接管 Agent 之前；`lyteboat/headless-submit`（任务怎么交给 Agent），在提交任务之前；`lyteboat/headless-report`（stdout 输出的回答），在打印回答之前。监听器改计划并调 `next()`，运行器照 waterfall 留下的计划执行；没有监听器时就是官方运行器。续写时比对日志里的 preset 与计划的 | 上游的一次性运行器让插件能组合并安放它创建的 Agent、提交任务、决定打印什么 | `dsh/bundle/headless/tests/lyteboat/headless-hooks.spec.ts` | `@lyteboat/headless` 的 `lyteboat-headless` 行（`lyteboat headless --agent`） |
 
 ### 4.4 `lyteboatDistro`：把登记表带到运行时
 
 - **为什么需要它。** 装好的构建里没有 `extensions.yml` 和 `dsh.upstream.json`。插件想知道自己是否跑在 lyteboat 上、某个扩展在不在，需要运行时的事实。
-- **怎么生成。** `scripts/dist/gen-distro-manifest.ts` 把两个文件编译成 `lyteboat/plugins/distro/src/distro-manifest.ts`：`DSH_BASE = '0.2.0-rc.2'`、`DISTRO_EXTENSIONS` 四条（id、package、kind）。
+- **怎么生成。** `scripts/dist/gen-distro-manifest.ts` 把两个文件编译成 `lyteboat/plugins/distro/src/distro-manifest.ts`：`DSH_BASE = '0.2.0-rc.2'`、`DISTRO_EXTENSIONS` 五条（id、package、kind）。
 - **服务。** `@lyteboat/distro` 发布 `ctx.lyteboatDistro`，提供 `dsh`、`extensions`、`has(id)`（`lyteboat/plugins/distro/src/index.ts` `LyteboatDistroService`）。
-- **挂载位置。** host bundle 把 `lyteboat-distro` 行放在 lyteboat 所有服务行的第一个（`lyteboat/bundles/host/cordis.patch.yml`）。
+- **挂载位置。** 业务底座 `@lyteboat/base` 把 `lyteboat-distro` 行放在 lyteboat 所有服务行的第一个（`lyteboat/bundles/base/cordis.patch.yml`）。
 - **防过期。** `pnpm run lint` 带 `--check` 跑一次生成器，产物过期就失败（`package.json`）。
-- **谁 inject 它。** lyteboat 里用到 `agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable` 的插件都 inject 它：`@lyteboat/tool-policy`、`@lyteboat/skill-router`、`@lyteboat/intake-guard`、`@lyteboat/aux-llm`（各自 `src/index.ts` 的 `static inject`）。放到官方 dsh 上，它们与第三方插件一样停在等待状态。`@lyteboat/chat-api` 经 `sessionController.prompt` 的 `sourceFields` 用 `session-controller-prompt-source`，没有 inject 它；它只挂在 lyteboat 的 serve 组合里（`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService.inject`）。`@lyteboat/eval-runner` 也一样，只挂在 eval 组合里（`lyteboat/plugins/eval-runner/src/index.ts` `EvalRunnerService.inject`）。
+- **谁 inject 它。** lyteboat 里用到 `agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable` 的插件都 inject 它：`@lyteboat/tool-policy`、`@lyteboat/skill-router`、`@lyteboat/intake-guard`、`@lyteboat/aux-llm`（各自 `src/index.ts` 的 `static inject`）；`@lyteboat/headless` 的 `lyteboat-headless` 行听 `headless-hooks` 的三个 waterfall，也 inject 它（`lyteboat/bundles/headless/src/index.ts` `LyteboatHeadlessHooks.inject`）。放到官方 dsh 上，它们与第三方插件一样停在等待状态。`@lyteboat/chat-api` 经 `sessionController.prompt` 的 `sourceFields` 用 `session-controller-prompt-source`，没有 inject 它；它只挂在 lyteboat 的 serve 组合里（`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService.inject`）。`@lyteboat/eval-runner` 也一样，只挂在 eval 组合里（`lyteboat/plugins/eval-runner/src/index.ts` `EvalRunnerService.inject`）。
 
-**例子：按第三方写法的插件。** 仓库里的 fixture `lyteboat/bundles/try/tests/fixtures/plugins/distro-aware.mjs`：
+**例子：按第三方写法的插件。** 仓库里的 fixture `lyteboat/bundles/headless/tests/fixtures/plugins/distro-aware.mjs`：
 
 ```js
 export const name = 'example-distro-aware'
@@ -512,17 +519,17 @@ export function apply(ctx) {
 }
 ```
 
-**[实跑]**（临时 `LYTEBOAT_HOME`；这条路不请求模型，所以不需要 key）：
+**[实跑]**（临时 `LYTEBOAT_HOME`；这条路不请求模型，所以不需要 key；`--agent` 让 launcher 启动业务底座的 `headless-agent` profile，`minimal` 是同一个 bundle 的夹具 agent，只有人设）：
 
 ```console
-$ node lyteboat/apps/cli/lib/bin.js try --plugin lyteboat/bundles/try/tests/fixtures/plugins/distro-aware.mjs "hello"
-lyteboat on dsh 0.2.0-rc.2: agent-loop-intake, agent-loop-pre-assemble, session-append-ignorable, session-controller-prompt-source
+$ node lyteboat/apps/cli/lib/bin.js headless --plugin lyteboat/bundles/headless/tests/fixtures/plugins/distro-aware.mjs --agents lyteboat/bundles/headless/tests/fixtures/agents --agent minimal "hello"
 lyteboat: session session-…
+lyteboat on dsh 0.2.0-rc.2: agent-loop-intake, agent-loop-pre-assemble, session-append-ignorable, session-controller-prompt-source, headless-hooks
 ```
 
-退出码 0。`lyteboat/intake` 的 `reply` 不发模型请求；作为对照，不带插件的 `try "hello"` 发一次主循环请求（业务底座关掉了会话标题的旁路请求）。stderr 那一行是会话 id，供 `--session-id` 续写。`lyteboat/bundles/try/tests/distro.composite.ts` 断言这两点。
+退出码 0。`lyteboat/intake` 的 `reply` 不发模型请求；作为对照，不带插件的同一条命令发一次主循环请求（业务底座关掉了会话标题的旁路请求）。stderr 那一行是会话 id，供 `--session-id` 续写。`lyteboat/bundles/headless/tests/distro.composite.ts` 断言这两点。
 
-放到官方 dsh 上，同一个插件没有 `lyteboatDistro` 可注入，cordis 让它停在 `pending (waiting for service: lyteboatDistro)`，而不是监听一个没人派发的事件（`dsh-compat/COMPAT.md` §4）。
+放到官方 dsh 上，同一个插件没有 `lyteboatDistro` 可注入，cordis 让它停在 `pending (waiting for service: lyteboatDistro)`，而不是监听一个没人派发的事件（`dsh-compat/COMPAT.md` §4）。lyteboat 的原生 profile 没有 `lyteboat-distro` 行，不带 `--agent` 的 `lyteboat headless` 上它也停在这里。
 
 ### 4.5 一个扩展的生命周期
 
@@ -544,7 +551,7 @@ stateDiagram-v2
 
 - **进内核**：一个 `extend` 提交同时带上游文件的钩子行、`src/lyteboat/` 模块、`tests/lyteboat/` 测试和登记条目；lyteboat 插件要用的新类型从 `@lyteboat/contracts` 再导出（`lyteboat/core/contracts/src/index.ts`），只放宽已有方法签名的扩展不必再导出。`delta-report --check` 校验 trailer 与登记，G1 放行登记的键，`gen-distro-manifest --check` 保证 `ctx.lyteboatDistro.has(<id>)` 为真。
 - **跨同步**：三方合并保留它；上游改了钩子附近的代码时，冲突就落在那几行上。
-- **退出**：上游提供了退出条件描述的能力，lyteboat 插件改听上游事件或改用上游接口，在那次同步里删掉钩子、模块、测试和登记条目。漏删登记，G1 的 stale 规则失败；只写登记而没有提交点名，`delta-report` 第 4 条失败。
+- **退出**：上游提供了退出条件描述的能力，lyteboat 插件改听上游事件或改用上游接口，在那次同步里删掉钩子、模块、测试和登记条目。漏删登记，G1 的 stale 规则失败；只写登记而没有提交点名，`delta-report` 第 5 条失败。
 
 ### 4.6 不承诺的东西
 
@@ -565,7 +572,8 @@ stateDiagram-v2
 `CLAUDE.md`「Architecture boundaries」的 **Promotion** 规定，npm 上的 dsh 包在以下任一情况下进入内核：
 
 - lyteboat 必须改它的实现（不是配置它，也不是用 provider 替换它）；
-- 它是每个 lyteboat 组合启动都需要的能力。
+- 它是每个 lyteboat 组合启动都需要的能力；
+- 它是上游的 bundle，lyteboat 作为发行版要改它的默认组合（`policy`，§3.2）。`dsh-base` 因此进了内核：它默认打开的三项上传在 lyteboat 里都关掉（`COMPAT.md` §8）。
 
 进了内核，它就受 G1–G3 管；发布 Typert 文件的还受 typert 闸门管（§5.3）。
 
@@ -583,7 +591,7 @@ stateDiagram-v2
 8. 若它导出 `./typert` 或 `./remote`，确认 `lib/typert.*` 随导入进来了，并跑 `pnpm run dist:overlay <checkout> typert`。若它在清单里声明了 `dsh.client`（有浏览器面），确认 `lib/client.js` 和 `lib/types/client/` 随导入进来了，见 §5.4。
 9. `pnpm run dist:snapshot <checkout>` 重写快照。同版本重写时它不打印差异，所以用 `git diff --stat dsh-compat/contract/` 确认只多出新包的几节，没有删除。
 10. 若 G2 需要新的环境适配，加进 `dsh-compat/tests/upstream-harness/README.md` 的表格。
-11. `pnpm install` 后确认 store 里没有它的 npm 副本：`ls node_modules/.pnpm | grep '^@deepseek-ai+<名字>@'` 应为空。再确认它的依赖没有多出第二份：新包成了自己的 importer，pnpm 按它声明的 peer 解析它依赖的 peer；它的依赖若经 peer 连到它自己没声明的内核包，pnpm 就只为它另装一份那个依赖，从一份导入的错误类对另一份做 `instanceof` 会失败。这时在 `pnpm-workspace.yaml` 的 `packageExtensions` 里给它补上这些 peer（session-controller 补了 dsh-compaction、dsh-system-prompt、dsh-tools）。
+11. `pnpm install` 后确认 store 里没有它的 npm 副本：`ls node_modules/.pnpm | grep '^@deepseek-ai+<名字>@'` 应为空。再确认它的依赖没有多出第二份：新包成了自己的 importer，pnpm 按它声明的 peer 解析它依赖的 peer；它的依赖若经 peer 连到它自己没声明的内核包，pnpm 就只为它另装一份那个依赖，从一份导入的错误类对另一份做 `instanceof` 会失败。这时在 `pnpm-workspace.yaml` 的 `packageExtensions` 里给它补上这些 peer（session-controller 补了 dsh-compaction、dsh-system-prompt、dsh-tools；dsh-base 和 dsh-headless 补了这三个和 dsh-session-persistence）。
 12. 跑全部闸门，包括 G3：依赖内核的包集合变了，G3 的基线缓存键随之改变，会自动建一份新基线（§6.4）。
 
 ### 5.3 Typert 文件：为什么随导入带进来，以及怎么保证它不过期
@@ -605,7 +613,7 @@ stateDiagram-v2
 3. 两者都不满足时，构建抛错，提示去跑 `pnpm run dist:overlay <checkout> typert --write`。
 4. `--write` 在上游 checkout 里用 lyteboat 的源码重新生成文件，并把摘要写进 `dsh/typert.json`（`scripts/dist/overlay.ts` `typert`）。
 
-14 个内核包里发布 Typert 文件的有两个：dsh-llm 和 dsh-api-session-controller，各 4 个（`lib/typert.host.*`、`lib/typert.remote-client.*`）。dsh-llm 的源码和导入的一样，它的 Typert 文件就是发布的那份。session-controller 不一样：它的源码带着扩展 `session-controller-prompt-source` 的钩子（`commands.ts`、`types.ts`、`src/lyteboat/prompt-source.ts`），Host face 还引用扩展 `session-append-ignorable` 放宽了的 `Session.append`，所以上游生成器从 lyteboat 源码生成的 `lib/typert.host.js` 和 `lib/typert.remote-client.js` 都与发布的不同。晋升之后，以及每次导入换掉了这两个文件的同步之后，都用 `--write` 重新生成，以 `Dist-Change: build` 单独提交（§7 第 6、10 步），`dsh/typert.json` 记下两个包的摘要。
+16 个内核包里发布 Typert 文件的有两个：dsh-llm 和 dsh-api-session-controller，各 4 个（`lib/typert.host.*`、`lib/typert.remote-client.*`）。dsh-llm 的源码和导入的一样，它的 Typert 文件就是发布的那份。session-controller 不一样：它的源码带着扩展 `session-controller-prompt-source` 的钩子（`commands.ts`、`types.ts`、`src/lyteboat/prompt-source.ts`），Host face 还引用扩展 `session-append-ignorable` 放宽了的 `Session.append`，所以上游生成器从 lyteboat 源码生成的 `lib/typert.host.js` 和 `lib/typert.remote-client.js` 都与发布的不同。晋升之后，以及每次导入换掉了这两个文件的同步之后，都用 `--write` 重新生成，以 `Dist-Change: build` 单独提交（§7 第 6、10 步），`dsh/typert.json` 记下两个包的摘要。
 
 第 2 条的摘要只算包自己的 `src/`：别的内核包改了它引用的类型，构建察觉不到，只有 `dist:overlay … typert` 能发现。
 
@@ -649,7 +657,7 @@ CI 用默认的浅克隆（`.github/workflows/ci.yml`），浅克隆里找不到
 
 排除的 3 个文件（`dsh-compat/tests/upstream-harness/harness.ts` 的 `UPSTREAM_TEST_EXCLUDES`，`vitest.config.ts` 引用）测的都是上游的仓库脚本，不是内核包本身：`gen-tool-catalog.spec.ts`、`gen-persistence-catalog.spec.ts`、`verify-export-jsdoc.spec.ts`。另外，有浏览器面的内核包的 `tests/**/*.client.spec.ts` 也不在 G2 里（§5.4），session-controller 的浏览器面测试就是这样。
 
-G2 的 glob（`vitest.config.ts`：`dsh/*/*/tests/**/*.spec.ts`）也收 lyteboat 放在内核包 `tests/lyteboat/` 下的测试：agent-loop 的 `intake.spec.ts`、`pre-assemble.spec.ts`，session 的 `append-ignorable.spec.ts`，session-persistence 的 `reopen-ignorable.spec.ts`，session-controller 的 `prompt-source.host.spec.ts`。它们和上游测试跑在同一个装置、同一个不变量宿主下。
+G2 的 glob（`vitest.config.ts`：`dsh/*/*/tests/**/*.spec.ts`）也收 lyteboat 放在内核包 `tests/lyteboat/` 下的测试：agent-loop 的 `intake.spec.ts`、`pre-assemble.spec.ts`，session 的 `append-ignorable.spec.ts`，session-persistence 的 `reopen-ignorable.spec.ts`，session-controller 的 `prompt-source.host.spec.ts`，dsh-headless 的 `headless-hooks.spec.ts`。它们和上游测试跑在同一个装置、同一个不变量宿主下。
 
 G2 只收 `*.spec.ts`。内核包的 `tests/` 里另有 4 个非 spec 文件不在 G2 里：`dsh/core/agent-loop/tests/request-cache.e2e.ts`，`dsh/session/session-persistence-jsonl/tests/` 下的 `built-migration-worker.e2e.ts`、`lease.two-process.e2e.ts`、`catalog-migration.perf.ts`（**[实跑]** `find dsh -path '*/tests/*' \( -name '*.e2e.ts' -o -name '*.perf.ts' \)`）。
 
@@ -718,7 +726,7 @@ typert vs dsh 0.2.0-rc.2: @deepseek-ai/dsh-llm, @deepseek-ai/dsh-api-session-con
 
 树必须在仓库外，否则 Node 向上查找会退回到工作区的 `node_modules`。两棵树只差内核，所以任何差异都是内核造成的。
 
-**跑什么。** 两边都用官方 CLI `dsh headless` 对着上游的 `@deepseek-ai/dsh-llm-mock-server` 运行（`dsh-compat/tests/support/official-cli.ts`）。七个场景（`dsh-compat/tests/scenarios/scenarios.ts` `G4_SCENARIOS`），每个走内核的一条不同路径：
+**跑什么。** 两边都用官方 CLI `dsh headless` 对着上游的 `@deepseek-ai/dsh-llm-mock-server` 运行（`dsh-compat/tests/support/official-cli.ts`）。G4–G6 的每次运行（`runScenario`）都给两棵树写同一份 overlay，关掉 `session-title-llm` 和 `COMPAT.md` §8 的三行（`QUIET_PATCH`、`DISTRIBUTION_POLICY_PATCH`）：比的是内核，不是默认组合；不然只有原版日志里有 `session-log-deepseek` 的投递记录。七个场景（`dsh-compat/tests/scenarios/scenarios.ts` `G4_SCENARIOS`），每个走内核的一条不同路径：
 
 | 场景 | mock 序列 | 走的内核路径 |
 |---|---|---|
@@ -827,7 +835,7 @@ typert vs dsh 0.2.0-rc.2: @deepseek-ai/dsh-llm, @deepseek-ai/dsh-api-session-con
 
 ```sh
 export LYTEBOAT_HOME=$(mktemp -d) DSH_HOME=$(mktemp -d) DSH_TELEMETRY_DISABLED=1
-node lyteboat/apps/cli/lib/bin.js config dump --profile try > $SCRATCH/dump.yml 2> $SCRATCH/dump.err
+node lyteboat/apps/cli/lib/bin.js config dump --profile headless-agent > $SCRATCH/dump.yml 2> $SCRATCH/dump.err
 ```
 
 ---
@@ -874,7 +882,7 @@ node lyteboat/apps/cli/lib/bin.js config dump --profile try > $SCRATCH/dump.yml 
    - 金丝雀：跟踪版本变了就按 §6.7 重选；在官方新版本上坏了的替换掉；
    - `COMPAT.md` 里写着跟踪版本的地方、README、`CLAUDE.md` 的 Stack 一行、本文；
    - 从 dsh 改编来的文件保留 `Adapted from deepseek-ai/deepseek-harness` 文件头，`THIRD_PARTY_NOTICES.md` 按这个文件头列出它们。
-10. **验证准入，提交。** 用构建好的 launcher 跑 `node lyteboat/apps/cli/lib/bin.js config dump --profile try 2> $SCRATCH/dump.err`，`dump.err` 里不能有 `disabling profile plugin` 或 `skipping profile bundle`（§8.2）。stdout 里本来就有一批 `disabled: true`：dsh-base 的 `tool-plugin-manager`、`skill-badge`、`tool-ralph`，`@lyteboat/try` 关掉的 `hmr`，`@lyteboat/host` 关掉的 `session-telemetry-otel`，以及 `@lyteboat/business-base` 关掉的行；它们是配置，与准入无关。然后提交合并，标题 `dist(sync): track dsh-v<新版本>`，正文列出每道闸门的数字。合并提交不受 `delta-report --check` 检查，用 §3.3 的 `git merge-tree` 办法确认合并没有夹带内核包目录下的改动。第 6 步重新生成的 Typert 文件和 `dsh/typert.json` 紧接着以 `Dist-Change: build` 单独提交；在合并提交和它之间，完整克隆的构建会停在 Typert 校验上。
+10. **验证准入，提交。** 用构建好的 launcher 跑 `node lyteboat/apps/cli/lib/bin.js config dump --profile headless-agent 2> $SCRATCH/dump.err`，`dump.err` 里不能有 `disabling profile plugin` 或 `skipping profile bundle`（§8.2）。stdout 里本来就有一批 `disabled: true`：dsh-base 的 `tool-plugin-manager`、`skill-badge`、`tool-ralph`，以及它的 `policy` 关掉的 `session-log-deepseek`、`plugin-package-inventory-deepseek`、`session-telemetry-otel`，dsh-headless 关掉的 `hmr`，`@lyteboat/headless` 关掉的 `headless-startup`，以及 `@lyteboat/base` 关掉的行；它们是配置，与准入无关。然后提交合并，标题 `dist(sync): track dsh-v<新版本>`，正文列出每道闸门的数字。合并提交不受 `delta-report --check` 检查，用 §3.3 的 `git merge-tree` 办法确认合并没有夹带内核包目录下的改动。第 6 步重新生成的 Typert 文件和 `dsh/typert.json` 紧接着以 `Dist-Change: build` 单独提交；在合并提交和它之间，完整克隆的构建会停在 Typert 校验上。
 
 ---
 
@@ -1000,7 +1008,7 @@ lyteboat-next 与 lyteboat-stable 的规则见 [dsh-compat/COMPAT.md §7](../dsh
 
 ```console
 $ node lyteboat/apps/cli/lib/bin.js release --agents ./examples/agents --agent finance
-lyteboat release: finance 1.0.0 (sha256:97d6bed7…) released; lock: <仓库>/examples/agents/finance/agent.release.json; replay: <LYTEBOAT_HOME>/evals/<运行>/report.md
+lyteboat release: finance 1.0.0 (sha256:a8261280…) released; lock: <仓库>/examples/agents/finance/agent.release.json; replay: <LYTEBOAT_HOME>/evals/<运行>/report.md
 ```
 
 退出码 0，这一行写在 stdout。拒绝时退出 1，stderr 是 `lyteboat release: refused at <步骤>: <原因>`，不写锁（`lyteboat/bundles/eval/src/index.ts`）：录完基线之后 agent 目录又改过（源码、清单或构建出的 `lib/`），摘要就不再是基线记下的那个，在 stamps 这一步被拒，例如 `refused at stamps: the baseline ran finance 1.0.0 (sha256:<基线的摘要>…), but the agent is now finance 1.0.0 (sha256:<现在的摘要>…); record the baseline again`；照 [03-agent-development.md](03-agent-development.md) §4.14 重录基线之后放行。锁的 `files` 是摘要覆盖的每一个文件（`agent.yml`、`package.json`、`tsconfig.json`、`assets/`、`src/`，以及构建出的 `lib/`；有 `agent.cordis.yml` 的 agent 还有它），finance 现在是 98 个，其中 `lib/` 下 60 个；`baseline` 记下基线的开始时间，用例、轮次、检查的个数（6、7、30）和 `results.jsonl` 的哈希。摘要随本机构建出的 `lib/` 而定。示例 agent 不提交锁。
@@ -1068,7 +1076,7 @@ lyteboat release: finance 1.0.0 (sha256:97d6bed7…) released; lock: <仓库>/ex
 2. 在 `tests/lyteboat/<name>.spec.ts` 写测试。扩展涉及持久化时，在持久化层所在的包里另写一个"存盘再读回"的测试（如 `reopen-ignorable.spec.ts`）。
 3. `pnpm run build && pnpm run contract:check`：G1 列出的 `unregistered addition` / `unregistered change` 就是要登记的键。
 4. 在 `dsh-compat/contract/extensions.yml` 加条目：`id`、`package`、`kind`、`surface`、`contract`（上一步的键或它们的前缀）、`exit`、`tests`。再跑 G1，应当变成 `N registered difference(s), 0 failure(s)`。
-5. `node --import tsx scripts/dist/gen-distro-manifest.ts` 重新生成 distro manifest；断言完整扩展清单的 `lyteboat/bundles/try/tests/distro.composite.ts` 跟着改；`pnpm run lint` 确认不过期。
+5. `node --import tsx scripts/dist/gen-distro-manifest.ts` 重新生成 distro manifest；断言完整扩展清单的 `lyteboat/bundles/headless/tests/distro.composite.ts` 跟着改；`pnpm run lint` 确认不过期。
 6. lyteboat 插件要用这个扩展的新类型，从 `@lyteboat/contracts` 再导出（参照 `lyteboat/core/contracts/src/index.ts`）；用到扩展的插件 inject `lyteboatDistro`（§4.4）。
 7. 在 `COMPAT.md` §4 补一句人读说明（如需）。
 8. 提交带全 §3.3 的六个 trailer。

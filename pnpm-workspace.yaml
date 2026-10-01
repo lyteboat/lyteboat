@@ -28,6 +28,8 @@ overrides:
   "@deepseek-ai/dsh-compaction-basic": "workspace:*"
   "@deepseek-ai/dsh-agent-loop-testkit": "workspace:*"
   "@deepseek-ai/dsh-api-session-controller": "workspace:*"
+  "@deepseek-ai/dsh-base": "workspace:*"
+  "@deepseek-ai/dsh-headless": "workspace:*"
   # The bundler behind tsdown at the version upstream's lockfile resolves, so the kernel
   # bundles (lib/index.js, lib/worker.cjs) come out byte for byte as npm publishes them.
   "rolldown": "1.1.1"
@@ -37,15 +39,29 @@ overrides:
 # peers it does not declare itself (dsh-subagent wants dsh-system-prompt and dsh-tools;
 # dsh-session-query reaches dsh-compaction through dsh-session-format-catalog); without them
 # pnpm keeps second copies of dsh-subagent and dsh-session-query for this importer alone, and
-# an error class imported from one copy fails `instanceof` against the other.
+# an error class imported from one copy fails `instanceof` against the other. dsh-base's
+# dependencies (dsh-session-query, dsh-session-checkpoint-policy) reach dsh-session-persistence
+# the same way.
 packageExtensions:
   "@deepseek-ai/dsh-api-session-controller":
     peerDependencies:
       "@deepseek-ai/dsh-compaction": "0.2.0-rc.2"
       "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2"
       "@deepseek-ai/dsh-tools": "0.2.0-rc.2"
+  "@deepseek-ai/dsh-base":
+    peerDependencies:
+      "@deepseek-ai/dsh-compaction": "0.2.0-rc.2"
+      "@deepseek-ai/dsh-session-persistence": "0.2.0-rc.2"
+      "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2"
+      "@deepseek-ai/dsh-tools": "0.2.0-rc.2"
+  "@deepseek-ai/dsh-headless":
+    peerDependencies:
+      "@deepseek-ai/dsh-compaction": "0.2.0-rc.2"
+      "@deepseek-ai/dsh-session-persistence": "0.2.0-rc.2"
+      "@deepseek-ai/dsh-system-prompt": "0.2.0-rc.2"
+      "@deepseek-ai/dsh-tools": "0.2.0-rc.2"
 
-# An agent directory (`lyteboat try --agents`) names its rows by bare package name, and they
+# An agent directory (`lyteboat headless --agents`) names its rows by bare package name, and they
 # resolve from the agent directory upward; the composition tests resolve rows from the
 # workspace root. Under pnpm's isolated layout both only reach the dsh and lyteboat packages
 # at the root node_modules, so every @deepseek-ai and @lyteboat package is hoisted there. All
@@ -85,7 +101,6 @@ catalogs:
     "@deepseek-ai/dsh-agent-tool-presentation": "0.2.0-rc.2"
     "@deepseek-ai/dsh-app-boot": "0.2.0-rc.2"
     "@deepseek-ai/dsh-atomic-write": "0.2.0-rc.2"
-    "@deepseek-ai/dsh-base": "0.2.0-rc.2"
     "@deepseek-ai/dsh-brand": "0.2.0-rc.2"
     "@deepseek-ai/dsh-client-connection": "0.2.0-rc.2"
     "@deepseek-ai/dsh-client-file-upload": "0.2.0-rc.2"
@@ -105,7 +120,6 @@ catalogs:
     "@deepseek-ai/dsh-fs-local": "0.2.0-rc.2"
     "@deepseek-ai/dsh-goal": "0.2.0-rc.2"
     "@deepseek-ai/dsh-goal-round-driver": "0.2.0-rc.2"
-    "@deepseek-ai/dsh-headless": "0.2.0-rc.2"
     "@deepseek-ai/dsh-hmr": "0.2.0-rc.2"
     "@deepseek-ai/dsh-home-paths": "0.2.0-rc.2"
     "@deepseek-ai/dsh-hooks-claude-code": "0.2.0-rc.2"

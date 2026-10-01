@@ -1,6 +1,6 @@
 /**
- * The inspect composition in process (dsh-base, @lyteboat/host, the business
- * base, @lyteboat/inspect) over fixture agents: a mounted agent's tools, how
+ * The inspect composition in process (dsh-base, @lyteboat/base,
+ * @lyteboat/inspect) over fixture agents: a mounted agent's tools, how
  * each reaches the model, its skills with their checks, and its case files,
  * as text and as a {@link LyteboatInspectResult}; an agent that does not mount
  * exits 1 with the reason; no root holding the agent, or a missing flag, is a

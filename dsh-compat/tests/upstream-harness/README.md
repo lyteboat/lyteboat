@@ -15,7 +15,7 @@ Upstream runs these tests inside its monorepo, with a resolution facade that map
 | `@deepseek-ai/dsh-subagent/src/projection.ts` → `shims/subagent-projection.ts` | Three `session-controller` specs import an unexported source file of a package lyteboat installs from npm; the shim re-exports the same module from the published package's compiled `lib/types/projection.js`. |
 | TypeScript sources with standard decorators are lowered with `ts.transpileModule` before vite parses them | `dsh-llm`'s source uses standard decorators (`@Remote`), which vite's parser leaves in place; upstream's vitest runs the same lowering (`standardDecoratorPlugin` in its `vitest.shared.ts`). |
 | Each test file runs from a directory whose `packages/` links to `dsh/` (`setup.ts`) | Upstream's tests address fixtures from the repository root as `packages/<group>/<package>/…`. |
-| `fast-check` is a root devDependency | Upstream's property tests import it from the root manifest. |
+| `fast-check` and `js-yaml` are root devDependencies | Upstream's property tests import `fast-check`, and `dsh-base`'s bundle spec parses its patch with `js-yaml`, both from upstream's root manifest. |
 | `test-invariants.ts` globs companions under `dsh/` | Upstream's invariant host, otherwise unchanged (see below). |
 
 Excluded (`UPSTREAM_TEST_EXCLUDES` in `harness.ts`): the tests of upstream's repository tooling rather than the package, and the browser-face specs (`tests/**/*.client.spec.ts`) of every kernel package that carries its browser face as published (`scripts/dist/client-face.ts`); those run in upstream's DOM lane against the browser build, which lyteboat neither builds nor changes. The tooling tests are:
