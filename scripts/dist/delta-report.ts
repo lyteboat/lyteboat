@@ -12,7 +12,8 @@
  * - an `extend` commit names its `dsh-compat/contract/extensions.yml` entry in
  *   `Dist-Extension`, and every entry is named by at least one commit;
  * - `fix` carries `Dist-Tests`, `backport` carries `Dist-Upstream`, `compat`
- *   and `drop` carry `Dist-Exit`.
+ *   and `drop` carry `Dist-Exit`, `policy` carries `Dist-Policy`;
+ * - a `policy` commit edits only bundles' `cordis.patch.yml`.
  *
  *   node --import tsx scripts/dist/delta-report.ts [--check]
  *
@@ -22,6 +23,7 @@
  * @module scripts/dist/delta-report
  */
 
+import { pathToFileURL } from 'node:url'
 import { git, kernelPackages, repoRoot } from './kernel.ts'
 import { readExtensions } from './contract-check.ts'
 import { IMPORT_TRAILER, lastImport } from './import-upstream.ts'
@@ -34,10 +36,12 @@ export const CHANGE_CLASSES: Readonly<Record<string, string | undefined>> = {
   redesign: 'Dist-Tests',
   compat: 'Dist-Exit',
   drop: 'Dist-Exit',
+  policy: 'Dist-Policy',
   build: undefined,
 }
 
-interface DistCommit {
+/** One commit under `dsh/`, as the report reads it. */
+export interface DistCommit {
   sha: string
   date: string
   subject: string
@@ -62,7 +66,7 @@ function readCommits(range: string): DistCommit[] {
 }
 
 /** Commits under `dsh/` since the first import that break the discipline, one line each. */
-function violations(commits: readonly DistCommit[]): string[] {
+export function violations(commits: readonly DistCommit[]): string[] {
   const extensionIds = new Set(readExtensions().map(extension => extension.id))
   const named = new Set<string>()
   const found: string[] = []
@@ -76,6 +80,9 @@ function violations(commits: readonly DistCommit[]): string[] {
     }
     const required = CHANGE_CLASSES[changeClass]
     if (required !== undefined && !commit.trailers.has(required)) found.push(`${where}: a ${changeClass} change needs a ${required} trailer`)
+    // A distribution policy changes what upstream's default composition turns on, never code.
+    const outsidePatches = changeClass === 'policy' ? commit.files.filter(file => !file.endsWith('/cordis.patch.yml')) : []
+    if (outsidePatches.length > 0) found.push(`${where}: a policy change edits bundles' cordis.patch.yml only, not ${outsidePatches.join(', ')}`)
     for (const id of commit.trailers.get('Dist-Extension') ?? []) {
       if (!extensionIds.has(id)) found.push(`${where}: Dist-Extension ${id} is not in dsh-compat/contract/extensions.yml`)
       named.add(id)
@@ -149,4 +156,4 @@ function main(): void {
   if (found.length > 0) process.exitCode = 1
 }
 
-main()
+if (import.meta.url === pathToFileURL(process.argv[1] ?? '').href) main()

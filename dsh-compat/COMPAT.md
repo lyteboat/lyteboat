@@ -4,7 +4,7 @@ lyteboat is a distribution of [DeepSeek Harness](https://github.com/deepseek-ai/
 
 ## 1. Scope
 
-For the dsh release pinned in `dsh.upstream.json` (`0.2.0-rc.2`), lyteboat promises that a plugin written against that release observes the same **protocol, interface, and behavior** from lyteboat's kernel as from the official packages, except where §4 lists an addition. Packages outside the kernel are installed from npm at the pinned version, unchanged; lyteboat's promise about them is only that it does not patch them.
+For the dsh release pinned in `dsh.upstream.json` (`0.2.0-rc.2`), lyteboat promises that a plugin written against that release observes the same **protocol, interface, and behavior** from lyteboat's kernel as from the official packages, except where §4 lists an addition or §8 a distribution policy. Packages outside the kernel are installed from npm at the pinned version, unchanged; lyteboat's promise about them is only that it does not patch them.
 
 ## 2. Stable surface
 
@@ -61,3 +61,9 @@ A third-party plugin that wants a lyteboat extension declares `inject: ['lyteboa
 
 - **lyteboat-next** follows every sync: a sync merges the import of the tag it moves to and must pass G1–G6. Syncs are batched weekly; one sync may cross several tags.
 - **lyteboat-stable** is cut only when lyteboat makes a release, and only from a sync onto a dsh release candidate (`-rc.N`) that passes G1–G6; afterwards it takes backports only. No stable channel has been cut: lyteboat has made no release.
+
+## 8. Distribution policy
+
+lyteboat sends nothing off the machine that its user did not send to a model. Where an upstream bundle's default composition does, the kernel's copy of that bundle turns the row off (`Dist-Change: policy`, a `cordis.patch.yml` edit and nothing else). A plugin sees the same interfaces; what changes is only which rows the default composition starts. A deployment that wants a row back lists it again in its own patch.
+
+No policy is in force yet.

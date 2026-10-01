@@ -39,7 +39,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 | 机制 | 在仓库里是什么 | 本文 |
 |---|---|---|
 | 原样上游 + 显式差量 | 每个上游 tag 一个导入提交（带 `Dist-Import` trailer），第一个导入就是整段历史的根；lyteboat 的改动是其上的提交，靠三方合并跟进新 tag | §2 |
-| 差量分类 | 七类 `Dist-Change` + 每类必需的 trailer；`pnpm run dist:delta -- --check` 校验 | §3 |
+| 差量分类 | 八类 `Dist-Change` + 每类必需的 trailer；`pnpm run dist:delta -- --check` 校验 | §3 |
 | 稳定面清单 + 机器检查 | `dsh-compat/contract/dsh-0.2.0-rc.2/` 契约快照 + `extensions.yml` 登记表；每次 `pnpm run test` 在构建之后跑 G1 | §4 |
 | 兼容性由测试定义 | G1–G6 六道兼容闸门，加上 persistence、typert 两道叠加闸门 | §6 |
 | 扩展点优先于补丁 | 上游文件只加几行 `// lyteboat:` 钩子，逻辑放在上游没有的 `src/lyteboat/` | §3.5 |
@@ -297,12 +297,14 @@ flowchart TD
   Q4 -->|"只增加或放宽"| EX["extend<br/>Dist-Extension 并登记"]
   Q4 -->|"要收窄或删已有的"| Q5{"为接住上游已删、<br/>社区还在用的接口？"}
   Q5 -->|"是"| CP["compat<br/>Dist-Exit，限期"]
-  Q5 -->|"否"| NO["不做<br/>违反发行版契约"]
+  Q5 -->|"否"| Q6{"只关掉上游默认组合里<br/>把数据送出本机的行？"}
+  Q6 -->|"是"| PL["policy<br/>Dist-Policy，只改 cordis.patch.yml"]
+  Q6 -->|"否"| NO["不做<br/>违反发行版契约"]
   TMP["临时改动<br/>下次同步前必须删"] --> DR["drop<br/>Dist-Exit"]
   PKG["打包或装置适配<br/>只改注释"] --> BD["build<br/>无额外 trailer"]
 ```
 
-### 3.2 七类改动
+### 3.2 八类改动
 
 机器可读的定义是 `scripts/dist/delta-report.ts` 的 `CHANGE_CLASSES`。
 
@@ -314,18 +316,20 @@ flowchart TD
 | `redesign` | 内部重写：几行钩子加一个 `src/lyteboat/` 模块 | 无，由 G1–G6 证明 | 保留；上游对被替换逻辑的改动要移植过来 | `Dist-Tests` | — |
 | `compat` | 为还在用的社区插件保留上游已删的接口 | 追加（旧接口） | 到期删除 | `Dist-Exit` | 在 `COMPAT.md` §5 与 `Dist-Exit` 写到期版本，即某个 dsh release |
 | `drop` | 临时改动（生成物、试验开关） | 无 | 下次同步前必须删除 | `Dist-Exit` | — |
+| `policy` | 发行版策略：关掉上游 bundle 默认组合里把数据送出本机的行，只改 `cordis.patch.yml`，不改代码 | 无（行为差异在 `COMPAT.md` §8 登记） | 永久保留；上游改了那几行，合并时保留关闭 | `Dist-Policy`（关掉什么、为什么） | `COMPAT.md` §8 同步更新 |
 | `build` | 打包与装置适配、内核里只改注释 | 无 | — | 无 | — |
 
 适配工作几乎都在内核外（根配置、`dsh-compat/tests/upstream-harness`），所以 `build` 类很少碰 `dsh/`。`COMPAT.md` §5 没有列出任何 `compat` 改动。
 
 ### 3.3 trailer：哪些是机器强制，哪些是惯例
 
-`pnpm run dist:delta -- --check`（`scripts/dist/delta-report.ts` `violations`）强制以下四条：
+`pnpm run dist:delta -- --check`（`scripts/dist/delta-report.ts` `violations`）强制以下五条：
 
 1. 第一个导入之后，每个碰内核包目录的**非合并**提交都带 `Dist-Change`，而且是已知类别（`readCommits` 用 `--no-merges`）。导入提交本身跳过。
 2. 该类别要求的 trailer 存在。
 3. 每个 `Dist-Extension` 的 id 都在 `extensions.yml` 里。
-4. `extensions.yml` 里每个 id 至少被一个提交点名，所以不会有从未落地的登记。它读的范围是"第一个导入..HEAD"（`main`），点名过某条登记的提交永远在范围内；代码删掉而登记还留着的情况由 G1 的 stale 规则拦住（§4.2）。
+4. `policy` 提交只改内核包里的 `cordis.patch.yml`（`scripts/dist/delta-report.spec.ts`）。
+5. `extensions.yml` 里每个 id 至少被一个提交点名，所以不会有从未落地的登记。它读的范围是"第一个导入..HEAD"（`main`），点名过某条登记的提交永远在范围内；代码删掉而登记还留着的情况由 G1 的 stale 规则拦住（§4.2）。
 
 它**不检查**的：
 
@@ -368,6 +372,7 @@ Dist-Tests: dsh/<group>/<pkg>/tests/lyteboat/<name>.spec.ts
 | `Dist-Exit` | 上游做了什么之后它就该删？ | 同步的人，以及报告的 exit 列 |
 | `Dist-Upstream` | 回馈上游了吗？ | 人；dsh 不接受外部 PR（`up:CONTRIBUTING.md:9`："we cannot accept external pull requests at the moment"），所以写明原因 |
 | `Dist-Tests` | 什么测试证明它？ | 人；该测试跑在 G2 项目里 |
+| `Dist-Policy` | 这条发行版策略关掉了什么，为什么？ | `delta-report` 校验存在；人对照 `COMPAT.md` §8 |
 
 一个提交若既碰内核又碰内核外的文件，而内核里那部分只是跟着改注释（例如登记表的路径），就拆成两个提交：内核外的改动一个，内核里的注释改动一个 `Dist-Change: build`。否则 `--check` 会把整件改动当成未分类的内核提交拒绝。
 
@@ -565,7 +570,8 @@ stateDiagram-v2
 `CLAUDE.md`「Architecture boundaries」的 **Promotion** 规定，npm 上的 dsh 包在以下任一情况下进入内核：
 
 - lyteboat 必须改它的实现（不是配置它，也不是用 provider 替换它）；
-- 它是每个 lyteboat 组合启动都需要的能力。
+- 它是每个 lyteboat 组合启动都需要的能力；
+- 它是上游的 bundle，lyteboat 作为发行版要改它的默认组合（`policy`，§3.2）。
 
 进了内核，它就受 G1–G3 管；发布 Typert 文件的还受 typert 闸门管（§5.3）。
 
