@@ -571,7 +571,7 @@ stateDiagram-v2
 
 - lyteboat 必须改它的实现（不是配置它，也不是用 provider 替换它）；
 - 它是每个 lyteboat 组合启动都需要的能力；
-- 它是上游的 bundle，lyteboat 作为发行版要改它的默认组合（`policy`，§3.2）。
+- 它是上游的 bundle，lyteboat 作为发行版要改它的默认组合（`policy`，§3.2）。`dsh-base` 因此进了内核：它默认打开的三项上传在 lyteboat 里都关掉（`COMPAT.md` §8）。
 
 进了内核，它就受 G1–G3 管；发布 Typert 文件的还受 typert 闸门管（§5.3）。
 

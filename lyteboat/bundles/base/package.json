@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "license": "MIT",
-  "description": "lyteboat's business base over dsh-base: lyteboat's host services (distro marker, tool policy, side calls, request context, admission, skill router, a2ui, history import), and a business agent gets only the capabilities its own composition declares, so the coding tools and the services behind them, the sandbox and approval rows, the host's skill roots, the rows that leak the machine's configuration into model requests, and the session uploads are off in every business mode (try, serve, eval, studio, inspect)",
+  "description": "lyteboat's business base over dsh-base: lyteboat's host services (distro marker, tool policy, side calls, request context, admission, skill router, a2ui, history import), and a business agent gets only the capabilities its own composition declares, so the coding tools and the services behind them, the sandbox and approval rows, the host's skill roots, and the rows that leak the machine's configuration into model requests are off in every business mode (try, serve, eval, studio, inspect)",
   "type": "module",
   "exports": {
     "./cordis.patch.yml": "./cordis.patch.yml",

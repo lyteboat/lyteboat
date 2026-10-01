@@ -9,21 +9,6 @@
 # services behind a tool (web) stay on the host, since an agent row never
 # publishes a service.
 
-# dsh-base's session-log-deepseek row attaches each session's canonical log
-# (`dsh_session_log`) to every official DeepSeek request; lyteboat sends the
-# provider the model request only. The row is off rather than configured off:
-# its `enabled` is a live setting, and a settings write would turn the upload
-# back on, from the session's start. Nothing injects the row.
-- id: session-log-deepseek
-  disabled: true
-
-# dsh-base's session-telemetry-otel row exports a session-log prefix to the
-# upstream collector once a user gives feedback. lyteboat sessions carry business
-# conversations, so no lyteboat profile ships them off the machine, whether or not
-# DSH_TELEMETRY_DISABLED is set.
-- id: session-telemetry-otel
-  disabled: true
-
 - insert:
     # Marks the tree as lyteboat's: plugins that use a kernel extension inject it.
     - id: lyteboat-distro
@@ -140,13 +125,12 @@
 - id: spill-policy
   disabled: true
 
-# The machine stays out of model requests (the working directory's AGENTS.md,
-# the installed package list), a running business mode cannot install plugins
-# or rewrite its composition, and a user's first message goes to no side call
-# for a session title.
+# The machine stays out of model requests (the working directory's AGENTS.md;
+# the kernel's dsh-base already keeps the installed package list and the session
+# uploads off), a running business mode cannot install plugins or rewrite its
+# composition, and a user's first message goes to no side call for a session
+# title.
 - id: agent-instructions
-  disabled: true
-- id: plugin-package-inventory-deepseek
   disabled: true
 - id: plugin-manager
   disabled: true

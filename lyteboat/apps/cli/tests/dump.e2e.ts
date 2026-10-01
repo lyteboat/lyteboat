@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { LYTEBOAT_TRY_BUNDLES } from '@lyteboat/testing/composition'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { LYTEBOAT_PROFILE_TEMPLATES } from '../src/templates.ts'
 import { runLyteboat } from './support/lyteboat-process.ts'
 
 /** The dumped YAML of one row, up to the next row or layer marker. */
@@ -36,19 +37,13 @@ describe('lyteboat config dump (built bin)', () => {
     expect(manifest.dsh.profile).toEqual({ bundles: LYTEBOAT_TRY_BUNDLES })
   })
 
-  it('keeps dsh-base\'s feedback telemetry export off in the try and serve profiles, without DSH_TELEMETRY_DISABLED', async () => {
-    for (const profile of ['try', 'serve']) {
+  it('starts no row that sends a session off the machine, in any lyteboat profile, without DSH_TELEMETRY_DISABLED', async () => {
+    for (const profile of Object.keys(LYTEBOAT_PROFILE_TEMPLATES)) {
       const result = await runLyteboat(['config', 'dump', '--profile', profile], { env: { LYTEBOAT_HOME: home, DSH_TELEMETRY_DISABLED: undefined } })
-      expect(result.code, result.stderr).toBe(0)
-      expect(dumpedRow(result.stdout, 'session-telemetry-otel')).toMatch(/^ {2}disabled: true$/mu)
-    }
-  })
-
-  it('mounts no session-log upload in the try and serve profiles, so no settings form can turn it on', async () => {
-    for (const profile of ['try', 'serve']) {
-      const result = await runLyteboat(['config', 'dump', '--profile', profile], { env: { LYTEBOAT_HOME: home } })
-      expect(result.code, result.stderr).toBe(0)
-      expect(dumpedRow(result.stdout, 'session-log-deepseek')).toMatch(/^ {2}disabled: true$/mu)
+      expect(result.code, `${profile}: ${result.stderr}`).toBe(0)
+      for (const id of ['session-log-deepseek', 'plugin-package-inventory-deepseek', 'session-telemetry-otel']) {
+        expect(dumpedRow(result.stdout, id), `${profile}: ${id}`).toMatch(/^ {2}disabled: true$/mu)
+      }
     }
   })
 

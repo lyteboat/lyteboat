@@ -205,7 +205,7 @@ The [agent development guide](docs/03-agent-development.md) walks through every 
 - Every agent has a working directory of its own, `$LYTEBOAT_HOME/agent-workdirs/<id>`: the sessions of `/chat`, of evals, and of `lyteboat try --agent` are recorded under it wherever the process started, so `lyteboat try --agent <id> --session-id <session>` continues a session from any directory; `lyteboat try` without `--agent` still runs in the directory it was started in.
 - Every request records who sent it: `/chat` records `user:<user_id>`, `lyteboat try` `operator:cli`, and an eval run `system:eval`.
 - The session log is the single source of truth. A card and a state delta sit on `tool/result.meta.lyteboat`, a request's context and admission verdict on the human message's `source.lyteboatRequest`, a routed skill is dsh's own skill-invocation message, an intake reply is an assistant message whose `source.provider` is `lyteboat`, and imported history is closed turns of ordinary nodes; the side-call audit `lyteboat/aux-llm-call` is marked ignorable. So these sessions reopen under dsh's own persistence.
-- `@lyteboat/base` turns off dsh-base's `session-log-deepseek` row: the model provider receives the request and nothing else.
+- The kernel's dsh-base turns off the three uploads upstream turns on by default: the session log attached to model requests (`session-log-deepseek`), the plugin inventory (`plugin-package-inventory-deepseek`), and the session telemetry exported after feedback (`session-telemetry-otel`). The model provider receives the request and nothing else, and no session leaves the machine ([`dsh-compat/COMPAT.md`](dsh-compat/COMPAT.md) §8).
 
 ## Documentation
 

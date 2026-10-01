@@ -205,7 +205,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 - 每个 agent 有自己的工作目录 `$LYTEBOAT_HOME/agent-workdirs/<id>`：`/chat`、评测和 `lyteboat try --agent` 的会话都记在它下面，不管进程从哪个目录启动，所以 `lyteboat try --agent <id> --session-id <会话>` 在任何目录都能续聊；不带 `--agent` 的 `lyteboat try` 仍在启动它的目录里跑。
 - 每条请求记着是谁发的：`/chat` 记 `user:<user_id>`，`lyteboat try` 记 `operator:cli`，评测记 `system:eval`。
 - 会话日志是唯一的事实来源。卡片和状态增量记在 `tool/result.meta.lyteboat` 上，请求上下文和准入判定记在人类消息的 `source.lyteboatRequest` 上，路由选中的技能是 dsh 自己的技能调用消息，拒识回复是 `source.provider` 为 `lyteboat` 的助手消息，导入的历史是一串已关闭的普通 turn；旁路调用的审计 `lyteboat/aux-llm-call` 标为可忽略。所以这些会话可以被 dsh 自己的持久化层重新打开。
-- `@lyteboat/base` 关掉了 dsh-base 的 `session-log-deepseek` 行：模型服务只收到请求本身。
+- 内核的 dsh-base 关掉了上游默认打开的三项上传：随请求附带的会话日志（`session-log-deepseek`）、插件清单（`plugin-package-inventory-deepseek`），以及用户反馈后导出的会话遥测（`session-telemetry-otel`）。模型服务只收到请求本身，会话不离开本机（[`dsh-compat/COMPAT.md`](dsh-compat/COMPAT.md) §8）。
 
 ## 文档
 

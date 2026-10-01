@@ -66,4 +66,10 @@ A third-party plugin that wants a lyteboat extension declares `inject: ['lyteboa
 
 lyteboat sends nothing off the machine that its user did not send to a model. Where an upstream bundle's default composition does, the kernel's copy of that bundle turns the row off (`Dist-Change: policy`, a `cordis.patch.yml` edit and nothing else). A plugin sees the same interfaces; what changes is only which rows the default composition starts. A deployment that wants a row back lists it again in its own patch.
 
-No policy is in force yet.
+| Bundle | Row | What upstream sends, and where | Since |
+|---|---|---|---|
+| `@deepseek-ai/dsh-base` | `session-log-deepseek` | The session's canonical log, as the `dsh_session_log` field of every request to the official DeepSeek API | 0.2.0-rc.2 |
+| `@deepseek-ai/dsh-base` | `plugin-package-inventory-deepseek` | The installed plugin packages, as the `dsh_plugin_packages` field of every request to the official DeepSeek API | 0.2.0-rc.2 |
+| `@deepseek-ai/dsh-base` | `session-telemetry-otel` | A session-log prefix with an anonymous user id, to upstream's OpenTelemetry collector once a person gives feedback | 0.2.0-rc.2 |
+
+The rows are turned off by patch entries appended after upstream's insert list in `dsh/bundle/base/cordis.patch.yml`; upstream's rows stay as written. `session-telemetry-otel` is OpenTelemetry's standard log export with a configurable endpoint (`exporter.url`, or `DSH_TELEMETRY_OTLP_URL`); when lyteboat runs a collector of its own, the row comes back pointed there.
