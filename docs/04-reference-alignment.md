@@ -10,7 +10,7 @@
 > - 不带前缀的路径从 lyteboat 仓库根算起，例如 `lyteboat/plugins/tool-policy/src/state.ts`；内核包引用 lyteboat 里的源码路径，例如 `dsh/core/agent-loop/src/agent.ts`。
 > - `ref:` 指参考实现的 Python 包根目录，例如 `ref:core/runtime/base_agent.py`；`ref 仓库:` 指参考实现的仓库根。参考实现只按文件路径引用。
 > - `dsh:` 指 dsh 0.2.0-rc.2 上游 monorepo 的根，例如 `dsh:packages/preset/agent-preset-registry/README.md`。
-> - `CLAUDE.md` 按节标题和规则名引用，例如 `CLAUDE.md`「Architecture boundaries」的 "Outside the kernel first"。
+> - `CLAUDE.md` 按节标题和规则名引用，例如 `CLAUDE.md`「Architecture boundaries」的 "Outside the kernel first"；`.claude/rules/` 下的细则按文件名和规则名引用，例如 `.claude/rules/kernel.md` 的 "Promotion"。
 >
 > **数据说明**
 > - 仓库里的代码按文件加符号名引用，不写行号；`dsh:` 路径钉在上游 tag 上，保留行号。
@@ -80,7 +80,7 @@
 
 ### 1.3 兼容承诺（`dsh-compat/README.md`）
 
-闸门 G1–G6 和两道叠加闸门（persistence、typert）各证明什么、怎么跑，见 [dsh-compat/README.md](../dsh-compat/README.md)；承诺本身见 [COMPAT.md](../dsh-compat/COMPAT.md)。和本文有关的两点：G4 包括工具集在会话中途变化的两个场景，一个在 `addition-only` 路由上，一个在不带工具更新的路由上（`dsh-compat/tests/scenarios/scenarios.ts`）；契约只能以登记的方式增长（`CLAUDE.md`「Architecture boundaries」的 "The contract only grows, by registration"）。G6 跑的是两棵树上的官方 headless 组合，不带 lyteboat 插件；带 lyteboat 记录的会话能不能被 dsh 的持久层重开，由各组合测试用 `@lyteboat/testkit/session-reopen` 的 `reopenRefusal`（它调用内核的 `validateStoredEvents`）逐份检查。
+闸门 G1–G6 和两道叠加闸门（persistence、typert）各证明什么、怎么跑，见 [dsh-compat/README.md](../dsh-compat/README.md)；承诺本身见 [COMPAT.md](../dsh-compat/COMPAT.md)。和本文有关的两点：G4 包括工具集在会话中途变化的两个场景，一个在 `addition-only` 路由上，一个在不带工具更新的路由上（`dsh-compat/tests/scenarios/scenarios.ts`）；契约只能以登记的方式增长（`.claude/rules/kernel.md`的 "The contract only grows, by registration"）。G6 跑的是两棵树上的官方 headless 组合，不带 lyteboat 插件；带 lyteboat 记录的会话能不能被 dsh 的持久层重开，由各组合测试用 `@lyteboat/testkit/session-reopen` 的 `reopenRefusal`（它调用内核的 `validateStoredEvents`）逐份检查。
 
 ---
 
@@ -105,7 +105,7 @@
    - session-controller 的 `prompt` 在自己的校验、附件准入和去重之后才构造用户消息，source 由它自己写；另开一条写入路径就丢了这三样：所以有 `session-controller-prompt-source`。
    - dsh-headless 的一次性 runner 只按模型选择、在当前目录建 Agent，拒绝在 agent preset 下跑过的会话，把任务作为一条普通 user 消息提交，打印最后一段 assistant 文字；插件碰不到这几步，要以业务 agent 作答只能另写一份 runner：所以有 `headless-hooks`。
 
-   上游文件里的钩子保持几行，逻辑放在 `src/lyteboat/`（`CLAUDE.md`「Architecture boundaries」的 "The kernel changes only by classified commits"）；每项扩展登记退出条件，上游提供替代能力后在下一次同步里退役。这样做是因为内核的每一行差量都要长期携带：dsh 不接受外部 PR（`dsh:CONTRIBUTING.md:9`），而扩展所在的文件是上游改得最勤的：在 dsh-0.2.0-rc.2 的 checkout 上执行 `git log --since=2026-08-01`，`packages/core/agent-loop/src/agent.ts` 有 83 个提交（不算合并提交 59 个），`packages/core/session/src/index.ts` 有 70 个（不算合并提交 57 个）。
+   上游文件里的钩子保持几行，逻辑放在 `src/lyteboat/`（`.claude/rules/kernel.md`的 "The kernel changes only by classified commits"）；每项扩展登记退出条件，上游提供替代能力后在下一次同步里退役。这样做是因为内核的每一行差量都要长期携带：dsh 不接受外部 PR（`dsh:CONTRIBUTING.md:9`），而扩展所在的文件是上游改得最勤的：在 dsh-0.2.0-rc.2 的 checkout 上执行 `git log --since=2026-08-01`，`packages/core/agent-loop/src/agent.ts` 有 83 个提交（不算合并提交 59 个），`packages/core/session/src/index.ts` 有 70 个（不算合并提交 57 个）。
 
    其余内核包不改，理由如下：
 
@@ -142,11 +142,11 @@
 2. **可忽略记录**：只给纯信息记录，读者跳过它必须能重建出同一个会话（`CLAUDE.md`「Architecture boundaries」的 "A new session event type is proven reopenable before it ships"）。只有 `lyteboat/aux-llm-call` 一种，一次调用一条。读者需要的事实从不放在可忽略记录上。
 3. **发行版必需词表**：空。加一个词意味着官方 dsh 拒读含它的会话；新词要先证明持久化后能重开。
 
-**投影的规则**（`CLAUDE.md`「Architecture boundaries」的 "Projections return the same reference when nothing changed" 和 "Projections fold appended nodes only"）：只折叠 `surfaceOp === 'append'` 的节点，压缩或替换带着原来的 meta，再折一次会把旧的增量或旧卡片重放一遍；不相干的事件返回同一个引用；lyteboat 信封不合 contracts 的 schema 时抛错并指出 seq（`lyteboat/plugins/tool-policy/src/state.ts` `lyteboatStateProjectionDefinition.apply`、`lyteboat/plugins/a2ui/src/cards-projection.ts` `preparedCardsOf`、`lyteboat/plugins/request-context/src/request-projection.ts` `lyteboatRequestProjectionDefinition`）。`lyteboatState`、`lyteboatCards`、`lyteboatActiveSkill` 的 `stateVersion` 是 1，`lyteboatRequest` 是 3。
+**投影的规则**（`.claude/rules/typescript.md`的 "Projections return the same reference when nothing changed" 和 "Projections fold appended nodes only"）：只折叠 `surfaceOp === 'append'` 的节点，压缩或替换带着原来的 meta，再折一次会把旧的增量或旧卡片重放一遍；不相干的事件返回同一个引用；lyteboat 信封不合 contracts 的 schema 时抛错并指出 seq（`lyteboat/plugins/tool-policy/src/state.ts` `lyteboatStateProjectionDefinition.apply`、`lyteboat/plugins/a2ui/src/cards-projection.ts` `preparedCardsOf`、`lyteboat/plugins/request-context/src/request-projection.ts` `lyteboatRequestProjectionDefinition`）。`lyteboatState`、`lyteboatCards`、`lyteboatActiveSkill` 的 `stateVersion` 是 1，`lyteboatRequest` 是 3。
 
 **`lyteboat-request` 这个来源的设计：**
 - **kind 是 `'user'`。** `MessageSourceMap` 的键 `'lyteboat-request'` 只是声明合并时的名字，运行时靠 kind 区分来源。dsh 里人直接输入的消息用 kind `'user'`：tool-skill 只把 `source.kind === 'user'` 的消息当人类输入扫描（`dsh:packages/skill/tool-skill/src/index.ts:171`），goal 的授权判断也一样（`dsh:packages/goal/tool-goal/src/authority.ts:83`）。人在 `ask_user_question` 超时之后才给的回答是另一个 kind `'user-question-reply'`（`dsh:packages/interaction/user-questions/src/index.ts:186-194`），这两处都不把它当人类输入；lyteboat 的请求来自人直接发的消息，所以用 `'user'`。lyteboat 的字段都收在 `lyteboatRequest` 下面，不用 `rpcId` 这个名字，否则 session-controller 的 `hasPromptRequest`（`'rpcId' in source`，`dsh:packages/api/session-controller/src/commands.ts:602-614`）会把它当成 user-rpc。
-- **当数据读，用 schema 校验。** `lyteboatRequestOf(source)`（`lyteboat/plugins/request-context/src/request-projection.ts`）先看 kind 是不是 `'user'`，再把 `lyteboatRequest` 字段取出来用 `lyteboatRequestSchema` 校验，不合 schema 就抛错；不用 `'lyteboatRequest' in source` 这类能力探测（`CLAUDE.md`「Coding conventions」的 "No capability probing"）。插件之间只能 `import type`，a2ui 用同样的读法取判定里的卡片（`cardsOfRequest`，`lyteboat/plugins/a2ui/src/cards-projection.ts`）。
+- **当数据读，用 schema 校验。** `lyteboatRequestOf(source)`（`lyteboat/plugins/request-context/src/request-projection.ts`）先看 kind 是不是 `'user'`，再把 `lyteboatRequest` 字段取出来用 `lyteboatRequestSchema` 校验，不合 schema 就抛错；不用 `'lyteboatRequest' in source` 这类能力探测（`.claude/rules/typescript.md`的 "No capability probing"）。插件之间只能 `import type`，a2ui 用同样的读法取判定里的卡片（`cardsOfRequest`，`lyteboat/plugins/a2ui/src/cards-projection.ts`）。
 - **上下文只落日志，不给模型看。** 调用方给的上下文原样记在 `context` 上，工具经 `ctx.requestContext.contextOf(agent)` 读取；凭证不放进上下文（`lyteboat/plugins/request-context/src/index.ts` 的模块注释）。实跑：金融智能体几次运行的所有请求体（准入分类、路由、主循环）里都没有 `lyteboatRequest` 字段，也没有上下文里的客户名。
 
 ### 2.3 工具集变化按 dsh 0.2.0-rc.2 的工具更新走
@@ -162,7 +162,7 @@
 2. **读取时 fail-closed。** 未登记又没标可忽略的事件类型，整份会话拒读（`dsh/session/session-persistence/src/storage-contract.ts` `validateStoredEvents`）。可忽略只用于纯信息记录（`SessionEvent.ignorable`，`dsh/core/session/src/types.ts`）。上游的决策笔记保留了这个字段，否决了「外部事件一律可忽略」和「按挂载的组合登记事件名」两种做法，并写明只有替代机制完成切换之后才能删它（`dsh:.agents/notes/implemented/architecture/2026-08-30-retain-ignorable-external-session-events.md`「Decision」）。
 3. **加插件，不改循环**（`dsh:AGENTS.md:139`）。见 2.1 第 3 条。
 4. **能力 seam 的三个角色要齐全**（`dsh:AGENTS.md:140`）。
-5. **登记本身就是 effect**，`register()` 返回 disposer（`dsh:AGENTS.md:133`，`CLAUDE.md`「Architecture boundaries」的 "Registrations are effects"）。per-agent 状态放在 `WeakMap<Agent, …>` 里。
+5. **登记本身就是 effect**，`register()` 返回 disposer（`dsh:AGENTS.md:133`，`.claude/rules/typescript.md`的 "Registrations are effects"）。per-agent 状态放在 `WeakMap<Agent, …>` 里。
 6. **组合就是数据。** agent 是一行 preset 声明，注册表不扫描目录（`dsh:.agents/notes/implemented/architecture/2026-09-18-declarative-agent-presets.md`）。
 7. **waterfall 的监听者必须调用 `next()`**（`dsh:AGENTS.md:137`）。在 `next()` 前做还是后做要想清楚：skill-router 在 `lyteboat/pre-assemble` 上先路由再 `next()`，tool-policy 在 `next()` 之后重算限制；intake-guard 在 `lyteboat/intake` 上 `next()` 之后才判定，所以后登记的门先做决定。
 8. **`agent/turn-stopping` 按 serial 派发。** 监听者用 steer 放进收件箱的输入决定本轮是否继续（`dsh/core/agent/src/runtime-types.ts`）。
@@ -171,7 +171,7 @@
 11. **失败按错误码路由，不解析错误文本。** 适配器一次调用只试一次，重试在 step 边界由 llm-retry 做，并写进日志。
 12. **在做决定的操作处执行约束**，监听顺序、提示过滤都不算执行（`dsh:packages/AGENTS.md:14`）；**状态只在提交点发布**（15）；**上限作用在完整结果上**（16）。提示预算因此由各内容生产方执行，不靠一个排在最后的全局截断。
 13. **旁路模型调用也留痕。** dsh 的先例是 `session/title-llm-request`，请求发出前就写日志。lyteboat 的 aux-llm 在调用结束后追加一条可忽略的 `lyteboat/aux-llm-call`，带回答或失败原因和耗时；调用方自己中止时什么也不记。
-14. **上游测试从不修改**，lyteboat 自己的内核测试放在 `tests/lyteboat/` 下（`CLAUDE.md`「Architecture boundaries」的 "Upstream's tests are never edited"）。
+14. **上游测试从不修改**，lyteboat 自己的内核测试放在 `tests/lyteboat/` 下（`.claude/rules/kernel.md`的 "Upstream's tests are never edited"）。
 
 ### 2.5 不移植的参考实现机制
 
@@ -784,7 +784,7 @@ flowchart TB
 **扩充 eval 用例。**
 - 金融智能体的用例（`examples/agents/finance/evals/cases.yml`）有一份真模型基线，组合测试免 key 回放它（6.6）。
 - 接下来把用例扩充到准入分类（四类意图、追问归类）、路由、工具选择、卡片标记的写法、边界话术、续聊时上下文的沿用；每扩一批就真跑一次、审报告、重录基线。
-- 这份数据是之后改提示的依据（`CLAUDE.md`「Agent design」：提示改动要有 eval 数据，否则只是工作假设），也用来回答几个悬而未决的问题：更早轮次的工具结果要不要老化成只留事实的形式；入参二次编码要不要纠正；5.5 那些行为差异的实际影响；`lyteboatState` 的可见键和预算怎样设计才有用。
+- 这份数据是之后改提示的依据（`.claude/rules/agent-design.md`：提示改动要有 eval 数据，否则只是工作假设），也用来回答几个悬而未决的问题：更早轮次的工具结果要不要老化成只留事实的形式；入参二次编码要不要纠正；5.5 那些行为差异的实际影响；`lyteboatState` 的可见键和预算怎样设计才有用。
 
 ### 6.2 对外服务的其余部分
 
@@ -878,7 +878,7 @@ sequenceDiagram
 - **选题。** 第二个 agent 同样只用公开知识，选一个会用到金融智能体没用到的能力的领域。第 3 节里标「按需」的能力（终答前纠错、引用、工作流状态机、tool_exchange、子任务与委派、A2UI 的 blocks 模式、常驻进程 provider、SKILL.md 转换脚本、`router:false`）按它的需要引入，每项都先过一遍 2.1 的落点顺序。
 - **委派的做法。** 子任务先验证不新增工具的方案：给 tool-subagent 配一个 provider，或者加一个 `tools/post-execute` 监听，把 `user:*` 传进去、把状态增量带回来；只有回传没法通过 meta 表达时才做一个薄工具，默认的 toolFilter 排除记忆写入工具。`@lyteboat/consult` 是一个 preset 型的 SubagentProvider，只挂目标 preset，不调用 `applyChildComposition`，否则子 agent 会拿到路由 agent 自己的组合；consult 工具读取所在 assistant 消息里的工具调用，只有它是这一批里唯一的 consult 调用、并且 `stop_after` 允许时才 `concludeTurn()`，这样单路直接结束、多路交给模型汇总。子 agent 的卡片留在子会话里，出口层通过 `subagent/start` 找到子会话，读它的 `lyteboatCards`。
 - **agent 包形态。** agent 做成 npm 包，`dsh.bundle.patch` 插入 `preset-<id>` 一行，行下的子行就是 agent 的行（`agent.cordis.yml` 的内容，没有它时是 `./lib/agent.js` 一行）。装进 profile 会让 bundle 列表多一项，所以 `ensureProfileInitialized` 的检查从逐项相同放宽为以模板为前缀。
-- **要不要 agent kit。** 抽取在第三次重复时做，不在第一次（`CLAUDE.md`「Coding conventions」的 "Limits"）。两个 agent 都写完后，对照它们重复的部分（数据源单例、digest 格式、unauthorized 兜底、准入函数的骨架、卡片出法），决定 kit 值不值得做、放在哪一层（跨层的决定，先确认）；init、add-agent 这类 CLI 命令随 kit 一起定。
+- **要不要 agent kit。** 抽取在第三次重复时做，不在第一次（`.claude/rules/typescript.md`的 "Limits"）。两个 agent 都写完后，对照它们重复的部分（数据源单例、digest 格式、unauthorized 兜底、准入函数的骨架、卡片出法），决定 kit 值不值得做、放在哪一层（跨层的决定，先确认）；init、add-agent 这类 CLI 命令随 kit 一起定。
 
 ### 6.5 多实例部署
 
