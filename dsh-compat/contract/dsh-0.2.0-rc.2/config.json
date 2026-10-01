@@ -291,6 +291,7 @@
       }
     }
   },
+  "@deepseek-ai/dsh-base": {},
   "@deepseek-ai/dsh-compaction": {
     "./invariant": {
       "$module": {
@@ -544,6 +545,51 @@
           "tokenMeter",
           "sessions"
         ]
+      }
+    }
+  },
+  "@deepseek-ai/dsh-headless": {
+    ".": {
+      "$module": {
+        "Config": [
+          {
+            "dict": {
+              "json": 3,
+              "sessionId": 2,
+              "task": 1
+            },
+            "meta": {
+              "default": {}
+            },
+            "type": "object"
+          },
+          {
+            "meta": {},
+            "type": "string"
+          },
+          {
+            "meta": {},
+            "type": "string"
+          },
+          {
+            "meta": {},
+            "type": "boolean"
+          }
+        ],
+        "inject": [
+          "agentDefaultModel",
+          "agents",
+          "sessions"
+        ],
+        "name": "headless-runner"
+      }
+    },
+    "./startup": {
+      "$module": {
+        "inject": [
+          "cmdlineArgs"
+        ],
+        "name": "headless-startup"
       }
     }
   },

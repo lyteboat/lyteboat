@@ -26,6 +26,7 @@ dsh/                      the kernel: dsh packages lyteboat owns (dsh/kernel.jso
   llm/llm/ core/session/ core/system-prompt/ core/tools/ skill/skill/ core/agent/ core/agent-loop/
   session/session-projection/ session/session-persistence/ session/session-persistence-jsonl/
   compaction/compaction/ compaction/compaction-basic/ test-support/agent-loop-testkit/ api/session-controller/
+  bundle/base/ bundle/headless/
                           each: upstream's src/ and tests/ as imported, lyteboat's commits on top,
                           lyteboat-owned modules in src/lyteboat/ and tests/lyteboat/
   kernel.json             the kernel list (promotion adds a row); tsdown.config.ts: upstream's root bundling options

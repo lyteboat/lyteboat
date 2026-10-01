@@ -40,7 +40,7 @@
   - 外部对话历史导入（`@lyteboat/history-import`）。
 - **一个业务 agent 就是一个目录。** 在 `examples/agents/<id>/` 下写组合文件、技能、工具和卡片模板即可。
 - **业务 agent 只拿到它自己声明的能力。** `lyteboat try`、`serve`、`eval` 三种业务模式都带业务底座（`@lyteboat/base`）：没有编码工具，没有沙箱和人工审批；模型请求里没有宿主的 persona、工作目录的 AGENTS.md 和本机装了哪些包。agent 要用的 dsh 工具和它的技能，写在它自己的组合里。
-- **与 dsh 生态兼容。** 轻舟是 dsh 的一个发行版：它以原包名接管 dsh 内核 14 个包的源码（`dsh/`），官方包和社区插件不改一行就跑在轻舟的实现上。与所跟踪的 dsh 版本在协议、接口、行为上保持兼容，由 G1–G6 六道闸门证明（[`dsh-compat/`](dsh-compat/README.md)）。
+- **与 dsh 生态兼容。** 轻舟是 dsh 的一个发行版：它以原包名接管 dsh 内核 16 个包的源码（`dsh/`），官方包和社区插件不改一行就跑在轻舟的实现上。与所跟踪的 dsh 版本在协议、接口、行为上保持兼容，由 G1–G6 六道闸门证明（[`dsh-compat/`](dsh-compat/README.md)）。
 - **有迹可查。** 模型看到的一切都能从会话日志还原；轻舟记录的事实都放在 dsh 已有的日志信封里。
 
 ## 快速开始
@@ -222,7 +222,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 ## 项目结构
 
 ```
-dsh/                  内核：dsh/kernel.json 列出的 14 个 dsh 包，沿用 @deepseek-ai/* 包名
+dsh/                  内核：dsh/kernel.json 列出的 16 个 dsh 包，沿用 @deepseek-ai/* 包名
 lyteboat/             轻舟自己的 27 个包，每层一个目录
   apps/               进程：lyteboat 启动器
   bundles/            组合：每个 profile 都带的业务底座 base，lyteboat try、serve、eval、studio、inspect 各自的 bundle

@@ -40,7 +40,7 @@ lyteboat turns that last mile into a reusable chassis for vertical agents. A tea
   - Import of external conversation history (`@lyteboat/history-import`).
 - **One business agent is one directory.** Write its composition file, skills, tools, and card templates under `examples/agents/<id>/`.
 - **A business agent gets only what it declares.** The three business modes, `lyteboat try`, `serve`, and `eval`, all list the business base (`@lyteboat/base`): no coding tools, no sandbox, no human approval; no host persona, no working-directory AGENTS.md, and no list of the installed packages in model requests. The dsh tools an agent uses, and its skills, are written in its own composition.
-- **Compatible with the dsh ecosystem.** lyteboat is a distribution of dsh: it owns the source of dsh's 14 kernel packages under their published names (`dsh/`), so official packages and community plugins run on lyteboat's implementation unchanged. It keeps the protocol, interfaces, and behavior of the dsh release it tracks, and six gates, G1–G6, prove it ([`dsh-compat/`](dsh-compat/README.md)).
+- **Compatible with the dsh ecosystem.** lyteboat is a distribution of dsh: it owns the source of dsh's 16 kernel packages under their published names (`dsh/`), so official packages and community plugins run on lyteboat's implementation unchanged. It keeps the protocol, interfaces, and behavior of the dsh release it tracks, and six gates, G1–G6, prove it ([`dsh-compat/`](dsh-compat/README.md)).
 - **Traceable.** Everything a model sees is reconstructable from the session log, and every fact lyteboat records rides an envelope dsh already knows.
 
 ## Quick start
@@ -224,7 +224,7 @@ The guides are written in Chinese.
 ## Repository layout
 
 ```
-dsh/                  the kernel: the 14 dsh packages dsh/kernel.json lists, under their @deepseek-ai/* names
+dsh/                  the kernel: the 16 dsh packages dsh/kernel.json lists, under their @deepseek-ai/* names
 lyteboat/             lyteboat's 27 packages, one directory per layer
   apps/               processes: the lyteboat launcher
   bundles/            compositions: base (the business base, in every profile) and one each behind lyteboat try, serve, eval, studio, and inspect
@@ -300,7 +300,7 @@ Syncing a new dsh release, promoting a package into the kernel, and running G3 a
 ## Status and roadmap
 
 - Tracks dsh **0.2.0-rc.2** (`dsh.upstream.json`). The kernel is its import plus lyteboat's four registered extensions (`agent-loop-intake`, `agent-loop-pre-assemble`, `session-append-ignorable`, `session-controller-prompt-source`), and every gate above passes against it.
-- Provides seven commands: `lyteboat try` (a one-shot task), `serve` (the `/chat` service), `eval` (eval cases), `release` (the release gate and lock), `inspect` (what an agent is made of), `studio` (the Studio workshop), and `config dump` (the composed plugin tree), with the capability plugins behind them, the finance agent, the distribution tooling and the 14-package kernel, and the compatibility gates G1–G6. The [CHANGELOG](CHANGELOG.md) has the full list.
+- Provides seven commands: `lyteboat try` (a one-shot task), `serve` (the `/chat` service), `eval` (eval cases), `release` (the release gate and lock), `inspect` (what an agent is made of), `studio` (the Studio workshop), and `config dump` (the composed plugin tree), with the capability plugins behind them, the finance agent, the distribution tooling and the 16-package kernel, and the compatibility gates G1–G6. The [CHANGELOG](CHANGELOG.md) has the full list.
 - Known limitations:
   - A business mode's model requests still carry a few traces of the host: dsh's skill-invocation message names the skill's absolute directory; the compaction summarizer's instructions are written for a coding assistant; `{{cwd}}` in a persona renders the server's path, so a business persona should not use it. The launcher also still reads a `.env` in the directory it starts in (kept for the operator's deployment settings).
   - There is no memory and there are no suggested questions. Side calls use the agent's own model by default; skill routing can name its own provider and model in `lyteboatAgentDef`'s `skillRouting`, intake classification cannot yet.

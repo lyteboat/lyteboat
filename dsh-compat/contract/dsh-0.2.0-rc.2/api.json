@@ -1422,6 +1422,12 @@
       }
     }
   },
+  "@deepseek-ai/dsh-base": {
+    "augmentations": {},
+    "exports": {
+      ".": {}
+    }
+  },
   "@deepseek-ai/dsh-compaction": {
     "augmentations": {
       "@deepseek-ai/dsh-llm#MessageSourceMap": {
@@ -1565,6 +1571,29 @@
           "inject": "static inject: string[];",
           "summarize": "protected summarize(input: SummarizationInput, agent: Agent, signal?: AbortSignal): Promise<SummaryResult>;"
         }
+      }
+    }
+  },
+  "@deepseek-ai/dsh-headless": {
+    "augmentations": {},
+    "exports": {
+      ".": {
+        "Config": "const Config: z<Config>;\ninterface Config { task?: string; sessionId?: string; json?: boolean; }",
+        "apply": "function apply(ctx: Context, config: Config): void;",
+        "inject": "const inject: string[];",
+        "name": "const name = \"headless-runner\";"
+      },
+      "./startup": {
+        "HEADLESS_STARTUP_SERVICE": "const HEADLESS_STARTUP_SERVICE = \"headlessStartup\";",
+        "HeadlessStartupValues": {
+          "$declaration": "interface HeadlessStartupValues { }",
+          "json": "json: boolean;",
+          "sessionId": "sessionId: string | undefined;",
+          "task": "task: string | undefined;"
+        },
+        "apply": "function apply(ctx: Context): void;",
+        "inject": "const inject: string[];",
+        "name": "const name = \"headless-startup\";"
       }
     }
   },

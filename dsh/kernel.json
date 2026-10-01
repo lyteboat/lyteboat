@@ -14,6 +14,8 @@
     "@deepseek-ai/dsh-compaction": "compaction/compaction",
     "@deepseek-ai/dsh-compaction-basic": "compaction/compaction-basic",
     "@deepseek-ai/dsh-agent-loop-testkit": "test-support/agent-loop-testkit",
-    "@deepseek-ai/dsh-api-session-controller": "api/session-controller"
+    "@deepseek-ai/dsh-api-session-controller": "api/session-controller",
+    "@deepseek-ai/dsh-base": "bundle/base",
+    "@deepseek-ai/dsh-headless": "bundle/headless"
   }
 }

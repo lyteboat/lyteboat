@@ -45,6 +45,12 @@
       "path": "./dsh/api/session-controller"
     },
     {
+      "path": "./dsh/bundle/base"
+    },
+    {
+      "path": "./dsh/bundle/headless"
+    },
+    {
       "path": "./lyteboat/core/contracts"
     },
     {
