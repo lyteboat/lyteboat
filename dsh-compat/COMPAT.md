@@ -34,7 +34,7 @@ Every invariant is held by a test that runs against lyteboat's kernel. Upstream'
 | Waterfall events (`agent/pre-step`, `agent/request`, `tools/pre-execute`, …) short-circuit when a listener does not call `next()`, and see rewritten payloads in listener order | G2 `dsh/core/agent-loop/tests/interception.spec.ts` |
 | A projection that ignores an event returns the same state reference | G2 `dsh/session/session-projection/tests/registry.spec.ts` |
 | Persistence refuses a stored log with an event type outside the compiled catalog unless the event is `ignorable` | G2 `dsh/session/session-persistence-jsonl/tests`, overlay `persistence` |
-| For the same scripted model and the same plugins, a session log written on lyteboat equals one written on the official release, event by event after normalization | G4 `dsh-compat/tests/scenarios` |
+| For the same scripted model, the same plugins, and the same default composition (the official release run with §8's policy), a session log written on lyteboat equals one written on the official release, event by event after normalization | G4 `dsh-compat/tests/scenarios` |
 | Pinned community plugins that run on the official release run on lyteboat and write the same log | G5 `dsh-compat/tests/canaries` |
 | A session lyteboat writes opens on the official release, and the reverse | G6 `dsh-compat/tests/roundtrip` |
 | Official packages that depend on the kernel keep passing their own tests on lyteboat's kernel | G3 (overlay `g3`) |

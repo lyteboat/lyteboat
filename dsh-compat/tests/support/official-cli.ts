@@ -41,6 +41,15 @@ export interface OfficialRun {
 const QUIET_PATCH = '- id: session-title-llm\n  disabled: true\n'
 
 /**
+ * lyteboat's distribution policy (COMPAT.md §8): its dsh-base turns these rows
+ * off. Both trees get the same entries, so a comparison is about the kernel,
+ * not the default composition; without them the official log alone carries
+ * session-log-deepseek's delivery records.
+ */
+const DISTRIBUTION_POLICY_PATCH = ['session-log-deepseek', 'plugin-package-inventory-deepseek', 'session-telemetry-otel']
+  .map(id => `- id: ${id}\n  disabled: true\n`).join('')
+
+/**
  * dsh resolves HTTP(S)_PROXY for model requests; the scripted model listens on
  * loopback, so the child gets none of them. Installs keep the ambient proxy.
  */
@@ -86,7 +95,7 @@ export function freshRun(root: string, label: string, files: Record<string, stri
  */
 export async function runScenario(tree: string, scenario: OfficialScenario, place: { home: string; cwd: string }, extraArgs: readonly string[] = []): Promise<OfficialRun> {
   const patchFile = join(place.home, 'compatibility.patch.yml')
-  writeFileSync(patchFile, `${QUIET_PATCH}${scenario.patch ?? ''}`)
+  writeFileSync(patchFile, `${QUIET_PATCH}${DISTRIBUTION_POLICY_PATCH}${scenario.patch ?? ''}`)
   const mock = await startMockLlmServer({ ...scenario.mock, sequence: scenario.sequence, port: 0, apiKey: 'mock-key' })
   let result
   try {
