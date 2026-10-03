@@ -7,7 +7,7 @@
 # is created and no model is called. The agent loop comes from dsh-base, and
 # lyteboat's service rows and the business base from @lyteboat/base, both
 # listed before this bundle in the inspect profile, so the agent is mounted
-# exactly as headless --agent, serve, and eval mount it.
+# exactly as serve and eval mount it.
 
 - insert:
     - id: lyteboat-inspect-startup

@@ -1,9 +1,8 @@
 /**
  * The round rules for history a caller brings from an earlier conversation
- * (ported from the reference implementation's history merger): a history
- * document is an entry list, bare or under `history` / `context.history`;
- * entries are `{ role, traceId, parts: [{ type?, text }], createTime? }`; a
- * round is one user and one assistant entry sharing a trace id. Half rounds
+ * (ported from the reference implementation's history merger): history is
+ * an entry list, each `{ role, traceId, parts: [{ type?, text }], createTime? }`;
+ * a round is one user and one assistant entry sharing a trace id. Half rounds
  * (the in-flight one), empty-text rounds and malformed entries are dropped; a
  * duplicate role inside a round keeps the first; rounds sort by `createTime`
  * when every round has one, else keep input order.
@@ -21,27 +20,13 @@ export interface HistoryRound {
   assistant: HistoryMessage
 }
 
-export interface HistoryParse {
+interface HistoryParse {
   rounds: HistoryRound[]
   dropped: { malformed: number; duplicated: number; half: number; empty: number }
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-/**
- * The entry list inside a history document: a bare array, or an object
- * carrying it under `history` (or `context.history`, a request envelope).
- */
-export function historyEntriesOf(document: unknown): unknown {
-  if (Array.isArray(document)) return document
-  if (isRecord(document)) {
-    if (Array.isArray(document['history'])) return document['history']
-    const context = document['context']
-    if (isRecord(context) && Array.isArray(context['history'])) return context['history']
-  }
-  return undefined
 }
 
 function partsText(entry: Record<string, unknown>): string {

@@ -16,7 +16,7 @@
 
 import { Command, CommanderError } from 'commander'
 import { pluginFilesProblem } from './plugins.ts'
-import { DEFAULT_EVAL_PROFILE, DEFAULT_HEADLESS_AGENT_PROFILE, DEFAULT_HEADLESS_PROFILE, DEFAULT_INSPECT_PROFILE, DEFAULT_SERVE_PROFILE, DEFAULT_STUDIO_PROFILE, DEFAULT_WEB_PROFILE } from './templates.ts'
+import { DEFAULT_EVAL_PROFILE, DEFAULT_HEADLESS_PROFILE, DEFAULT_INSPECT_PROFILE, DEFAULT_SERVE_PROFILE, DEFAULT_STUDIO_PROFILE, DEFAULT_WEB_PROFILE } from './templates.ts'
 
 /** Boot a named profile and hand it the invocation's inner arguments. */
 interface ProfileInvocation {
@@ -63,8 +63,8 @@ interface LyteboatProfileCommand {
   argument: [string, string]
   /** The default `--profile`. */
   profile: string
-  /** The default `--profile` instead when the inner arguments name an agent (`--agent`, `--agents`). */
-  agentProfile?: string
+  /** The usage error when the inner arguments name an agent (`--agent`, `--agents`) and `--profile` is absent: the command runs no business agent. */
+  agentRefusal?: string
   /** A command of the booted app the inner arguments go to (`lyteboat release …` is `eval release …`). */
   innerCommand?: string
   /** The help heading of the base the command boots. */
@@ -85,8 +85,6 @@ const HELP_EXAMPLES = `
 Examples:
   lyteboat web                                         serve dsh's web app: dsh's coding agent and personal assistant (lyteboat web --help)
   lyteboat headless "run the tests"                    answer one task with dsh's own agent, print the result, and exit
-  lyteboat headless --agents ./agents --agent finance "task"  answer one task as an agent, print the turn, and exit
-  lyteboat headless --agents ./agents --agent finance -h      the business one-shot's own flags and help
   lyteboat headless --patch ./extra.yml "task"         boot the headless profile with one extra overlay
   lyteboat headless --plugin ./my-plugin.mjs "task"    insert a local plugin file into the tree
   lyteboat serve --agents ./agents                     serve the agents over HTTP: POST /chat (lyteboat serve --help)
@@ -96,7 +94,7 @@ Examples:
   lyteboat inspect --agents ./agents --agent finance   print what an agent is made of, or why it does not mount
   lyteboat studio account add alice --role admin < pw.txt  make the first Studio account (password on stdin)
   lyteboat studio --agents ./agents                    serve the Studio workshop (lyteboat studio --help)
-  lyteboat config dump --profile headless-agent        print the composed plugin tree and exit
+  lyteboat config dump --profile serve                 print the composed plugin tree and exit
 `
 
 function validateBoot(program: Command, options: BootOptions): { profile: string; patches: string[]; plugins: string[] } {
@@ -148,7 +146,7 @@ export function parseLyteboatArgs(argv: readonly string[], versions: LyteboatVer
   // The subcommands that boot a profile, in help order.
   const profileCommands: LyteboatProfileCommand[] = [
     { name: 'web', description: `serve dsh's web app, as dsh ships it (profile: ${DEFAULT_WEB_PROFILE}); the web app's own flags follow`, argument: ['[args...]', 'arguments for the web app (see: lyteboat web --help)'], profile: DEFAULT_WEB_PROFILE, helpGroup: NATIVE_HELP_GROUP },
-    { name: 'headless', description: `answer one task and exit: with dsh's own agent (profile: ${DEFAULT_HEADLESS_PROFILE}), or with --agent as a business agent (profile: ${DEFAULT_HEADLESS_AGENT_PROFILE}); the one-shot app's own flags follow`, argument: ['[task...]', 'the task text and any flags of the one-shot app (see: lyteboat headless --help, lyteboat headless --agent <id> --help)'], profile: DEFAULT_HEADLESS_PROFILE, agentProfile: DEFAULT_HEADLESS_AGENT_PROFILE, helpGroup: NATIVE_HELP_GROUP },
+    { name: 'headless', description: `answer one task with dsh's own agent and exit (profile: ${DEFAULT_HEADLESS_PROFILE}); the one-shot app's own flags follow`, argument: ['[task...]', 'the task text and any flags of the one-shot app (see: lyteboat headless --help)'], profile: DEFAULT_HEADLESS_PROFILE, agentRefusal: 'error: lyteboat headless answers with dsh\'s own agent and runs no business agent; serve one with lyteboat serve --agents <dir> and POST /chat, or run its eval cases with lyteboat eval', helpGroup: NATIVE_HELP_GROUP },
     { name: 'serve', description: `serve agents over HTTP (profile: ${DEFAULT_SERVE_PROFILE}); the service's own flags follow`, argument: ['[args...]', 'arguments for the service (see: lyteboat serve --help)'], profile: DEFAULT_SERVE_PROFILE, helpGroup: BUSINESS_HELP_GROUP },
     { name: 'eval', description: `run an agent's eval cases, replay a recorded run, or compare two runs (profile: ${DEFAULT_EVAL_PROFILE}); the eval app's own flags follow`, argument: ['[args...]', 'arguments for the eval app (see: lyteboat eval --help)'], profile: DEFAULT_EVAL_PROFILE, helpGroup: BUSINESS_HELP_GROUP },
     // A release is an eval run: the eval profile with the eval app's release command.
@@ -165,9 +163,8 @@ export function parseLyteboatArgs(argv: readonly string[], versions: LyteboatVer
       .option('--patch <path>', PATCH_OPTION_HELP, collect)
       .option('--plugin <file>', PLUGIN_OPTION_HELP, collect)
       .action((args: string[], options: BootOptions) => {
-        const booted = validateBoot(command, options)
-        const { patches, plugins } = booted
-        const profile = spec.agentProfile !== undefined && command.getOptionValueSource('profile') === 'default' && namesAgent(args) ? spec.agentProfile : booted.profile
+        const { profile, patches, plugins } = validateBoot(command, options)
+        if (spec.agentRefusal !== undefined && command.getOptionValueSource('profile') === 'default' && namesAgent(args)) command.error(spec.agentRefusal)
         resolved = { mode: 'profile', profile, patches, plugins, args: spec.innerCommand === undefined ? args : [spec.innerCommand, ...args] }
       })
   }
@@ -175,7 +172,7 @@ export function parseLyteboatArgs(argv: readonly string[], versions: LyteboatVer
   const config = program.command('config').description('inspect profile composition without booting')
   const dump = config.command('dump')
     .description('print the composed profile tree and exit')
-    .option('--profile <name>', 'the profile to compose', DEFAULT_HEADLESS_AGENT_PROFILE)
+    .option('--profile <name>', 'the profile to compose', DEFAULT_SERVE_PROFILE)
     .option('--default', 'print the bundle layers only, without the user layer or --patch overlays')
     .option('--patch <path>', PATCH_OPTION_HELP, collect)
     .option('--plugin <file>', PLUGIN_OPTION_HELP, collect)

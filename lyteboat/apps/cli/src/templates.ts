@@ -35,10 +35,7 @@ export const LYTEBOAT_PROFILE_TEMPLATES: Readonly<Record<string, LyteboatProfile
   // The native base: dsh's apps on lyteboat's kernel.
   web: dshProfileTemplate('web'),
   headless: dshProfileTemplate('headless'),
-  // The business base. The one-shot is dsh's, so its bundle comes before the base.
-  'headless-agent': {
-    bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless', '@lyteboat/base', '@lyteboat/headless'],
-  },
+  // The business base.
   serve: {
     bundles: ['@deepseek-ai/dsh-base', '@lyteboat/base', '@lyteboat/serve'],
   },
@@ -58,9 +55,6 @@ export const DEFAULT_WEB_PROFILE = 'web'
 
 /** The profile `lyteboat headless` boots when `--profile` is absent. */
 export const DEFAULT_HEADLESS_PROFILE = 'headless'
-
-/** The profile `lyteboat headless` boots when its inner arguments name an agent and `--profile` is absent. */
-export const DEFAULT_HEADLESS_AGENT_PROFILE = 'headless-agent'
 
 /** The profile `lyteboat serve` boots when `--profile` is absent. */
 export const DEFAULT_SERVE_PROFILE = 'serve'

@@ -44,7 +44,6 @@
     "@lyteboat/cli": "workspace:*",
     "@lyteboat/distro": "workspace:*",
     "@lyteboat/eval": "workspace:*",
-    "@lyteboat/headless": "workspace:*",
     "@lyteboat/model-side-call": "workspace:*",
     "@lyteboat/request-admission": "workspace:*",
     "@lyteboat/request-context": "workspace:*",

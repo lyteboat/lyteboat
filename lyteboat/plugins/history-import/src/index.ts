@@ -9,16 +9,13 @@
  * `lyteboat/intake` waterfall (the kernel extension `agent-loop-intake`) with
  * the recorded answer and no model request. The log then holds the question
  * (source `plugin:lyteboat-history-import` with its trace id, the answer
- * removed) and the answer (provider `lyteboat`, model `history-import`), the
- * same nodes a session seed writes. A round is known by its trace id alone:
- * the `lyteboatTraceIds` projection keeps those of the session's requests and
- * imported rounds, and the inbox those still queued. The service also builds
- * the seed of closed turns a new session can start from.
+ * removed) and the answer (provider `lyteboat`, model `history-import`). A
+ * round is known by its trace id alone: the `lyteboatTraceIds` projection
+ * keeps those of the session's requests and imported rounds, and the inbox
+ * those still queued.
  * @module @lyteboat/history-import
  */
 
-import { readFileSync } from 'node:fs'
-import { basename } from 'node:path'
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
@@ -26,14 +23,14 @@ import type { MessageSource, UserMessage } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-session-projection'
 import { LYTEBOAT_HISTORY_IMPORT_SOURCE } from '@lyteboat/contracts'
 import type { LyteboatIntakeDecision, LyteboatStepPayload } from '@lyteboat/contracts'
-import { historyEntriesOf, parseHistoryRounds } from './round-history.ts'
-import type { HistoryParse, HistoryRound } from './round-history.ts'
-import { HISTORY_IMPORT_MODEL, seedFromRounds } from './seed.ts'
-import type { SeedOptions, SeedResult } from './seed.ts'
+import { parseHistoryRounds } from './round-history.ts'
+import type { HistoryRound } from './round-history.ts'
 import { lyteboatTraceIdsProjectionDefinition, traceIdOf } from './trace-ids-projection.ts'
 
 export type { HistoryRound } from './round-history.ts'
-export type { SeedResult } from './seed.ts'
+
+/** The model recorded on an imported round's answer. */
+const HISTORY_IMPORT_MODEL = 'history-import'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -41,7 +38,7 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-/** Host service: parse history, queue the rounds a session lacks and answer them, or build a seed. */
+/** Host service: parse history, queue the rounds a session lacks, and answer them. */
 export class HistoryImportService extends Service {
   // lyteboatDistro: the answer rides the kernel extension agent-loop-intake.
   static inject = ['sessionProjections', 'lyteboatDistro']
@@ -60,7 +57,10 @@ export class HistoryImportService extends Service {
    */
   parse(entries: unknown): HistoryRound[] {
     const parsed = parseHistoryRounds(entries)
-    this.warnDropped('request history', parsed.dropped)
+    const { malformed, duplicated, half, empty } = parsed.dropped
+    if (malformed + duplicated + half + empty > 0) {
+      this.ctx.logger.warn(`history import: request history dropped ${String(malformed)} malformed, ${String(duplicated)} duplicate-role, ${String(half)} half, ${String(empty)} empty round(s)`)
+    }
     return parsed.rounds
   }
 
@@ -90,31 +90,6 @@ export class HistoryImportService extends Service {
       queued.push(round)
     }
     return queued
-  }
-
-  /**
-   * Read a history file (JSON: an entry array, or an object with `history` /
-   * `context.history`) into rounds; logs what was dropped.
-   * @param path - the file path.
-   */
-  readFile(path: string): { rounds: HistoryRound[]; source: string } {
-    const document: unknown = JSON.parse(readFileSync(path, 'utf8'))
-    const entries = historyEntriesOf(document)
-    if (entries === undefined) throw new Error(`history file ${path} holds no history list`)
-    const parsed = parseHistoryRounds(entries)
-    this.warnDropped(basename(path), parsed.dropped)
-    return { rounds: parsed.rounds, source: basename(path) }
-  }
-
-  /** The seed for a new session: every round as a closed turn. */
-  seed(rounds: readonly HistoryRound[], options: SeedOptions = {}): SeedResult {
-    return seedFromRounds(rounds, options)
-  }
-
-  private warnDropped(from: string, dropped: HistoryParse['dropped']): void {
-    const { malformed, duplicated, half, empty } = dropped
-    if (malformed + duplicated + half + empty === 0) return
-    this.ctx.logger.warn(`history import: ${from} dropped ${String(malformed)} malformed, ${String(duplicated)} duplicate-role, ${String(half)} half, ${String(empty)} empty round(s)`)
   }
 }
 

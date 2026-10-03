@@ -53,19 +53,15 @@ describe('the native base: dsh\'s own apps on lyteboat\'s kernel (built bin, moc
     }
   })
 
-  it('a business agent reads neither the shared skill root nor dsh-headless\'s coding persona that a native run gets', async () => {
+  it('lyteboat headless refuses a business agent and points to serve, without a model request', async () => {
     const { home, workspace } = scratch.run('business')
     const before = mock.requests.length
 
     const result = await runLyteboat(['headless', '--agents', AGENTS, '--agent', 'echo', 'say hello'], { cwd: workspace, env: { LYTEBOAT_HOME: home, DSH_AGENTS_HOME: agentsHome, ...scriptedModelEnv(mock) } })
 
-    expect(result.code, result.stderr).toBe(0)
-    const sent = mock.requests.slice(before)
-    expect(sent.length).toBeGreaterThan(0)
-    for (const request of sent) {
-      expect(JSON.stringify(request)).not.toContain(STRAY_SKILL)
-      expect(JSON.stringify(request)).not.toContain('You are a coding agent')
-    }
+    expect(result.code).toBe(1)
+    expect(result.stderr).toContain('serve one with lyteboat serve --agents <dir> and POST /chat')
+    expect(mock.requests.length).toBe(before)
   })
 
   it('lyteboat web serves dsh\'s web app and accepts its sign-in token', async () => {

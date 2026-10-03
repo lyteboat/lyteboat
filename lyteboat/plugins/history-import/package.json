@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "license": "MIT",
-  "description": "lyteboat's external history import: entries grouped into rounds by trace id (half rounds dropped, the first duplicate role kept, ordered by create time); each round a session lacks, by trace id, queued as a turn of its own and answered on the lyteboat/intake waterfall without a model request, or a session seed of closed turns",
+  "description": "lyteboat's external history import: entries grouped into rounds by trace id (half rounds dropped, the first duplicate role kept, ordered by create time); each round a session lacks, by trace id, queued as a turn of its own and answered on the lyteboat/intake waterfall without a model request",
   "type": "module",
   "exports": {
     ".": {

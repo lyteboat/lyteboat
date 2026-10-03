@@ -111,9 +111,6 @@
       "path": "./lyteboat/plugins/studio-web"
     },
     {
-      "path": "./lyteboat/bundles/headless"
-    },
-    {
       "path": "./lyteboat/bundles/serve"
     },
     {

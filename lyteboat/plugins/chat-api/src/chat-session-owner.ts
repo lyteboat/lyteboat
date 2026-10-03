@@ -1,6 +1,6 @@
 /**
  * Who may continue a session over `/chat`: only the end user who owns it. A
- * session owned by another user, by an operator (the command line), by
+ * session owned by another user, by an operator, by
  * lyteboat itself (an eval run), or by nobody is not theirs to continue.
  * @module @lyteboat/chat-api/chat-session-owner
  */

@@ -124,7 +124,9 @@ describe('lyteboat serve (in process, scripted model)', () => {
     expect(loop?.toolNames).toEqual(['skill'])
     // No runtime context either: no sandbox or approval policy, no state.
     expect(loop?.body.messages).toEqual([{ role: 'user', content: [{ type: 'text', text: 'what do you see' }] }])
+    // The kernel's dsh-base keeps the session uploads off.
     expect(loop?.body['dsh_plugin_packages']).toBeUndefined()
+    expect(loop?.body['dsh_session_log']).toBeUndefined()
   })
 
   it('streams the enterprise frames in protocol order, each tagged by the agent\'s frame decorator', async () => {
@@ -328,6 +330,17 @@ describe('lyteboat serve startup (in process)', () => {
 
     expect(result.code).not.toBe(0)
     expect(result.stderr).toContain('beta: agent.yml declares model deepseek-official/deepseek-pro, but this process runs deepseek-official/deepseek-flash')
+  })
+
+  it('stops with the agent catalog\'s diagnosis when an agent does not mount', async () => {
+    const run = scratch.run('unmountable', { 'agents/unmountable/agent.cordis.yml': "- id: gone\n  name: '@lyteboat/no-such-package'\n" })
+    const target = { cwd: run.workspace, home: run.home, env: { DSH_TELEMETRY_DISABLED: '1' } }
+
+    const result = await bootComposition({ bundles: LYTEBOAT_SERVE_BUNDLES, args: ['--agents', join(run.workspace, 'agents'), '--port', '0'], ...target })
+
+    expect(result.code).toBe(1)
+    expect(result.stderr).toContain('agent-catalog: 1 agent(s) failed')
+    expect(result.stderr).toContain('@lyteboat/no-such-package')
   })
 
   it('refuses a chat-api config key it does not have', async () => {

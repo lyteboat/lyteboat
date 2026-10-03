@@ -1,5 +1,5 @@
 // A plugin file that writes one line to stderr when applied and registers one tool:
-// try.e2e inserts it with --plugin, looks for the line (the row ran, not only
+// serve.e2e inserts it with --plugin, looks for the line (the row ran, not only
 // loaded), and has the model call the tool, since the business base leaves no coding
 // tool to call; args.spec needs a second existing file.
 export const name = 'fixture-announce'

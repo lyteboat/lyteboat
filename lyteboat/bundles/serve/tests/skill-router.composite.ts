@@ -1,20 +1,18 @@
+import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
-import { findSessionLogs, readSessionLog } from '@lyteboat/testkit/session-log'
 import { reopenRefusal } from '@lyteboat/testkit/session-reopen'
-import { FIXTURES, headlessComposition } from './support/headless-composition.ts'
-import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
+import { startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
+import { serveBaseAgents, type BaseLogRecord, type ServedBaseAgents } from './support/base-agents-serve.ts'
 
-const AGENTS = join(FIXTURES, 'agents')
 const ANSWER = 'SKILL-ROUTER-OK'
 
-type SessionRecord = { type: string; ignorable?: true; data?: Record<string, unknown> }
-const isSkillInvocation = (record: SessionRecord): boolean =>
+const isSkillInvocation = (record: BaseLogRecord): boolean =>
   record.type === 'user/message' && (record.data?.['source'] as { kind?: unknown } | undefined)?.kind === 'skill-invocation'
 
-// A skill in the workspace's project root: the business base lends no agent a
-// host skill root, so it is never a routing candidate.
+// A skill in the project root of every session an agent runs: the business
+// base lends no agent a host skill root, so it is never a routing candidate.
 const WORKSPACE_SKILL = `---
 name: workspace-notes
 description: 工作区里的笔记。
@@ -22,34 +20,35 @@ description: 工作区里的笔记。
 WORKSPACE-NOTES-BODY
 `
 
-describe('@lyteboat/skill-router in the business one-shot composition (in process, scripted model)', () => {
+describe('@lyteboat/skill-router in the serve composition (in process, scripted model)', () => {
   const scratch = createLyteboatScratch('skill-router')
   let model: ScriptedModel
+  let served: ServedBaseAgents
 
   beforeAll(async () => {
     model = await startScriptedModel(withTitle((request: RecordedRequest) => request.purpose === 'router'
       ? { text: '{"skill_id": "asset-overview", "reason": "看资产"}' }
       : { text: ANSWER }), { apiKey: 'mock-key' })
+    served = await serveBaseAgents(scratch, model)
+    for (const agent of ['routed', 'minimal']) {
+      const skillDir = join(served.home, 'agent-workdirs', agent, '.dsh', 'skills', 'workspace-notes')
+      mkdirSync(skillDir, { recursive: true })
+      writeFileSync(join(skillDir, 'SKILL.md'), WORKSPACE_SKILL)
+    }
   })
 
   afterAll(async () => {
+    const run = await served.serve.stop()
     await model.close()
     scratch.remove()
+    expect(run.code, run.stderr).toBe(0)
   })
 
-  function fresh(label: string): { home: string; workspace: string } {
-    return scratch.run(label, { '.dsh/skills/workspace-notes/SKILL.md': WORKSPACE_SKILL })
-  }
-
-  it('routes the task through the router model and puts the skill body and its tool into the same request', async () => {
-    const { home, workspace } = fresh('dynamic')
+  it('routes the message through the router model and puts the skill body and its tool into the same request', async () => {
     const before = model.requests.length
-    const result = await headlessComposition(
-      ['--agents', AGENTS, '--agent', 'routed', '看看我的资产'],
-      { cwd: workspace, home, env: scriptedModelEnv(model) },
-    )
-    expect(result.code, result.stderr).toBe(0)
-    expect(result.stdout).toContain(ANSWER)
+    const { body, records } = await served.ask('routed', '看看我的资产')
+
+    expect(body.response).toBe(ANSWER)
     const requests = model.requests.slice(before)
     const router = requests.filter(request => request.purpose === 'router')
     expect(router).toHaveLength(1)
@@ -65,8 +64,6 @@ describe('@lyteboat/skill-router in the business one-shot composition (in proces
     const messages = JSON.stringify(loop[0]!.body.messages)
     expect(messages).toContain('ASSET-OVERVIEW-BODY')
     expect(messages).not.toContain('MARKET-NEWS-BODY')
-    const [log] = findSessionLogs(home)
-    const records = readSessionLog(log!) as SessionRecord[]
     // The router call is lyteboat's one record of its own: audited, and ignorable for other readers.
     const own = records.filter(record => record.type.startsWith('lyteboat/'))
     expect(own.map(record => [record.type, record.ignorable])).toEqual([['lyteboat/aux-llm-call', true]])
@@ -78,18 +75,33 @@ describe('@lyteboat/skill-router in the business one-shot composition (in proces
     expect(reopenRefusal(records)).toBeUndefined()
   })
 
-  it('leaves the host composition alone without an agent: no router call and no skill, not even the workspace\'s', async () => {
-    const { home, workspace } = fresh('off')
+  it('continues a routed session: the next turn derives the first and keeps the skill without injecting it again', async () => {
+    const first = await served.ask('routed', '看看我的资产')
     const before = model.requests.length
-    const result = await headlessComposition(['看看我的资产'], { cwd: workspace, home, env: scriptedModelEnv(model) })
-    expect(result.code, result.stderr).toBe(0)
+
+    const { body, records } = await served.ask('routed', '那总额呢', { session_id: first.body.session_id })
+
+    expect(body).toMatchObject({ session_id: first.body.session_id, response: ANSWER })
+    const requests = model.requests.slice(before)
+    expect(requests.filter(request => request.purpose === 'router')[0]?.lastUser).toContain('<current_active_skill>asset-overview</current_active_skill>')
+    const loop = requests.filter(request => request.purpose === 'loop')
+    expect(loop).toHaveLength(1)
+    expect(loop[0]!.toolNames).toContain('todo_write')
+    const messages = JSON.stringify(loop[0]!.body.messages)
+    expect(messages).toContain('看看我的资产')
+    expect(messages.split('ASSET-OVERVIEW-BODY')).toHaveLength(2)
+    expect(records.filter(record => record.type === 'turn/start')).toHaveLength(2)
+  })
+
+  it('makes no router call and offers no skill to an agent without routing, not even its project root\'s', async () => {
+    const before = model.requests.length
+    const { records } = await served.ask('minimal', '看看我的资产')
+
     const requests = model.requests.slice(before)
     expect(requests.filter(request => request.purpose === 'router')).toHaveLength(0)
     const loop = requests.filter(request => request.purpose === 'loop')
     expect(loop).toHaveLength(1)
     expect(JSON.stringify(loop[0]!.body)).not.toContain('workspace-notes')
-    const [log] = findSessionLogs(home)
-    const records = readSessionLog(log!) as SessionRecord[]
     expect(records.map(record => record.type).filter(type => type.startsWith('lyteboat/'))).toEqual([])
     expect(records.filter(isSkillInvocation)).toEqual([])
   })

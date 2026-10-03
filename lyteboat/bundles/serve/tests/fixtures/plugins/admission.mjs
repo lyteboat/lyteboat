@@ -1,6 +1,6 @@
 // A host-scope admission function: a stock question gets a fixed reply and a
 // card without a model request, everything else passes. Tests insert it the way
-// `lyteboat headless --plugin <this file>` would in the business one-shot.
+// `lyteboat serve --plugin <this file>` would.
 export const name = 'example-admission'
 export const inject = ['requestAdmission']
 

@@ -102,6 +102,7 @@ extensions:
       - api › @deepseek-ai/dsh-headless › exports › . › LyteboatHeadlessReportPlan
     exit: >-
       Upstream's one-shot runner lets a plugin compose and place the Agent it creates, submit the task,
-      and shape what it prints; then @lyteboat/headless uses those seams instead.
+      and shape what it prints; then a plugin uses those seams instead. No lyteboat row listens to
+      these waterfalls.
     tests:
       - dsh/bundle/headless/tests/lyteboat/headless-hooks.spec.ts
