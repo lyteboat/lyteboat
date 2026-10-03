@@ -181,7 +181,7 @@ Work is delivered one runnable milestone at a time, and a large milestone is spl
 
 Run only the gates the change can affect, and report only the commands you ran.
 
-1. Touched `src/` or `tests/`? `pnpm run lint` and `pnpm run test` (build, G1, spec, composite, e2e, and G2) pass; `pnpm run check` adds the compatibility gates (G4–G6). While iterating, `pnpm run test:changed` runs only the spec files whose imports reach a file changed since `origin/master` (seconds for a plugin change); `pnpm run test:unit` runs every spec (about a minute, half of it upstream's kernel tests). Both read the kernel's built `lib/`, so after a `dsh/` change run `pnpm run build` first. Run `pnpm run test` once before a commit, not after every edit.
+1. Touched `src/` or `tests/`? `pnpm run lint` and `pnpm run test` (build, G1, spec, composite, e2e, and G2) pass; `pnpm run check` adds the compatibility gates (G4–G6). `pnpm run test:unit` is the fast loop while iterating (the kernel must have been built once).
 2. Touched types or a `tsconfig.json`? `pnpm run typecheck` (sources and tests) introduces no new errors.
 3. Tests for the new code match the [test table](#testing).
 4. Touched anything a user runs (CLI flags, `cordis.patch.yml`, an agent)? Run it once from the built binary (`node lyteboat/apps/cli/lib/bin.js …`) with the scripted model or a real key, and paste the command in the commit or PR.
@@ -226,8 +226,7 @@ Conventions:
 | Build | `pnpm run build` (`tsc -b`; emits every package's `lib/`) |
 | Lint | `pnpm run lint` |
 | Typecheck sources and tests | `pnpm run typecheck` |
-| Unit tests affected by this branch (no build, no composite or e2e) | `pnpm run test:changed` |
-| Unit tests (no build, no composite or e2e) | `pnpm run test:unit` |
+| Unit tests (fast loop, no build, no composite or e2e) | `pnpm run test:unit` |
 | All tests (spec + composite + e2e, builds first) | `pnpm run test` |
 | What CI runs (build, G1, lyteboat's tests, G2) | `pnpm run test` (after `pnpm run lint` and `pnpm run typecheck`) |
 | G4–G6 against the official release | `pnpm run dsh-compat` |

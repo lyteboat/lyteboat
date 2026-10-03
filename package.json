@@ -15,7 +15,6 @@
     "test": "pnpm run build && pnpm run contract:check && vitest run --project source --project dsh --project composite",
     "dsh-compat": "pnpm run build && vitest run --project dsh-compat",
     "test:unit": "vitest run --project source --project dsh --exclude '**/*.e2e.ts' --exclude '**/*.composite.ts'",
-    "test:changed": "vitest run --project source --project dsh --changed origin/master --exclude '**/*.e2e.ts' --exclude '**/*.composite.ts'",
     "check": "pnpm run lint && pnpm run test && pnpm run dsh-compat",
     "dist:snapshot": "node --import tsx scripts/dist/snapshot.ts",
     "dist:import": "node --import tsx scripts/dist/import-upstream.ts",
