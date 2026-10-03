@@ -132,7 +132,7 @@ lyteboat 的解法照搬 Android 的 CDD/CTS：`COMPAT.md` 写"必须成立什�
 
 **机制三：公开提升**（`pnpm-workspace.yaml`）。`publicHoistPattern` 把 `@deepseek-ai/*` 和 `@lyteboat/*` 提升到根 `node_modules`，原因有两个：
 
-- agent 目录（`lyteboat headless`、`serve`、`eval`、`inspect`、`studio` 的 `--agents`）里的行用裸包名，从 agent 目录向上查找；
+- agent 目录（`serve`、`eval`、`inspect`、`studio` 的 `--agents`）里的行用裸包名，从 agent 目录向上查找；
 - 组合测试从仓库根解析行。
 
 pnpm 的隔离布局下，只有提升到根的包才能被这两种查找找到。所有包都被机制二钉在同一个版本，所以提升不会产生版本冲突。
@@ -493,7 +493,7 @@ G1 stale registration: <extension> lists <key>, which does not differ from upstr
 | `agent-loop-pre-assemble` | `@deepseek-ai/dsh-agent-loop` · `event` | `lyteboat/pre-assemble` waterfall：`lyteboat/intake` 放行之后、装配提示词之前派发，所以技能路由和工具激活能影响同一步的请求 | 上游在 `systemPrompt.assemble` 之前派发一个还能改这一步提示词与工具集的事件 | `dsh/core/agent-loop/tests/lyteboat/pre-assemble.spec.ts` | `@lyteboat/tool-policy`、`@lyteboat/skill-router` |
 | `session-append-ignorable` | `@deepseek-ai/dsh-session` · `api-option` | `Session.append(type, data, { ignorable: true })` 给本构建不认识的非 surface 类型写 `ignorable: true`，读者不认识这个类型就跳过它，而不是拒绝整份日志；本构建认识的类型（含 surface 类型）要求标记一律拒绝 | 上游给 `Session.append`（或别的写入口）一个设置 `SessionEvent.ignorable` 的办法 | `dsh/core/session/tests/lyteboat/append-ignorable.spec.ts`、`dsh/session/session-persistence/tests/lyteboat/reopen-ignorable.spec.ts` | `@lyteboat/model-side-call`（`lyteboat/aux-llm-call` 记录） |
 | `session-controller-prompt-source` | `@deepseek-ai/dsh-api-session-controller` · `api-option` | `SessionPromptRequest.sourceFields`：`prompt` 把调用方的字段并进它追加的用户消息的 source，与控制器自己写的 `kind`、`rpcId`、`clientTimeZone` 并列；设置这三个字段的请求以 `gateway/bad-request` 拒绝，消息不到 agent。Typert 的 Host face 和 Remote client 认这个字段 | 上游让 prompt 能把调用方的字段带到用户消息的 source 上 | `dsh/api/session-controller/tests/lyteboat/prompt-source.host.spec.ts` | `@lyteboat/request-context` 的 `sourceFields()`（`/chat` 和 `lyteboat eval` 经它送请求） |
-| `headless-hooks` | `@deepseek-ai/dsh-headless` · `event` | 一次性运行器在一次运行周围派发三个 waterfall，各带运行器在那一点的计划：`lyteboat/headless-start`（工作目录、新会话记下且续写的会话必须沿用的 agent preset、每个 Agent 的 setup、新会话的 seed），在创建或接管 Agent 之前；`lyteboat/headless-submit`（任务怎么交给 Agent），在提交任务之前；`lyteboat/headless-report`（stdout 输出的回答），在打印回答之前。监听器改计划并调 `next()`，运行器照 waterfall 留下的计划执行；没有监听器时就是官方运行器。续写时比对日志里的 preset 与计划的 | 上游的一次性运行器让插件能组合并安放它创建的 Agent、提交任务、决定打印什么 | `dsh/bundle/headless/tests/lyteboat/headless-hooks.spec.ts` | `@lyteboat/headless` 的 `lyteboat-headless` 行（`lyteboat headless --agent`） |
+| `headless-hooks` | `@deepseek-ai/dsh-headless` · `event` | 一次性运行器在一次运行周围派发三个 waterfall，各带运行器在那一点的计划：`lyteboat/headless-start`（工作目录、新会话记下且续写的会话必须沿用的 agent preset、每个 Agent 的 setup、新会话的 seed），在创建或接管 Agent 之前；`lyteboat/headless-submit`（任务怎么交给 Agent），在提交任务之前；`lyteboat/headless-report`（stdout 输出的回答），在打印回答之前。监听器改计划并调 `next()`，运行器照 waterfall 留下的计划执行；没有监听器时就是官方运行器。续写时比对日志里的 preset 与计划的 | 上游的一次性运行器让插件能组合并安放它创建的 Agent、提交任务、决定打印什么 | `dsh/bundle/headless/tests/lyteboat/headless-hooks.spec.ts` | 没有：lyteboat 的行都不监听它，`lyteboat headless` 跑的是官方运行器 |
 
 ### 4.4 `lyteboatDistro`：把登记表带到运行时
 
@@ -502,9 +502,9 @@ G1 stale registration: <extension> lists <key>, which does not differ from upstr
 - **服务。** `@lyteboat/distro` 发布 `ctx.lyteboatDistro`，提供 `dsh`、`extensions`、`has(id)`（`lyteboat/plugins/distro/src/index.ts` `LyteboatDistroService`）。
 - **挂载位置。** 业务底座 `@lyteboat/base` 把 `lyteboat-distro` 行放在 lyteboat 所有服务行的第一个（`lyteboat/bundles/base/cordis.patch.yml`）。
 - **防过期。** `pnpm run lint` 带 `--check` 跑一次生成器，产物过期就失败（`package.json`）。
-- **谁 inject 它。** lyteboat 里用到 `agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable` 的插件都 inject 它：`@lyteboat/tool-policy`、`@lyteboat/skill-router`、`@lyteboat/request-admission`、`@lyteboat/model-side-call`（各自 `src/index.ts` 的 `static inject`）；`@lyteboat/headless` 的 `lyteboat-headless` 行听 `headless-hooks` 的三个 waterfall，也 inject 它（`lyteboat/bundles/headless/src/index.ts` `LyteboatHeadlessHooks.inject`）。放到官方 dsh 上，它们与第三方插件一样停在等待状态。`@lyteboat/chat-api` 经 `sessionController.prompt` 的 `sourceFields` 用 `session-controller-prompt-source`，没有 inject 它；它只挂在 lyteboat 的 serve 组合里（`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService.inject`）。`@lyteboat/eval-runner` 也一样，只挂在 eval 组合里（`lyteboat/plugins/eval-runner/src/index.ts` `EvalRunnerService.inject`）。
+- **谁 inject 它。** lyteboat 里用到 `agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable` 的插件都 inject 它：`@lyteboat/tool-policy`、`@lyteboat/skill-router`、`@lyteboat/request-admission`、`@lyteboat/model-side-call`、`@lyteboat/history-import`（各自 `src/index.ts` 的 `static inject`）。放到官方 dsh 上，它们与第三方插件一样停在等待状态。`@lyteboat/chat-api` 经 `sessionController.prompt` 的 `sourceFields` 用 `session-controller-prompt-source`，没有 inject 它；它只挂在 lyteboat 的 serve 组合里（`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService.inject`）。`@lyteboat/eval-runner` 也一样，只挂在 eval 组合里（`lyteboat/plugins/eval-runner/src/index.ts` `EvalRunnerService.inject`）。
 
-**例子：按第三方写法的插件。** 仓库里的 fixture `lyteboat/bundles/headless/tests/fixtures/plugins/distro-aware.mjs`：
+**例子：按第三方写法的插件。** 仓库里的 fixture `lyteboat/bundles/serve/tests/fixtures/plugins/distro-aware.mjs`：
 
 ```js
 export const name = 'example-distro-aware'
@@ -519,17 +519,18 @@ export function apply(ctx) {
 }
 ```
 
-**[实跑]**（临时 `LYTEBOAT_HOME`；这条路不请求模型，所以不需要 key；`--agent` 让 launcher 启动业务底座的 `headless-agent` profile，`minimal` 是同一个 bundle 的夹具 agent，只有人设）：
+**[实跑]**（临时 `LYTEBOAT_HOME`，`DEEPSEEK_BASE_URL` 指向脚本化模型；`minimal` 是 serve 测试的夹具 agent，只有人设）：
 
 ```console
-$ node lyteboat/apps/cli/lib/bin.js headless --plugin lyteboat/bundles/headless/tests/fixtures/plugins/distro-aware.mjs --agents lyteboat/bundles/headless/tests/fixtures/agents --agent minimal "hello"
-lyteboat: session session-…
-lyteboat on dsh 0.2.0-rc.2: agent-loop-intake, agent-loop-pre-assemble, session-append-ignorable, session-controller-prompt-source, headless-hooks
+$ node lyteboat/apps/cli/lib/bin.js serve --plugin lyteboat/bundles/serve/tests/fixtures/plugins/distro-aware.mjs --agents lyteboat/bundles/serve/tests/fixtures/base-agents --port 0
+lyteboat serve: http://127.0.0.1:<端口>/chat (agents: minimal, policy, routed)
+$ curl -s 127.0.0.1:<端口>/chat -H 'content-type: application/json' -d '{"agent_id":"minimal","user_id":"u-1","message":"hello"}'
+{"session_id":"session-…","message_id":"…","outcome":"rejected","response":"lyteboat on dsh 0.2.0-rc.2: agent-loop-intake, agent-loop-pre-assemble, session-append-ignorable, session-controller-prompt-source, headless-hooks","cards":[],"tool_calls":[]}
 ```
 
-退出码 0。`lyteboat/intake` 的 `reply` 不发模型请求；作为对照，不带插件的同一条命令发一次主循环请求（业务底座关掉了会话标题的旁路请求）。stderr 那一行是会话 id，供 `--session-id` 续写。`lyteboat/bundles/headless/tests/distro.composite.ts` 断言这两点。
+脚本化模型一个请求也没收到：`lyteboat/intake` 的 `reply` 不发模型请求，所以这一轮的结局是 `rejected`。日志里的回答是一条普通的 assistant 消息，source 为 `{"kind":"model","provider":"lyteboat","model":"example-distro-aware"}`，dsh 的持久层能重开这份日志。`lyteboat/bundles/serve/tests/distro.composite.ts` 断言回答、零个模型请求和重开。
 
-放到官方 dsh 上，同一个插件没有 `lyteboatDistro` 可注入，cordis 让它停在 `pending (waiting for service: lyteboatDistro)`，而不是监听一个没人派发的事件（`dsh-compat/COMPAT.md` §4）。lyteboat 的原生 profile 没有 `lyteboat-distro` 行，不带 `--agent` 的 `lyteboat headless` 上它也停在这里。
+放到官方 dsh 上，同一个插件没有 `lyteboatDistro` 可注入，cordis 让它停在 `pending (waiting for service: lyteboatDistro)`，而不是监听一个没人派发的事件（`dsh-compat/COMPAT.md` §4）。lyteboat 的原生 profile 没有 `lyteboat-distro` 行，`lyteboat headless` 和 `lyteboat web` 上它也停在这里。
 
 ### 4.5 一个扩展的生命周期
 
@@ -835,7 +836,7 @@ typert vs dsh 0.2.0-rc.2: @deepseek-ai/dsh-llm, @deepseek-ai/dsh-api-session-con
 
 ```sh
 export LYTEBOAT_HOME=$(mktemp -d) DSH_HOME=$(mktemp -d) DSH_TELEMETRY_DISABLED=1
-node lyteboat/apps/cli/lib/bin.js config dump --profile headless-agent > $SCRATCH/dump.yml 2> $SCRATCH/dump.err
+node lyteboat/apps/cli/lib/bin.js config dump --profile serve > $SCRATCH/dump.yml 2> $SCRATCH/dump.err
 ```
 
 ---
@@ -882,7 +883,7 @@ node lyteboat/apps/cli/lib/bin.js config dump --profile headless-agent > $SCRATC
    - 金丝雀：跟踪版本变了就按 §6.7 重选；在官方新版本上坏了的替换掉；
    - `COMPAT.md` 里写着跟踪版本的地方、README、`CLAUDE.md` 的 Stack 一行、本文；
    - 从 dsh 改编来的文件保留 `Adapted from deepseek-ai/deepseek-harness` 文件头，`THIRD_PARTY_NOTICES.md` 按这个文件头列出它们。
-10. **验证准入，提交。** 用构建好的 launcher 跑 `node lyteboat/apps/cli/lib/bin.js config dump --profile headless-agent 2> $SCRATCH/dump.err`，`dump.err` 里不能有 `disabling profile plugin` 或 `skipping profile bundle`（§8.2）。stdout 里本来就有一批 `disabled: true`：dsh-base 的 `tool-plugin-manager`、`skill-badge`、`tool-ralph`，以及它的 `policy` 关掉的 `session-log-deepseek`、`plugin-package-inventory-deepseek`、`session-telemetry-otel`，dsh-headless 关掉的 `hmr`，`@lyteboat/headless` 关掉的 `headless-startup`，以及 `@lyteboat/base` 关掉的行；它们是配置，与准入无关。然后提交合并，标题 `dist(sync): track dsh-v<新版本>`，正文列出每道闸门的数字。合并提交不受 `delta-report --check` 检查，用 §3.3 的 `git merge-tree` 办法确认合并没有夹带内核包目录下的改动。第 6 步重新生成的 Typert 文件和 `dsh/typert.json` 紧接着以 `Dist-Change: build` 单独提交；在合并提交和它之间，完整克隆的构建会停在 Typert 校验上。
+10. **验证准入，提交。** 用构建好的 launcher 跑 `node lyteboat/apps/cli/lib/bin.js config dump --profile serve 2> $SCRATCH/dump.err`，`dump.err` 里不能有 `disabling profile plugin` 或 `skipping profile bundle`（§8.2）。stdout 里本来就有一批 `disabled: true`：dsh-base 的 `tool-plugin-manager`、`skill-badge`、`tool-ralph`，以及它的 `policy` 关掉的 `session-log-deepseek`、`plugin-package-inventory-deepseek`、`session-telemetry-otel`，`@lyteboat/serve` 关掉的 `hmr`，以及 `@lyteboat/base` 关掉的行；它们是配置，与准入无关。然后提交合并，标题 `dist(sync): track dsh-v<新版本>`，正文列出每道闸门的数字。合并提交不受 `delta-report --check` 检查，用 §3.3 的 `git merge-tree` 办法确认合并没有夹带内核包目录下的改动。第 6 步重新生成的 Typert 文件和 `dsh/typert.json` 紧接着以 `Dist-Change: build` 单独提交；在合并提交和它之间，完整克隆的构建会停在 Typert 校验上。
 
 ---
 
@@ -1076,7 +1077,7 @@ lyteboat release: finance 1.0.0 (sha256:a8261280…) released; lock: <仓库>/ex
 2. 在 `tests/lyteboat/<name>.spec.ts` 写测试。扩展涉及持久化时，在持久化层所在的包里另写一个"存盘再读回"的测试（如 `reopen-ignorable.spec.ts`）。
 3. `pnpm run build && pnpm run contract:check`：G1 列出的 `unregistered addition` / `unregistered change` 就是要登记的键。
 4. 在 `dsh-compat/contract/extensions.yml` 加条目：`id`、`package`、`kind`、`surface`、`contract`（上一步的键或它们的前缀）、`exit`、`tests`。再跑 G1，应当变成 `N registered difference(s), 0 failure(s)`。
-5. `node --import tsx scripts/dist/gen-distro-manifest.ts` 重新生成 distro manifest；断言完整扩展清单的 `lyteboat/bundles/headless/tests/distro.composite.ts` 跟着改；`pnpm run lint` 确认不过期。
+5. `node --import tsx scripts/dist/gen-distro-manifest.ts` 重新生成 distro manifest；断言完整扩展清单的 `lyteboat/bundles/serve/tests/distro.composite.ts` 跟着改；`pnpm run lint` 确认不过期。
 6. lyteboat 插件要用这个扩展的新类型，从 `@lyteboat/contracts` 再导出（参照 `lyteboat/core/contracts/src/index.ts`）；用到扩展的插件 inject `lyteboatDistro`（§4.4）。
 7. 在 `COMPAT.md` §4 补一句人读说明（如需）。
 8. 提交带全 §3.3 的六个 trailer。
