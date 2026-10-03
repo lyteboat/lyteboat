@@ -2,7 +2,10 @@
  * The `lyteboatTurnOutcomes` projection: each turn of a session folded from
  * its `turn/start` to its `turn/end`. The turn's first human message gives its
  * request (the request's own id, else the session controller's `rpcId`; the
- * owner, agent, trace id, and the admission's decision recorded on it); steps,
+ * owner, agent, trace id, and the admission's decision recorded on it): the
+ * fold follows the agent's inbox, so the turn takes the request when it claims
+ * the message, and a turn that fails before the message is logged (a throwing
+ * intake or pre-assemble listener) still answers it; steps,
  * model requests (answers and failed attempts that streamed), and the side
  * calls made while the turn was open are counted; every tool call is paired
  * with its result; the first content is the first answer text streamed, an
@@ -32,6 +35,7 @@ import {
 } from '@lyteboat/contracts'
 
 type TurnOutcomeRequest = NonNullable<LyteboatTurnOutcome['request']>
+type TurnOutcomeQueued = LyteboatTurnOutcomesState['queued']
 
 /** The request a turn's first human message carries: its own, else the session controller's request id alone. */
 function requestOf(source: { kind: string }): TurnOutcomeRequest {
@@ -47,6 +51,11 @@ function requestOf(source: { kind: string }): TurnOutcomeRequest {
     ...request.traceId === undefined ? {} : { traceId: request.traceId },
     ...request.intake === undefined ? {} : { intake: request.intake.decision },
   }
+}
+
+/** The request a queued message carries: a person's message has one, any other message none. */
+function queuedRequestOf(message: SessionEvent<'agent/inbox/spliced'>['data']['inserted'][number]): TurnOutcomeRequest | null {
+  return message.source.kind === 'user' ? requestOf(message.source) : null
 }
 
 function hasImmediateCard(meta: JsonValue | undefined): boolean {
@@ -94,11 +103,31 @@ function endTurn(turn: LyteboatTurnOutcome, event: SessionEvent<'turn/end'>): Ly
   }
 }
 
+/**
+ * One splice of the agent's inbox. The queue follows it; a claim (a removal the
+ * loop makes for a step, where a cancellation is marked `canceled`) gives the
+ * open turn the request of the first person's message it took.
+ */
+function withInboxSplice(state: LyteboatTurnOutcomesState, event: SessionEvent<'agent/inbox/spliced'>): LyteboatTurnOutcomesState {
+  const { target, start, removedCount = 0, inserted, outcome } = event.data
+  const pending = state.queued[target]
+  const spliced = pending.toSpliced(start, removedCount, ...inserted.map(queuedRequestOf))
+  const queued: TurnOutcomeQueued = target === 'next-turn'
+    ? { 'next-turn': spliced, 'next-step': state.queued['next-step'] }
+    : { 'next-turn': state.queued['next-turn'], 'next-step': spliced }
+  const next = { ...state, queued }
+  const claimed = outcome === 'canceled' ? undefined : pending.slice(start, start + removedCount).find(request => request !== null)
+  return claimed === undefined || claimed === null ? next : withOpenTurn(next, turn => turn.request === undefined ? { ...turn, request: claimed } : turn)
+}
+
 function withHumanMessage(turn: LyteboatTurnOutcome, event: SessionEvent<'user/message'>): LyteboatTurnOutcome {
   const { source } = event.data
   if (source.kind === LYTEBOAT_HISTORY_IMPORT_SOURCE) return turn.imported ? turn : { ...turn, imported: true }
-  if (turn.request !== undefined || source.kind !== 'user') return turn
-  return { ...turn, request: requestOf(source) }
+  if (source.kind !== 'user') return turn
+  const request = requestOf(source)
+  // The claim gave the turn this message's request; the logged message adds the admission's decision to it.
+  if (turn.request !== undefined && turn.request.requestId !== request.requestId) return turn
+  return { ...turn, request }
 }
 
 function withAnswer(turn: LyteboatTurnOutcome, event: SessionEvent<'assistant/message'>): LyteboatTurnOutcome {
@@ -134,6 +163,7 @@ function withToolResult(turn: LyteboatTurnOutcome, event: SessionEvent<'tool/res
 function applyTurnOutcomeEvent(state: LyteboatTurnOutcomesState, event: SessionEvent): LyteboatTurnOutcomesState {
   switch (event.type) {
     case 'turn/start': return startTurn(state, event)
+    case 'agent/inbox/spliced': return withInboxSplice(state, event)
     case 'turn/end': return withOpenTurn(state, turn => endTurn(turn, event))
     case 'step/start': return withOpenTurn(state, turn => ({ ...turn, steps: turn.steps + 1 }))
     case 'assistant/attempt':
@@ -151,7 +181,7 @@ function applyTurnOutcomeEvent(state: LyteboatTurnOutcomesState, event: SessionE
 
 /** The state of a log with no events yet, of which the first `inheritedEventCount` are inherited. */
 function initialTurnOutcomes(inheritedEventCount: number): LyteboatTurnOutcomesState {
-  return { importedBelowSeq: inheritedEventCount, turns: [] }
+  return { importedBelowSeq: inheritedEventCount, queued: { 'next-turn': [], 'next-step': [] }, turns: [] }
 }
 
 /**
@@ -170,5 +200,5 @@ export const lyteboatTurnOutcomesProjectionDefinition = {
   stateSchema: lyteboatTurnOutcomesStateSchema,
   init: (_header, inheritedEventCount): LyteboatTurnOutcomesState => initialTurnOutcomes(inheritedEventCount),
   apply: applyTurnOutcomeEvent,
-  stateVersion: 1,
+  stateVersion: 2,
 } satisfies ProjectionDefinition<'lyteboatTurnOutcomes', LyteboatTurnOutcomesState>

@@ -177,7 +177,7 @@ describe('the turn outcome fold over a stored log', () => {
   it('leaves a surface replacement uncounted and returns the same state for an event it ignores', () => {
     const { inherited, events } = seededLog()
     const definition = lyteboatTurnOutcomesProjectionDefinition
-    let state: LyteboatTurnOutcomesState = { importedBelowSeq: inherited, turns: [] }
+    let state: LyteboatTurnOutcomesState = { importedBelowSeq: inherited, queued: { 'next-turn': [], 'next-step': [] }, turns: [] }
     for (const event of events.slice(0, -1)) state = definition.apply(state, event)
     const replacement = {
       type: 'assistant/message', seq: SessionSeq(events.length), time: 2_000,
@@ -205,6 +205,22 @@ describe('turnOutcome.ended', () => {
     expect(ended).toMatchObject({ turn: 1, kind: 'completed', request: { requestId: 'rpc-1' } })
     expect(await ctx.turnOutcome.ended(agent.session, 'rpc-1', signal)).toEqual(ended)
     expect(ctx.turnOutcome.forRequest(agent.session, 'rpc-1')).toEqual(ended)
+  })
+
+  it('resolves for a turn that fails after claiming the request and before logging its message', async () => {
+    const adapter = new MockAdapter([])
+    const ctx = await outcomeHost(adapter)
+    ctx.on('lyteboat/pre-assemble', () => Promise.reject(new Error('skill "notes" requires tool "lookup_notes", which the tool policy does not declare')))
+    const agent = await agentOf(ctx, 'unlogged')
+
+    const pending = ctx.turnOutcome.ended(agent.session, 'rpc-1', new AbortController().signal)
+    agent.followup(controllerMessage('hello', 'rpc-1'))
+    const ended = await pending
+
+    expect(adapter.requests).toHaveLength(0)
+    expect(agent.session.snapshotEvents().map(event => event.type)).not.toContain('user/message')
+    expect(ended).toMatchObject({ turn: 1, kind: 'errored', request: { requestId: 'rpc-1' }, error: { message: expect.stringContaining('requires tool "lookup_notes"') as string } })
+    expect(ctx.turnOutcome.fold(agent.session.inheritedEventCount, agent.session.snapshotEvents())).toEqual(ctx.turnOutcome.of(agent.session))
   })
 
   it('stops waiting when its signal aborts', async () => {

@@ -503,7 +503,12 @@ export type LyteboatTurnOutcome = {
   endedAt?: number
   /** Whether the turn is imported history: it lies in the session's inherited prefix, or its human message is an imported round's question. */
   imported: boolean
-  /** The request of the turn's first human message, when it carries one or the session controller's request id. */
+  /**
+   * The request of the turn's first human message, when it carries one or the
+   * session controller's request id. The turn takes it when it claims the
+   * message from the agent's inbox, so a turn that fails before the message is
+   * logged still has it; the logged message adds the admission's decision.
+   */
   request?: {
     /** The request's own id, else the session controller's `rpcId`. */
     requestId?: string
@@ -530,6 +535,14 @@ export type LyteboatTurnOutcome = {
   error?: { code: string; message: string }
 }
 
+const lyteboatTurnOutcomeRequestSchema: z.ZodType<NonNullable<LyteboatTurnOutcome['request']>> = z.object({
+  requestId: z.string().exactOptional(),
+  owner: lyteboatRequestOwnerSchema.exactOptional(),
+  agentId: z.string().exactOptional(),
+  traceId: z.string().exactOptional(),
+  intake: z.enum(['pass', 'reply']).exactOptional(),
+})
+
 /** The schema of {@link LyteboatTurnOutcome}. */
 export const lyteboatTurnOutcomeSchema: z.ZodType<LyteboatTurnOutcome> = z.object({
   turn: z.number(),
@@ -538,13 +551,7 @@ export const lyteboatTurnOutcomeSchema: z.ZodType<LyteboatTurnOutcome> = z.objec
   startedAt: z.number(),
   endedAt: z.number().exactOptional(),
   imported: z.boolean(),
-  request: z.object({
-    requestId: z.string().exactOptional(),
-    owner: lyteboatRequestOwnerSchema.exactOptional(),
-    agentId: z.string().exactOptional(),
-    traceId: z.string().exactOptional(),
-    intake: z.enum(['pass', 'reply']).exactOptional(),
-  }).exactOptional(),
+  request: lyteboatTurnOutcomeRequestSchema.exactOptional(),
   answeredByAdmission: z.boolean(),
   steps: z.number(),
   modelRequests: z.number(),
@@ -566,12 +573,22 @@ export const lyteboatTurnOutcomeSchema: z.ZodType<LyteboatTurnOutcome> = z.objec
 export type LyteboatTurnOutcomesState = {
   /** Events below this seq are inherited (imported history). */
   importedBelowSeq: number
+  /**
+   * The messages pending in the agent's inbox, in its order per list (dsh's
+   * `agent/inbox/spliced`): each one's request, null for a message that is
+   * not a person's. A claim removes them, which tells the turn its request.
+   */
+  queued: { 'next-turn': (NonNullable<LyteboatTurnOutcome['request']> | null)[]; 'next-step': (NonNullable<LyteboatTurnOutcome['request']> | null)[] }
   turns: LyteboatTurnOutcome[]
 }
 
 /** The schema of {@link LyteboatTurnOutcomesState}. */
 export const lyteboatTurnOutcomesStateSchema: z.ZodType<LyteboatTurnOutcomesState> = z.object({
   importedBelowSeq: z.number(),
+  queued: z.object({
+    'next-turn': z.array(lyteboatTurnOutcomeRequestSchema.nullable()),
+    'next-step': z.array(lyteboatTurnOutcomeRequestSchema.nullable()),
+  }),
   turns: z.array(lyteboatTurnOutcomeSchema),
 })
 
