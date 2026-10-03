@@ -8,8 +8,6 @@
  * them. A routed session reopens under dsh's persistence, and `--session-id`
  * continues it in a new process with the context it began with.
  */
-import { writeFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { LYTEBOAT_HEADLESS_AGENT_BUNDLES, bootComposition, printedSessionId } from '@lyteboat/testkit/composition'
 import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
@@ -116,16 +114,6 @@ describe('finance agent in the business one-shot composition (in process, script
     expect(lastToolResult(requests.filter(isLoop)[1]!)).toMatch(/^\[tool:lookup_knowledge status=ok topic=再平衡 areas=none\]/u)
     expect(lastToolResult(requests.filter(isLoop)[1]!)).toContain('再平衡是定期把各类资产的比例调回目标')
     expect(resultMeta(records)?.lyteboat).toBeUndefined()
-  })
-
-  it('imported history: the admission classifier sees the imported questions beside their answers', async () => {
-    const history = join(scratch.root, 'history.json')
-    writeFileSync(history, JSON.stringify({ context: { history: [
-      { channel: 'app', createTime: '2026-09-20 10:00:00', role: 'user', traceId: 'trace-0001', parts: [{ type: 'text', text: '帮我看看我的资产' }] },
-      { channel: 'app', createTime: '2026-09-20 10:00:06', role: 'assistant', traceId: 'trace-0001', parts: [{ type: 'text', text: '您的资产合计 8 万元。' }] },
-    ] } }))
-    const { requests } = await run('history', 'young-idle-cash', '我的配置合理吗', ['--history', history])
-    expect(requests.find(isIntake)?.lastUser).toContain('<conversation>\n用户：帮我看看我的资产\n助手：您的资产合计 8 万元。\n</conversation>')
   })
 
   it('a routed session reopens under dsh persistence: every fact rides a dsh envelope, the side calls ignorable records', async () => {

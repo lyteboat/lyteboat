@@ -501,7 +501,7 @@ export type LyteboatTurnOutcome = {
   /** When the turn started (epoch ms). */
   startedAt: number
   endedAt?: number
-  /** Whether the turn lies in the session's inherited prefix (imported history). */
+  /** Whether the turn is imported history: it lies in the session's inherited prefix, or its human message is an imported round's question. */
   imported: boolean
   /** The request of the turn's first human message, when it carries one or the session controller's request id. */
   request?: {
@@ -659,10 +659,27 @@ export const lyteboatActiveSkillStateSchema: z.ZodType<LyteboatActiveSkillState>
   loading: z.record(z.string(), z.string()),
 })
 
+/** The `lyteboatTraceIds` fold state. */
+export interface LyteboatTraceIdsState {
+  /** Every trace id the session's requests and imported rounds carry, once each, in log order. */
+  traceIds: string[]
+}
+
+/** The schema of {@link LyteboatTraceIdsState}. */
+export const lyteboatTraceIdsStateSchema: z.ZodType<LyteboatTraceIdsState> = z.object({
+  traceIds: z.array(z.string()),
+})
+
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
-    /** Imported history rounds, written by `@lyteboat/history-import` into a session seed. */
-    'plugin:lyteboat-history-import': { kind: typeof LYTEBOAT_HISTORY_IMPORT_SOURCE }
+    /** An imported history round's question, queued by `@lyteboat/history-import` as a turn of its own (or written into a session seed). */
+    'plugin:lyteboat-history-import': {
+      kind: typeof LYTEBOAT_HISTORY_IMPORT_SOURCE
+      /** The round's trace id; absent on the rounds a session seed carries. */
+      traceId?: string
+      /** The round's answer, carried while the message waits in the inbox; the turn logs the message without it. */
+      answer?: string
+    }
     /** A side model call's prompt, owned by `@lyteboat/model-side-call`. */
     'plugin:lyteboat-aux-llm': { kind: typeof LYTEBOAT_AUX_LLM_SOURCE }
     /** A human message that carries its request (context, verdict), written by the caller through `@lyteboat/request-context`. */
@@ -692,6 +709,8 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
     lyteboatRequest: LyteboatRequestState
     /** Each turn's request, counts, tool calls, and outcome, folded from the log; host-only. Owned by `@lyteboat/turn-outcome`. */
     lyteboatTurnOutcomes: LyteboatTurnOutcomesState
+    /** The trace ids the session already holds, from its requests and imported rounds; host-only. Owned by `@lyteboat/history-import`. */
+    lyteboatTraceIds: LyteboatTraceIdsState
   }
   interface SessionProjectionMap {
     /** Session tool state as the client sees it: the fold state itself. */

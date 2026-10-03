@@ -16,6 +16,8 @@ import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
 import type { LyteboatTurnHeartbeat, LyteboatTurnMetric } from '@lyteboat/contracts'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testkit'
 import { readJsonLines } from '@lyteboat/testkit/json-lines'
+import LyteboatDistroService from '@lyteboat/distro'
+import HistoryImportService from '@lyteboat/history-import'
 import TurnMetricsRecorder from '@lyteboat/turn-metrics'
 import TurnMetricsReaderService from '@lyteboat/turn-metrics/reader'
 import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
@@ -92,6 +94,23 @@ describe('the turn-metrics recorder', () => {
 
     await vi.waitFor(() => { expect(heartbeatOf(dir)).toBeDefined() })
     expect(metricLines(dir)).toEqual([])
+  })
+
+  it('leaves out an imported round\'s turn and records the question behind it', async () => {
+    const dir = lyteboatTempDir('turn-metrics')
+    const ctx = await recorderHost(new MockAdapter([textResponse('hi')]), dir)
+    await ctx.plugin(LyteboatDistroService)
+    await ctx.plugin(HistoryImportService)
+    const agent = await agentOf(ctx, 'imported', 'alpha')
+
+    ctx.historyImport.enqueue(agent, ctx.historyImport.parse([
+      { role: 'user', traceId: 't1', parts: [{ text: 'earlier question' }] },
+      { role: 'assistant', traceId: 't1', parts: [{ text: 'earlier answer' }] },
+    ]))
+    await send(agent, 'hello')
+
+    await vi.waitFor(() => { expect(metricLines(dir)).toHaveLength(1) })
+    expect(metricLines(dir)).toEqual([expect.objectContaining({ turn: 2, modelRequests: 1, outcome: 'completed' })])
   })
 
   it('lets the turn finish when the metrics cannot be written, and says why', async () => {

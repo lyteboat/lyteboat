@@ -6,7 +6,8 @@
  * four scenarios are goldens: an overview with its card, a diagnosis with two,
  * education without a card, and a request the admission answers in the loop.
  * A customer with nothing authorized gets the admission's card, its verdict
- * logged on the request.
+ * logged on the request. History a request brings reaches the admission's
+ * classifier as conversation.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { postChat, streamChat, type ChatWireFrame } from '@lyteboat/testkit/chat-client'
@@ -15,7 +16,7 @@ import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
 import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testkit/session-log'
 import { reopenRefusal } from '@lyteboat/testkit/session-reopen'
 import { scriptedModelEnv, startScriptedModel, withTitle, type ScriptedModel } from '@lyteboat/testkit/scripted-model'
-import { AGENTS, isLoop, lastToolResult, financeScript } from './support/finance-model.ts'
+import { AGENTS, isIntake, isLoop, lastToolResult, financeScript } from './support/finance-model.ts'
 
 type LogRecord = SessionLogRecord & { type: string; data?: { [key: string]: unknown } }
 
@@ -89,6 +90,19 @@ describe('finance agent behind /chat (in process, scripted model)', () => {
     const human = records.find(record => record.type === 'user/message' && (record.data?.['source'] as { kind?: unknown } | undefined)?.kind === 'user')
     expect(human?.data?.['source']).toMatchObject({ rpcId: 'm-3', lyteboatRequest: { requestId: 'm-3', context: { customer: 'none-authorized' }, intake: { by: 'finance-admission', decision: 'reply', verdict: 'unauthorized', cards: [{ area: 'unauthorized' }] } } })
     expect(reopenRefusal(records)).toBeUndefined()
+  })
+
+  it('imports the history a request brings, and the admission classifier sees the imported question beside its answer', async () => {
+    const before = model.requests.length
+    const history = [
+      { channel: 'app', createTime: '2026-09-20 10:00:00', role: 'user', traceId: 'trace-0001', parts: [{ type: 'text', text: '帮我看看我的资产' }] },
+      { channel: 'app', createTime: '2026-09-20 10:00:06', role: 'assistant', traceId: 'trace-0001', parts: [{ type: 'text', text: '您的资产合计 8 万元。' }] },
+    ]
+
+    const reply = await postChat(chat, { agent_id: 'finance', user_id: 'u-history', message: '我的配置合理吗', trace_id: 'trace-0002', context: { customer: 'young-idle-cash' }, history })
+
+    expect(reply.body).toMatchObject({ outcome: 'completed', cards: [{ area: 'allocation_diagnosis' }, { area: 'allocation_plan' }] })
+    expect(model.requests.slice(before).find(isIntake)?.lastUser).toContain('<conversation>\n用户：帮我看看我的资产\n助手：您的资产合计 8 万元。\n</conversation>')
   })
 
   it.each([

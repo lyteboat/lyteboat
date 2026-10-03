@@ -9,10 +9,11 @@
  * answer with text, or an immediate card. At `turn/end` the turn gets its
  * outcome kind: by the reason, and a completed turn the admission answered
  * (a recorded `reply` verdict, or an answer from the admission in the loop) is
- * `rejected`, except in the inherited prefix, where imported history's
- * answers carry the same provider. Only appended surface nodes are folded. An
- * envelope that fails its schema counts as absent here: its owners
- * (request-context, a2ui) refuse it.
+ * `rejected`, except in imported history, whose answers carry the same
+ * provider: a turn in the inherited prefix (a session seed), or one whose
+ * human message is an imported round's question (`@lyteboat/history-import`).
+ * Only appended surface nodes are folded. An envelope that fails its schema
+ * counts as absent here: its owners (request-context, a2ui) refuse it.
  * @module @lyteboat/turn-outcome/turn-outcome-projection
  */
 
@@ -20,6 +21,7 @@ import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import {
   LYTEBOAT_ASSISTANT_PROVIDER,
+  LYTEBOAT_HISTORY_IMPORT_SOURCE,
   LYTEBOAT_TURN_OUTCOME_KIND_OF_REASON,
   lyteboatRequestSchema,
   lyteboatResultMetaSchema,
@@ -93,8 +95,10 @@ function endTurn(turn: LyteboatTurnOutcome, event: SessionEvent<'turn/end'>): Ly
 }
 
 function withHumanMessage(turn: LyteboatTurnOutcome, event: SessionEvent<'user/message'>): LyteboatTurnOutcome {
-  if (turn.request !== undefined || event.data.source.kind !== 'user') return turn
-  return { ...turn, request: requestOf(event.data.source) }
+  const { source } = event.data
+  if (source.kind === LYTEBOAT_HISTORY_IMPORT_SOURCE) return turn.imported ? turn : { ...turn, imported: true }
+  if (turn.request !== undefined || source.kind !== 'user') return turn
+  return { ...turn, request: requestOf(source) }
 }
 
 function withAnswer(turn: LyteboatTurnOutcome, event: SessionEvent<'assistant/message'>): LyteboatTurnOutcome {

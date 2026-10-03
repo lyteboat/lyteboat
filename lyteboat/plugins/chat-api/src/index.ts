@@ -5,8 +5,10 @@
  * created under the requested agent, a continued one is checked against the
  * caller and the agent it runs under, and the message is queued with its
  * request (owner, trace id, context) on its source (`requestContext.sourceFields`,
- * through the kernel extension session-controller-prompt-source). The answer
- * returns as one JSON body or as an enterprise event stream (SSE), its cards
+ * through the kernel extension session-controller-prompt-source). History the
+ * caller brings is queued first (`historyImport.enqueue`): each round the
+ * session lacks by trace id becomes a turn of its own ahead of the message.
+ * The answer returns as one JSON body or as an enterprise event stream (SSE), its cards
  * placed where the answer puts them, as `a2ui.turnParts` lays the turn out,
  * and its outcome as `turnOutcome` folds it.
  *
@@ -32,6 +34,7 @@ import type { ScopeLayer } from '@deepseek-ai/dsh-scope'
 import type { LyteboatTurnPart } from '@lyteboat/a2ui'
 import type { AgentCatalogEntry } from '@lyteboat/agent-catalog'
 import type { JsonValue, LyteboatAgentIdentity, LyteboatRequestState } from '@lyteboat/contracts'
+import type {} from '@lyteboat/history-import'
 import type {} from '@lyteboat/request-context'
 import { ChatApiError, parseChatRequest, readChatBody, type ChatRequest } from './chat-request.ts'
 import { isChatSessionOwner } from './chat-session-owner.ts'
@@ -98,7 +101,7 @@ function cardsOf(parts: readonly LyteboatTurnPart[]): ChatCard[] {
 
 /** Host service: the `/chat` endpoint and the frame decorators agents register. */
 export class ChatApiService extends Service {
-  static inject = ['webServer', 'sessionController', 'agentCatalog', 'requestContext', 'a2ui', 'turnOutcome', 'credentials']
+  static inject = ['webServer', 'sessionController', 'agentCatalog', 'requestContext', 'historyImport', 'a2ui', 'turnOutcome', 'credentials']
   // The loader applies a class plugin's static Config, not the module's.
   static Config = Config
 
@@ -229,6 +232,7 @@ export class ChatApiService extends Service {
       this.inFlight.add(key)
       const resolved = await this.ctx.sessionController.resolveAgent(sessionId)
       if ('error' in resolved) throw new ChatApiError('internal', resolved.error.message)
+      if (chat.history !== undefined) this.ctx.historyImport.enqueue(resolved.agent, this.ctx.historyImport.parse(chat.history))
       await this.answer(chat, sessionId, messageId, resolved.agent, agent.identity, response)
     } catch (error: unknown) {
       if (!response.headersSent) this.refuse(response, error)

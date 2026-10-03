@@ -1999,6 +1999,9 @@ importers:
       '@lyteboat/contracts':
         specifier: workspace:*
         version: link:../../core/contracts
+      '@lyteboat/history-import':
+        specifier: workspace:*
+        version: link:../history-import
       '@lyteboat/request-context':
         specifier: workspace:*
         version: link:../request-context
@@ -2111,6 +2114,12 @@ importers:
       '@deepseek-ai/cordis':
         specifier: catalog:cordis
         version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
+      '@deepseek-ai/dsh-agent':
+        specifier: workspace:*
+        version: link:../../../dsh/core/agent
+      '@deepseek-ai/dsh-agent-loop':
+        specifier: workspace:*
+        version: link:../../../dsh/core/agent-loop
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../../dsh/llm/llm
@@ -2120,6 +2129,9 @@ importers:
       '@deepseek-ai/dsh-session-projection':
         specifier: workspace:*
         version: link:../../../dsh/session/session-projection
+      '@lyteboat/distro':
+        specifier: workspace:*
+        version: link:../distro
       '@lyteboat/testkit':
         specifier: workspace:*
         version: link:../../test-support/testkit
@@ -2520,6 +2532,12 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../../dsh/core/tools
+      '@lyteboat/distro':
+        specifier: workspace:*
+        version: link:../distro
+      '@lyteboat/history-import':
+        specifier: workspace:*
+        version: link:../history-import
       '@lyteboat/testkit':
         specifier: workspace:*
         version: link:../../test-support/testkit

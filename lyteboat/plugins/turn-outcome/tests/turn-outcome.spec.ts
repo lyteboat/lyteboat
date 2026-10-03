@@ -166,6 +166,14 @@ describe('the turn outcome fold over a stored log', () => {
     expect(turns[1]).toMatchObject({ modelRequests: 1, firstContentAt: 1_007, request: {} })
   })
 
+  it('reads a turn whose human message is an imported round\'s question as imported history outside the inherited prefix', () => {
+    const { events } = seededLog()
+
+    const turns = foldTurnOutcomes(0, events)
+
+    expect(turns.map(turn => [turn.turn, turn.imported, turn.answeredByAdmission, turn.kind])).toEqual([[1, true, false, 'completed'], [2, false, false, 'completed']])
+  })
+
   it('leaves a surface replacement uncounted and returns the same state for an event it ignores', () => {
     const { inherited, events } = seededLog()
     const definition = lyteboatTurnOutcomesProjectionDefinition

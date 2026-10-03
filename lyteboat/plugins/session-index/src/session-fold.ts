@@ -11,8 +11,9 @@
  * decide on the queued message before the step records it). A surface replacement
  * (compaction, pruning) is shown once: a pruned tool result marks its call,
  * any other replacement is a compaction entry. A turn's outcome is the one
- * `turnOutcome.fold` gives for it. Events before the inherited cut are
- * imported history: shown, marked, and left out of every count.
+ * `turnOutcome.fold` gives for it. Imported history (events before the
+ * inherited cut, and the turns `turnOutcome.fold` marks imported) is shown,
+ * marked, and left out of every count.
  * @module @lyteboat/session-index/session-fold
  */
 
@@ -142,7 +143,7 @@ class SessionFold {
 
   add(event: SessionEvent): void {
     this.updatedAt = Math.max(this.updatedAt, event.time)
-    const imported = event.seq < this.inherited
+    const imported = event.seq < this.inherited || this.outcomes.get(this.turn)?.imported === true
     switch (event.type) {
       case 'turn/start':
         this.releaseAux()

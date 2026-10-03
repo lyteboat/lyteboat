@@ -38,7 +38,7 @@
   - 请求准入：agent 登记准入函数，每轮第一步、调模型之前就放行或直接回复，回复可以带卡（`@lyteboat/request-admission`）；底层的拒识钩子 `lyteboat/intake` 也可以直接用。
   - 旁路模型调用留痕：路由、分类这类旁路调用在会话里留下完整的 prompt 和回答（`@lyteboat/model-side-call`）。
   - 轮次结局：每轮怎样结束，从会话日志折一次；`/chat`、评测、指标和会话页读同一份（`@lyteboat/turn-outcome`）。
-  - 外部对话历史导入（`@lyteboat/history-import`）。
+  - 外部对话历史导入：`/chat` 带来的历史按 trace id 只导入会话里还没有的轮次，每轮一个 turn，不调模型（`@lyteboat/history-import`）。
 - **一个业务 agent 就是一个目录。** 在 `examples/agents/<id>/` 下写组合文件、技能、工具和卡片模板即可。
 - **业务 agent 只拿到它自己声明的能力。** `lyteboat headless --agent`、`serve`、`eval` 三种业务模式都带业务底座（`@lyteboat/base`）：没有编码工具，没有沙箱和人工审批；模型请求里没有宿主的 persona、工作目录的 AGENTS.md 和本机装了哪些包。agent 要用的 dsh 工具和它的技能，写在它自己的组合里。
 - **与 dsh 生态兼容。** 轻舟是 dsh 的一个发行版：它以原包名接管 dsh 内核 16 个包的源码（`dsh/`），官方包和社区插件不改一行就跑在轻舟的实现上。与所跟踪的 dsh 版本在协议、接口、行为上保持兼容，由 G1–G6 六道闸门证明（[`dsh-compat/`](dsh-compat/README.md)）。
@@ -167,9 +167,13 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 
 ```json
 { "agent_id": "finance", "user_id": "u-1", "message": "看看我的资产",
-  "session_id": "可选：续聊", "message_id": "可选：幂等键", "trace_id": "可选",
-  "stream": false, "context": { "customer": "young-idle-cash" } }
+  "session_id": "可选：续聊", "message_id": "可选：幂等键", "trace_id": "可选，带 history 时必填",
+  "stream": false, "context": { "customer": "young-idle-cash" },
+  "history": [{ "role": "user", "traceId": "trace-0001", "parts": [{ "type": "text", "text": "帮我看看我的资产" }] },
+              { "role": "assistant", "traceId": "trace-0001", "parts": [{ "type": "text", "text": "您的资产合计 8 万元。" }] }] }
 ```
+
+`history` 可选，是调用方从别处带来的对话。会话里还没有的轮次按顺序排在本条消息前面，每轮一个 turn，回答照录、不调模型。会话认得的轮次靠 trace id：本会话请求上的、之前导入的，都不再导入。
 
 `lyteboat eval` 另有：
 
@@ -257,13 +261,13 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | `lyteboat/plugins/request-admission` | `@lyteboat/request-admission` | 请求准入：agent 登记准入函数，`requestAdmission` 服务在每轮第一步的 `lyteboat/intake` 上对人类消息跑它；回复判定不调模型就作答，并把判定和卡片记在这条消息的请求上，放行不记 |
 | `lyteboat/plugins/skill-router` | `@lyteboat/skill-router` | 技能加载模式与模型路由（`historyWindow`、`timeoutMs`、`maxTokens` 可配）；`./agent` 在 agent 的组合文件里声明模式 |
 | `lyteboat/plugins/a2ui` | `@lyteboat/a2ui` | A2UI 模板引擎、`render_a2ui` 工具、`lyteboatCards` 投影；一个结果可带多张卡，按出卡模式（立即、延迟、延迟丢弃）和正文里的 `[[card:<区域>]]` 标记排进一轮（`turnParts`）；`./agent` 在组合文件里挂上这个工具，agent 自己的工具用 `renderCard`、`cardsPresentationMeta`、`cardMarker` 出卡；默认组件目录不含业务词汇 |
-| `lyteboat/plugins/history-import` | `@lyteboat/history-import` | 外部对话历史的解析，以及 `lyteboat headless --agent … --history` 用的会话种子 |
+| `lyteboat/plugins/history-import` | `@lyteboat/history-import` | 外部对话历史的解析；`/chat` 带来的历史按 trace id 去重（`lyteboatTraceIds` 投影），缺的轮次各排成一个 turn，在 `lyteboat/intake` 上照录回答；以及 `lyteboat headless --agent … --history` 用的会话种子 |
 | `lyteboat/plugins/agent-inspector` | `@lyteboat/agent-inspector` | 查看一个 agent 由什么组成，不建 agent 实例、不写盘：从它的常驻作用域读出工具（怎样到达模型、哪些技能要求它）、技能与路由方式，以及每个技能的确定性检查；Studio 和 `lyteboat inspect` 用它 |
 | `lyteboat/plugins/session-index` | `@lyteboat/session-index` | 只读地列出、查找一个 agent 存下的会话（按它的工作目录，不拿写所有权），把一个会话折成时间线或原样读出；Studio 的会话页用它 |
 | `lyteboat/plugins/turn-metrics` | `@lyteboat/turn-metrics` | 轮次指标：记录器（serve 挂）每轮结束后按这轮的结局往 `$LYTEBOAT_HOME/run-metrics/<日期>.jsonl` 追加一行，并写正在运行的轮次的心跳，不进模型请求也不进会话日志；读取器（`./reader`）给 Studio 的看板用 |
 | `lyteboat/plugins/agent-catalog` | `@lyteboat/agent-catalog` | agent 目录：扫描 agent 根目录，把每个 agent 声明成 dsh preset（没有 `agent.cordis.yml` 的 agent 跑它的 `lib/agent.js`，名字取 `agentName`），给出它的工作目录，报告挂载失败的 agent；`reload()` 按根目录现在的内容重新声明，`watch` 时目录一变就自动重载 |
 | `lyteboat/plugins/agent-def` | `@lyteboat/agent-def` | 业务 agent 的唯一声明 `lyteboatAgentDef({…})`：身份、人设、技能目录、技能路由、工具策略、模型请求参数、工具、准入、`render_a2ui` 工具、事件监听；它就是 agent 目录里的那一行，挂载时逐项交给负责它的宿主服务 |
-| `lyteboat/plugins/chat-api` | `@lyteboat/chat-api` | `/chat`：业务调用方的入口。消息经 dsh 的 session-controller 进会话，请求（owner、trace id、上下文）记在人类消息上；回答是一个 JSON 或 enterprise 事件流，卡片放在正文标记处；共享密钥鉴权、会话归属、重复 `message_id` 检查、断连取消；agent 行可以登记帧装饰器给帧加字段 |
+| `lyteboat/plugins/chat-api` | `@lyteboat/chat-api` | `/chat`：业务调用方的入口。消息经 dsh 的 session-controller 进会话，请求（owner、trace id、上下文）记在人类消息上，请求带的外部历史先排进会话；回答是一个 JSON 或 enterprise 事件流，卡片放在正文标记处；共享密钥鉴权、会话归属、重复 `message_id` 检查、断连取消；agent 行可以登记帧装饰器给帧加字段 |
 | `lyteboat/plugins/eval-runner` | `@lyteboat/eval-runner` | 评测：读用例（YAML，严格校验），每个用例一个新会话、逐轮经 session-controller 提交，从会话日志读出每轮的表现并检查；real 模式录下会话，replay 模式不调模型、按录音回放；写出运行结果与报告，比较两次运行；`./records` 给 Studio 读磁盘上的运行与用例文件 |
 | `lyteboat/plugins/studio-auth` | `@lyteboat/studio-auth` | Studio 的登录：运维用命令建的账户（scrypt 口令）、admin/editor/viewer 角色授予（不能改自己的角色，至少留一个 admin）、签名令牌、网关模式（共享密钥头加用户 id 头）、登录限流（同一用户名与来源连续 5 次失败，锁 30 秒）；`./accounts` 给账户命令用 |
 | `lyteboat/plugins/studio-web` | `@lyteboat/studio-web` | Studio 的页面：按原 Studio 移植的 React 单页应用（`src/client`，数据从 `/api/studio` 取），有 agent 雷达、agent 工作台（概览、技能、工具、会话）、看板和评测窗口；`pnpm run build` 用 Vite 构建到 `lib/web`，在 `/studio` 下以严格的 CSP 提供 |

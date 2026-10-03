@@ -21,7 +21,7 @@ export interface HistoryRound {
   assistant: HistoryMessage
 }
 
-interface HistoryParse {
+export interface HistoryParse {
   rounds: HistoryRound[]
   dropped: { malformed: number; duplicated: number; half: number; empty: number }
 }

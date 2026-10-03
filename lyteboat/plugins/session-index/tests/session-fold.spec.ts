@@ -115,6 +115,18 @@ describe('foldSession', () => {
     expect(summary).toMatchObject({ seeded: true, rejectedCount: 0, owner: { kind: 'operator', id: 'cli' }, firstMessage: '上次的问题', lastUserMessage: '继续' })
   })
 
+  it('marks a queued round\'s turn as imported history in a session no seed started, and leaves it out of the counts', () => {
+    const log = new SessionLogBuilder(1_000)
+      .turnStart().stepStart().user('现在的问题', request('r1')).stepStart().assistant('现在的回答').turnEnd()
+      .turnStart().stepStart().imported('上次的问题').assistant('上次的回答', { byAdmission: true }).turnEnd()
+
+    const { summary, items } = foldSession(log.header('s1', '/w'), 0, log.events)
+
+    expect(items.filter(item => item.kind === 'assistant').map(item => item.kind === 'assistant' && [item.imported, item.answeredByAdmission])).toEqual([[false, false], [true, true]])
+    expect(items.filter(item => item.kind === 'turn-end').map(item => item.kind === 'turn-end' && item.outcome)).toEqual(['completed', 'completed'])
+    expect(summary).toMatchObject({ seeded: false, rejectedCount: 0, turnCount: 2 })
+  })
+
   it('shows a person\'s late answer to a question as their message, in the counts and the search', () => {
     const log = new SessionLogBuilder(1_000)
       .turnStart().stepStart().user('帮我查一下', request('r1')).stepStart().assistant('要查哪个账户？').turnEnd()

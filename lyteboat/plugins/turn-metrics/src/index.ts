@@ -1,6 +1,7 @@
 /**
  * @lyteboat/turn-metrics — the turn-metrics recorder a service mounts (serve):
- * for every turn of a session whose agent is a preset, one line of
+ * for every turn of a session whose agent is a preset, imported history left
+ * out, one line of
  * {@link LyteboatTurnMetric} appended to the UTC day's file after the turn
  * ends, from the turn's outcome (`ctx.turnOutcome`) and the skills active
  * while it ran, and a heartbeat file listing the turns this process is
@@ -84,8 +85,10 @@ export default class TurnMetricsRecorder {
       running.delete(`${session.id}:${String(event.data.turn)}`)
       const outcome = ctx.turnOutcome.turn(session, event.data.turn)
       if (outcome === undefined) throw new Error(`turn ${String(event.data.turn)} ended without an outcome`)
-      const metric: LyteboatTurnMetric = turnMetricOf(turn.agentId, session.id, outcome, turn.skills)
-      enqueue(`the metric of ${session.id} turn ${String(event.data.turn)}`, () => appendFile(turnMetricDayFile(dir, metric.startedAt), `${JSON.stringify(metric)}\n`))
+      if (!outcome.imported) {
+        const metric: LyteboatTurnMetric = turnMetricOf(turn.agentId, session.id, outcome, turn.skills)
+        enqueue(`the metric of ${session.id} turn ${String(event.data.turn)}`, () => appendFile(turnMetricDayFile(dir, metric.startedAt), `${JSON.stringify(metric)}\n`))
+      }
       beat()
     }
 
