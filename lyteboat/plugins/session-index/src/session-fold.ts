@@ -10,8 +10,9 @@
  * human message when it came first (the router and the intake classifier
  * decide on the queued message before the step records it). A surface replacement
  * (compaction, pruning) is shown once: a pruned tool result marks its call,
- * any other replacement is a compaction entry. Events before the inherited
- * cut are imported history: shown, marked, and left out of every count.
+ * any other replacement is a compaction entry. A turn's outcome is the one
+ * `turnOutcome.fold` gives for it. Events before the inherited cut are
+ * imported history: shown, marked, and left out of every count.
  * @module @lyteboat/session-index/session-fold
  */
 
@@ -21,12 +22,12 @@ import type {} from '@deepseek-ai/dsh-skill'
 import {
   LYTEBOAT_ASSISTANT_PROVIDER,
   LYTEBOAT_HISTORY_IMPORT_SOURCE,
-  LYTEBOAT_TURN_OUTCOME_OF_REASON,
   lyteboatRequestSchema,
   lyteboatResultMetaSchema,
   type JsonValue,
   type LyteboatRequest,
   type LyteboatRequestOwner,
+  type LyteboatTurnOutcome,
 } from '@lyteboat/contracts'
 import type { StudioSessionSummary, StudioTimelineItem } from '@lyteboat/contracts/studio'
 
@@ -122,7 +123,7 @@ class SessionFold {
   private turn = 0
   private turns = 0
   private readonly openTurns = new Set<number>()
-  private readonly answeredByAdmission = new Set<number>()
+  private readonly outcomes: ReadonlyMap<number, LyteboatTurnOutcome>
   private readonly stepStarts = new Map<string, number>()
   private readonly calls = new Map<string, { item: SessionToolItem; time: number }>()
   /** Side calls of this turn made before its human message was recorded. */
@@ -134,8 +135,9 @@ class SessionFold {
   private lastUserMessage: string | undefined
   private updatedAt: number
 
-  constructor(private readonly header: SessionHeader, private readonly inherited: number) {
+  constructor(private readonly header: SessionHeader, private readonly inherited: number, outcomes: readonly LyteboatTurnOutcome[]) {
     this.updatedAt = header.createdAt
+    this.outcomes = new Map(outcomes.map(outcome => [outcome.turn, outcome]))
   }
 
   add(event: SessionEvent): void {
@@ -207,10 +209,9 @@ class SessionFold {
   }
 
   private turnEnd(event: SessionEvent<'turn/end'>, imported: boolean): void {
-    const { turn, reason } = event.data
+    const { turn } = event.data
     this.openTurns.delete(turn)
-    const outcome = LYTEBOAT_TURN_OUTCOME_OF_REASON[reason.kind] ?? 'errored'
-    const counted = outcome === 'completed' && this.answeredByAdmission.has(turn) ? 'rejected' : outcome
+    const counted = this.outcomes.get(turn)?.kind ?? 'errored'
     this.emit({ kind: 'turn-end', seq: event.seq, turn, time: event.time, outcome: counted })
     if (imported) return
     if (counted === 'rejected') this.counts.rejected++
@@ -252,7 +253,6 @@ class SessionFold {
     if (event.surfaceOp !== 'append') return this.replaced(event)
     const { turn, step, message, usage, stream } = event.data
     const byAdmission = message.source.provider === LYTEBOAT_ASSISTANT_PROVIDER
-    if (byAdmission) this.answeredByAdmission.add(turn)
     const stepStart = this.stepStarts.get(`${String(turn)}:${String(step)}`)
     const firstChunk = stream.length === 0 ? undefined : Math.min(...stream.map(record => record.type === 'chunk' ? record.time : record.time0))
     const llmMs = stepStart === undefined || byAdmission ? undefined : event.time - stepStart
@@ -306,9 +306,10 @@ class SessionFold {
  * @param header - its stored header.
  * @param inheritedEventCount - how many leading events are inherited (imported history).
  * @param events - its events from seq 0.
+ * @param outcomes - its turns as `turnOutcome.fold` folds the same log.
  */
-export function foldSession(header: SessionHeader, inheritedEventCount: number, events: readonly SessionEvent[]): FoldedSession {
-  const fold = new SessionFold(header, inheritedEventCount)
+export function foldSession(header: SessionHeader, inheritedEventCount: number, events: readonly SessionEvent[], outcomes: readonly LyteboatTurnOutcome[]): FoldedSession {
+  const fold = new SessionFold(header, inheritedEventCount, outcomes)
   for (const event of events) fold.add(event)
   return fold.folded()
 }

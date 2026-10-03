@@ -9,9 +9,9 @@ import SkillRegistry from '@deepseek-ai/dsh-skill'
 import { defineContentToolFixture, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import A2uiService from '@lyteboat/a2ui'
 import { lyteboatAgentDef, type LyteboatAgentDef, type LyteboatAgentHost } from '@lyteboat/agent-def'
-import AuxLlmService from '@lyteboat/aux-llm'
 import LyteboatDistroService from '@lyteboat/distro'
 import IntakeGuardService from '@lyteboat/intake-guard'
+import ModelSideCallService from '@lyteboat/model-side-call'
 import RequestContextService from '@lyteboat/request-context'
 import SkillRouterService from '@lyteboat/skill-router'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, mountAgentStandingScope, textResponse } from '@lyteboat/testkit'
@@ -24,7 +24,7 @@ async function harness(adapter: MockAdapter): Promise<Context> {
   await ctx.plugin(SkillRegistry)
   await ctx.plugin(LyteboatDistroService)
   await ctx.plugin(ToolPolicyService)
-  await ctx.plugin(AuxLlmService)
+  await ctx.plugin(ModelSideCallService)
   await ctx.plugin(SkillRouterService)
   await ctx.plugin(A2uiService)
   await ctx.plugin(RequestContextService)
@@ -126,7 +126,7 @@ describe('lyteboatAgentDef', () => {
   it('computes the services it injects from the fields it has', () => {
     expect(lyteboatAgentDef({ agentId: 'minimal', agentName: 'Minimal', skillDirs: [] }).inject).toEqual([])
     expect(lyteboatAgentDef({ agentId: 'minimal', agentName: 'Minimal', persona: { prefix: 'hi' } }).inject).toEqual(['systemPrompt', 'skills'])
-    expect([...lyteboatAgentDef(DESK_DEF).inject].sort()).toEqual(['a2ui', 'auxLlm', 'intakeGuard', 'requestContext', 'skillRouter', 'skills', 'systemPrompt', 'toolPolicy'])
+    expect([...lyteboatAgentDef(DESK_DEF).inject].sort()).toEqual(['a2ui', 'intakeGuard', 'modelSideCall', 'requestContext', 'skillRouter', 'skills', 'systemPrompt', 'toolPolicy'])
   })
 
   it('carries the identity the agent catalog reads, and names its fibers after the agent', () => {
@@ -173,7 +173,7 @@ describe('lyteboatAgentDef', () => {
     const ctx = await harness(new MockAdapter([]))
     let seen: LyteboatAgentHost | undefined
     await mountAgentStandingScope(ctx, join(AGENTS, 'desk'), lyteboatAgentDef({ ...DESK_DEF, tools: (host) => { seen = host; return [] } }))
-    expect([Object.keys(seen?.a2ui ?? {}), Object.keys(seen?.auxLlm ?? {}), Object.keys(seen?.requestContext ?? {}), Object.keys(seen?.toolPolicy ?? {})])
+    expect([Object.keys(seen?.a2ui ?? {}), Object.keys(seen?.modelSideCall ?? {}), Object.keys(seen?.requestContext ?? {}), Object.keys(seen?.toolPolicy ?? {})])
       .toEqual([['renderCard'], ['generate'], ['contextOf'], ['activate']])
   })
 

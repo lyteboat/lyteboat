@@ -10,7 +10,7 @@
 import { z } from 'zod'
 import type { LyteboatSkillFinding } from './cli.ts'
 import { LYTEBOAT_EVAL_CASE_ID_PATTERN } from './index.ts'
-import type { JsonValue, LyteboatAgentIdentity, LyteboatAgentModel, LyteboatRequest, LyteboatRequestOwner, LyteboatTurnOutcome } from './index.ts'
+import type { JsonValue, LyteboatAgentIdentity, LyteboatAgentModel, LyteboatRequest, LyteboatRequestOwner, LyteboatTurnOutcomeKind } from './index.ts'
 
 /** The Studio roles, from the most to the least capable. */
 export const STUDIO_ROLES = ['admin', 'editor', 'viewer'] as const
@@ -324,7 +324,7 @@ export type StudioTimelineItem =
   | { kind: 'skill'; seq: number; turn: number; time: number; skill: string }
   | { kind: 'aux'; seq: number; turn: number; time: number; purpose: string; durationMs: number; failure?: string }
   | { kind: 'compaction'; seq: number; turn: number; time: number; replaced: number }
-  | { kind: 'turn-end'; seq: number; turn: number; time: number; outcome: LyteboatTurnOutcome }
+  | { kind: 'turn-end'; seq: number; turn: number; time: number; outcome: LyteboatTurnOutcomeKind }
 
 /** `GET agents/:id/sessions/:sid`. */
 export type StudioSessionDetail = {
@@ -456,7 +456,7 @@ export type StudioEvalExpect = {
   skill?: string | null
   tools?: { called?: string[]; not_called?: string[] }
   cards?: { areas?: string[]; count?: number }
-  outcome?: LyteboatTurnOutcome
+  outcome?: LyteboatTurnOutcomeKind
   text?: { includes?: string[]; excludes?: string[]; matches?: string }
   model_requests?: { min?: number; max?: number }
 }
@@ -534,7 +534,7 @@ export type StudioEvalCheck = {
 export type StudioEvalTurnResult = {
   turn: number
   message: string
-  observed: { skill: string | null; tools: string[]; cards: string[]; outcome: LyteboatTurnOutcome; text: string; modelRequests: number }
+  observed: { skill: string | null; tools: string[]; cards: string[]; outcome: LyteboatTurnOutcomeKind; text: string; modelRequests: number }
   checks: StudioEvalCheck[]
   pass: boolean
 }

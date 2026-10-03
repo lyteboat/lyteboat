@@ -11,7 +11,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { load } from 'js-yaml'
 import { z } from 'zod'
-import { LYTEBOAT_EVAL_CASE_ID_PATTERN, LYTEBOAT_TURN_OUTCOMES, type JsonValue, type LyteboatTurnOutcome } from '@lyteboat/contracts'
+import { LYTEBOAT_EVAL_CASE_ID_PATTERN, LYTEBOAT_TURN_OUTCOME_KINDS, type JsonValue, type LyteboatTurnOutcomeKind } from '@lyteboat/contracts'
 
 /** What one turn must show; a check that is absent is not made. */
 export interface EvalExpect {
@@ -20,7 +20,7 @@ export interface EvalExpect {
   tools?: { called?: string[]; not_called?: string[] }
   /** The cards the turn shows, by area in any order, and how many. */
   cards?: { areas?: string[]; count?: number }
-  outcome?: LyteboatTurnOutcome
+  outcome?: LyteboatTurnOutcomeKind
   /** The answer text. */
   text?: { includes?: string[]; excludes?: string[]; matches?: string }
   /** How many model calls the loop made in the turn. */
@@ -51,7 +51,7 @@ const expectSchema = z.strictObject({
   skill: z.string().min(1).nullable().optional(),
   tools: z.strictObject({ called: names.optional(), not_called: names.optional() }).optional(),
   cards: z.strictObject({ areas: names.optional(), count: z.number().int().nonnegative().optional() }).optional(),
-  outcome: z.enum(LYTEBOAT_TURN_OUTCOMES).optional(),
+  outcome: z.enum(LYTEBOAT_TURN_OUTCOME_KINDS).optional(),
   text: z.strictObject({
     includes: names.optional(),
     excludes: names.optional(),

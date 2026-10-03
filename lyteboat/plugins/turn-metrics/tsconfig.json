@@ -6,12 +6,9 @@
   },
   "include": ["src"],
   "references": [
-    { "path": "../../../dsh/llm/llm" },
     { "path": "../../../dsh/core/session" },
-    { "path": "../../../dsh/session/session-persistence" },
-    { "path": "../../../dsh/skill/skill" },
+    { "path": "../../../dsh/session/session-projection" },
     { "path": "../../core/contracts" },
-    { "path": "../agent-catalog" },
     { "path": "../turn-outcome" }
   ]
 }

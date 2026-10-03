@@ -5,9 +5,16 @@
  * compaction and pruning, and imported history.
  */
 import { describe, expect, it } from 'vitest'
+import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
 import type { LyteboatRequest } from '@lyteboat/contracts'
-import { foldSession, SESSION_SLOW_CALL_MS } from '../src/session-fold.ts'
+import { foldTurnOutcomes } from '@lyteboat/turn-outcome'
+import { foldSession as foldSessionWith, SESSION_SLOW_CALL_MS } from '../src/session-fold.ts'
 import { SessionLogBuilder } from './session-log-builder.ts'
+
+/** The fold the session index makes: the turns' outcomes come from the turn outcome's fold of the same log. */
+function foldSession(header: SessionHeader, inherited: number, events: readonly SessionEvent[]): ReturnType<typeof foldSessionWith> {
+  return foldSessionWith(header, inherited, events, foldTurnOutcomes(inherited, events))
+}
 
 const request = (id: string, extra: Partial<LyteboatRequest> = {}): LyteboatRequest => ({ requestId: id, owner: { kind: 'user', id: 'alice' }, traceId: `trace-${id}`, context: { customer: 'c1' }, ...extra })
 const CARD = { surfaceId: 's-1', area: 'overview', emission: 'immediate', payload: { title: 'x' } }

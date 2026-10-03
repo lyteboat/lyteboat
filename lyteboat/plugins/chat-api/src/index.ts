@@ -7,7 +7,8 @@
  * request (owner, trace id, context) on its source (`requestContext.sourceFields`,
  * through the kernel extension session-controller-prompt-source). The answer
  * returns as one JSON body or as an enterprise event stream (SSE), its cards
- * placed where the answer puts them, as `a2ui.turnParts` lays the turn out.
+ * placed where the answer puts them, as `a2ui.turnParts` lays the turn out,
+ * and its outcome as `turnOutcome` folds it.
  *
  * `auth: none` serves only a loopback listener; any other listener needs
  * `shared-secret`, a bearer token resolved from `credentialRef` per request.
@@ -97,7 +98,7 @@ function cardsOf(parts: readonly LyteboatTurnPart[]): ChatCard[] {
 
 /** Host service: the `/chat` endpoint and the frame decorators agents register. */
 export class ChatApiService extends Service {
-  static inject = ['webServer', 'sessionController', 'agentCatalog', 'requestContext', 'a2ui', 'credentials']
+  static inject = ['webServer', 'sessionController', 'agentCatalog', 'requestContext', 'a2ui', 'turnOutcome', 'credentials']
   // The loader applies a class plugin's static Config, not the module's.
   static Config = Config
 

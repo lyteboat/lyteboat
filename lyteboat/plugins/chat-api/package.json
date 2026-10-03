@@ -18,6 +18,7 @@
     "@lyteboat/agent-catalog": "workspace:*",
     "@lyteboat/contracts": "workspace:*",
     "@lyteboat/request-context": "workspace:*",
+    "@lyteboat/turn-outcome": "workspace:*",
     "@deepseek-ai/dsh-brand": "catalog:dsh",
     "@deepseek-ai/dsh-credentials": "catalog:dsh",
     "@deepseek-ai/dsh-scope": "catalog:dsh",

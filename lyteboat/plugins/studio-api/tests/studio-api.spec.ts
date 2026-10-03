@@ -25,12 +25,11 @@ import JsonlSessionPersistence from '@deepseek-ai/dsh-session-persistence-jsonl'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
 import AgentCatalogService from '@lyteboat/agent-catalog'
 import AgentInspectorService from '@lyteboat/agent-inspector'
-import AuxLlmService from '@lyteboat/aux-llm'
-import type { LyteboatRunMetric } from '@lyteboat/contracts'
+import type { LyteboatTurnMetric } from '@lyteboat/contracts'
 import type { StudioSkillDiagnosticsAnswer } from '@lyteboat/contracts/studio'
 import LyteboatDistroService from '@lyteboat/distro'
 import EvalRecordsService from '@lyteboat/eval-runner/records'
-import RunMetricsReaderService from '@lyteboat/run-metrics/reader'
+import ModelSideCallService from '@lyteboat/model-side-call'
 import SessionIndexService from '@lyteboat/session-index'
 import SkillRouterService from '@lyteboat/skill-router'
 import StudioApiRoutes, { type StudioApiConfig } from '@lyteboat/studio-api'
@@ -40,6 +39,8 @@ import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testkit'
 import { readJsonLines } from '@lyteboat/testkit/json-lines'
 import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
 import ToolPolicyService from '@lyteboat/tool-policy'
+import TurnMetricsReaderService from '@lyteboat/turn-metrics/reader'
+import TurnOutcomeService from '@lyteboat/turn-outcome'
 import { studioHostAllowed } from '../src/studio-host-allowlist.ts'
 
 afterEach(() => { vi.unstubAllEnvs() })
@@ -89,15 +90,16 @@ async function studioFixture(config: StudioApiConfig = {}, setup: { workspace?: 
   await ctx.plugin(SkillRegistry)
   await ctx.plugin(LyteboatDistroService)
   await ctx.plugin(ToolPolicyService)
-  await ctx.plugin(AuxLlmService)
+  await ctx.plugin(ModelSideCallService)
   await ctx.plugin(SkillRouterService, {})
   await ctx.plugin(AgentPresetRegistry, { default: 'none' })
   await ctx.plugin(AgentDefaultModelConfig, { provider: 'deepseek-official', model: 'deepseek-flash' })
   await ctx.plugin(AgentCatalogService, { roots: [agentsDir], strict: false, workdirsDir: join(root, 'workdirs') })
   await ctx.plugin(AgentInspectorService)
   await ctx.plugin(JsonlSessionPersistence, { root: join(root, 'sessions') })
+  await ctx.plugin(TurnOutcomeService)
   await ctx.plugin(SessionIndexService)
-  await ctx.plugin(RunMetricsReaderService, { dir: metricsDir })
+  await ctx.plugin(TurnMetricsReaderService, { dir: metricsDir })
   await ctx.plugin(EvalRecordsService, { dir: join(root, 'evals') })
   await ctx.plugin(WebServer, { host: '127.0.0.1', port: 0 })
   await ctx.plugin(StudioAuthService, { dir: studioDir })
@@ -447,14 +449,14 @@ describe('the Dashboard', () => {
   const HOUR = 3_600_000
   const T = Date.UTC(2026, 8, 20, 8)
 
-  function metric(agentId: string, startedAt: number, extra: Partial<LyteboatRunMetric> = {}): LyteboatRunMetric {
+  function metric(agentId: string, startedAt: number, extra: Partial<LyteboatTurnMetric> = {}): LyteboatTurnMetric {
     return {
       agentId, sessionId: `s-${String(startedAt)}`, turn: 1, owner: { kind: 'user', id: `u-${agentId}` }, startedAt, durationMs: 2_000, firstContentMs: 400,
       steps: 2, modelRequests: 2, auxCalls: 0, tools: [{ name: 'lookup', durationMs: 120, isError: false }], activatedSkills: [], outcome: 'completed', ...extra,
     }
   }
 
-  function writeMetrics(studio: StudioFixture, rows: LyteboatRunMetric[]): void {
+  function writeMetrics(studio: StudioFixture, rows: LyteboatTurnMetric[]): void {
     mkdirSync(studio.metricsDir, { recursive: true })
     // One UTC day file, as the recorder names it.
     writeFileSync(join(studio.metricsDir, `${new Date(T).toISOString().slice(0, 10)}.jsonl`), rows.map(row => `${JSON.stringify(row)}\n`).join(''))

@@ -18,9 +18,9 @@ import SkillRegistry from '@deepseek-ai/dsh-skill'
 import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
 import { MockAdapter, createLyteboatUnitHost, mountAgentStandingScope, textResponse, toolCallResponse, type AgentStandingScope } from '@lyteboat/testkit'
 import ToolPolicyService from '@lyteboat/tool-policy'
-import AuxLlmService from '@lyteboat/aux-llm'
 import LyteboatDistroService from '@lyteboat/distro'
 import SkillRouterService from '@lyteboat/skill-router'
+import ModelSideCallService from '@lyteboat/model-side-call'
 import A2uiService, { validateFullPayload } from '@lyteboat/a2ui'
 import RequestContextService from '@lyteboat/request-context'
 import IntakeGuardService from '@lyteboat/intake-guard'
@@ -88,7 +88,7 @@ async function harness(plans: ReadonlyMap<string, TurnPlan>, intents: ReadonlyMa
   await ctx.plugin(SkillRegistry)
   await ctx.plugin(LyteboatDistroService)
   await ctx.plugin(ToolPolicyService)
-  await ctx.plugin(AuxLlmService)
+  await ctx.plugin(ModelSideCallService)
   await ctx.plugin(SkillRouterService)
   await ctx.plugin(A2uiService)
   await ctx.plugin(RequestContextService)

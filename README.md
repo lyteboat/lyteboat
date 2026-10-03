@@ -36,7 +36,8 @@
   - A2UI 模板卡片：一个工具结果可以带多张卡，按发射模式立即出，或由回答里的 `[[card:区域]]` 标记放到位；卡片可以由 `render_a2ui` 工具出，也可以由 agent 自己的工具出（`@lyteboat/a2ui`）。
   - 请求上下文：一条请求带着自己的上下文和准入判定进日志，会话内沿用（`@lyteboat/request-context`）。
   - 准入前移：agent 登记准入函数，请求进循环前就放行或直接回复，回复可以带卡（`@lyteboat/intake-guard`）；底层的拒识钩子 `lyteboat/intake` 也可以直接用。
-  - 旁路模型调用留痕：路由、分类这类旁路调用在会话里留下完整的 prompt 和回答（`@lyteboat/aux-llm`）。
+  - 旁路模型调用留痕：路由、分类这类旁路调用在会话里留下完整的 prompt 和回答（`@lyteboat/model-side-call`）。
+  - 轮次结局：每轮怎样结束，从会话日志折一次；`/chat`、评测、指标和会话页读同一份（`@lyteboat/turn-outcome`）。
   - 外部对话历史导入（`@lyteboat/history-import`）。
 - **一个业务 agent 就是一个目录。** 在 `examples/agents/<id>/` 下写组合文件、技能、工具和卡片模板即可。
 - **业务 agent 只拿到它自己声明的能力。** `lyteboat headless --agent`、`serve`、`eval` 三种业务模式都带业务底座（`@lyteboat/base`）：没有编码工具，没有沙箱和人工审批；模型请求里没有宿主的 persona、工作目录的 AGENTS.md 和本机装了哪些包。agent 要用的 dsh 工具和它的技能，写在它自己的组合里。
@@ -70,10 +71,10 @@ alias lyteboat="node $PWD/lyteboat/apps/cli/lib/bin.js"
 
 轻舟沿用 dsh 的模型配置：在环境变量或 `$LYTEBOAT_HOME/.env` 里设置 `DEEPSEEK_API_KEY`。`DEEPSEEK_BASE_URL` 可选，指向一个兼容 DeepSeek Anthropic Messages API 的端点。
 
-旁路调用（技能路由、准入分类）用路由自己的默认推理强度；DeepSeek 默认先思考再作答，思考同样计入这次调用的 `maxTokens`。要让旁路调用直接作答，用一个 patch 文件给 `lyteboat-aux-llm` 行配上推理强度，运行时 `--patch` 叠上：
+旁路调用（技能路由、准入分类）用路由自己的默认推理强度；DeepSeek 默认先思考再作答，思考同样计入这次调用的 `maxTokens`。要让旁路调用直接作答，用一个 patch 文件给 `lyteboat-model-side-call` 行配上推理强度，运行时 `--patch` 叠上：
 
 ```yaml
-- id: lyteboat-aux-llm
+- id: lyteboat-model-side-call
   config:
     reasoningEffort: 'off'    # 取值由路由的模型适配器定义，这是 DeepSeek 的
 ```
@@ -224,7 +225,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 
 ```
 dsh/                  内核：dsh/kernel.json 列出的 16 个 dsh 包，沿用 @deepseek-ai/* 包名
-lyteboat/             轻舟自己的 27 个包，每层一个目录
+lyteboat/             轻舟自己的 28 个包，每层一个目录
   apps/               进程：lyteboat 启动器
   bundles/            组合：每个业务 profile 都带的业务底座 base，lyteboat headless --agent、serve、eval、studio、inspect 各自的 bundle
   plugins/            能力插件
@@ -245,20 +246,21 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | `lyteboat/bundles/base` | `@lyteboat/base` | 业务底座，headless-agent、serve、eval、studio、inspect 五个 profile 都带，只有一个 patch：发行版标记与各能力插件的服务行；关掉编码工具和只为它们服务的行，关掉沙箱、审批与权限，关掉工作区 AGENTS.md、插件管理、会话标题的旁路请求（会话上传和本机包清单由内核的 dsh-base 关掉，COMPAT §8）；不挂宿主的默认技能目录，不加宿主的 persona（dsh headless 给编码 agent 的前后缀也清掉）和 harness 身份段 |
 | `lyteboat/bundles/headless` | `@lyteboat/headless` | `lyteboat headless --agent` 背后的业务一次性 bundle：dsh headless 的 runner 跑任务；它换上自己的启动行（在 dsh 的参数之外认 `--agent`、`--agents`、`--history`、`--context`、`--result`），监听 runner 的三个计划（内核扩展 `headless-hooks`）：挂上 agent 并移到它的工作目录、导入历史，请求进循环前先准入，输出按轮组合卡片 |
 | `lyteboat/bundles/eval` | `@lyteboat/eval` | `lyteboat eval` 背后的 bundle：只声明选中的 agent，挂上 session-controller（不带 Web 界面）和 eval-runner，跑完按结果退出 |
-| `lyteboat/bundles/serve` | `@lyteboat/serve` | `lyteboat serve` 背后的服务 bundle：声明 `--agents` 里的全部 agent，挂上 dsh 的 session-controller（不带 Web 界面）、`/chat` 和运行指标记录器 |
+| `lyteboat/bundles/serve` | `@lyteboat/serve` | `lyteboat serve` 背后的服务 bundle：声明 `--agents` 里的全部 agent，挂上 dsh 的 session-controller（不带 Web 界面）、`/chat` 和轮次指标记录器 |
 | `lyteboat/bundles/inspect` | `@lyteboat/inspect` | `lyteboat inspect` 背后的 bundle：带业务底座，按 headless --agent、serve、eval 的样子挂上一个 agent（挂不上就报原因，退出码 1），用 agent-inspector 与评测记录读出它的工具（怎样到达模型）、技能及每个技能的检查、用例文件，打印成文字或一个 JSON 对象（`--result json`）；不建 agent 实例，不调模型 |
-| `lyteboat/bundles/studio` | `@lyteboat/studio` | `lyteboat studio` 背后的 bundle：带业务底座，agent 的工具和技能按 serve 的样子挂上；声明 `--agents` 里的全部 agent（目录变了就重载），挂上 agent-inspector、session-index、运行指标读取器、评测记录、studio-auth、studio-api 与 studio-web；不挂 session-controller，Studio 不建也不续会话，它起的评测运行是 `lyteboat eval` 子进程；`account` 子命令管账户 |
+| `lyteboat/bundles/studio` | `@lyteboat/studio` | `lyteboat studio` 背后的 bundle：带业务底座，agent 的工具和技能按 serve 的样子挂上；声明 `--agents` 里的全部 agent（目录变了就重载），挂上 agent-inspector、session-index、轮次指标读取器、评测记录、studio-auth、studio-api 与 studio-web；不挂 session-controller，Studio 不建也不续会话，它起的评测运行是 `lyteboat eval` 子进程；`account` 子命令管账户 |
 | `lyteboat/plugins/distro` | `@lyteboat/distro` | `lyteboatDistro` 服务：内核来自哪个 dsh 版本、这次构建带了哪些内核扩展 |
 | `lyteboat/plugins/tool-policy` | `@lyteboat/tool-policy` | 工具可见性、状态增量；`./agent` 在 agent 的组合文件里声明策略，`inherited: visible \| hidden` 决定没有声明点名的继承工具是否可见；`visible(scope)` 回答一个新 agent 在某个常驻作用域下、激活之前看得到的工具 |
-| `lyteboat/plugins/aux-llm` | `@lyteboat/aux-llm` | 旁路模型调用（技能路由、准入分类）：各自带超时，每次调用在会话里留一条可忽略的审计记录；在 `maxTokens` 处截断的回答算失败；`reasoningEffort` 配置旁路调用请求的推理强度 |
+| `lyteboat/plugins/model-side-call` | `@lyteboat/model-side-call` | 旁路模型调用（技能路由、准入分类）：各自带超时，每次调用在会话里留一条可忽略的审计记录；在 `maxTokens` 处截断的回答算失败；`reasoningEffort` 配置旁路调用请求的推理强度 |
 | `lyteboat/plugins/request-context` | `@lyteboat/request-context` | 请求上下文：一条人类消息所回应的请求（请求 id、发起者、上下文、准入判定）记在它自己的 source 上；`lyteboatRequest` 投影保存会话的上下文和发起者 |
+| `lyteboat/plugins/turn-outcome` | `@lyteboat/turn-outcome` | 轮次结局：`lyteboatTurnOutcomes` 投影从会话日志折出每轮的请求、步数、模型请求、旁路调用、工具调用和结局；`turnOutcome` 服务按轮次或请求 id 读它、等一轮结束，也能折一份存下的日志；`/chat`、评测、轮次指标和会话索引都读它 |
 | `lyteboat/plugins/intake-guard` | `@lyteboat/intake-guard` | 准入前移：agent 登记准入函数，调用方用 `submit` 提交每个请求，先准入，再把请求连同判定记进会话；循环里按记录的回复判定直接作答，没有经过准入的消息在循环内补做 |
 | `lyteboat/plugins/skill-router` | `@lyteboat/skill-router` | 技能加载模式与模型路由（`historyWindow`、`timeoutMs`、`maxTokens` 可配）；`./agent` 在 agent 的组合文件里声明模式 |
 | `lyteboat/plugins/a2ui` | `@lyteboat/a2ui` | A2UI 模板引擎、`render_a2ui` 工具、`lyteboatCards` 投影；一个结果可带多张卡，按出卡模式（立即、延迟、延迟丢弃）和正文里的 `[[card:<区域>]]` 标记排进一轮（`turnParts`）；`./agent` 在组合文件里挂上这个工具，agent 自己的工具用 `renderCard`、`cardsPresentationMeta`、`cardMarker` 出卡；默认组件目录不含业务词汇 |
 | `lyteboat/plugins/history-import` | `@lyteboat/history-import` | 外部对话历史的解析，以及 `lyteboat headless --agent … --history` 用的会话种子 |
 | `lyteboat/plugins/agent-inspector` | `@lyteboat/agent-inspector` | 查看一个 agent 由什么组成，不建 agent 实例、不写盘：从它的常驻作用域读出工具（怎样到达模型、哪些技能要求它）、技能与路由方式，以及每个技能的确定性检查；Studio 和 `lyteboat inspect` 用它 |
 | `lyteboat/plugins/session-index` | `@lyteboat/session-index` | 只读地列出、查找一个 agent 存下的会话（按它的工作目录，不拿写所有权），把一个会话折成时间线或原样读出；Studio 的会话页用它 |
-| `lyteboat/plugins/run-metrics` | `@lyteboat/run-metrics` | 运行指标：记录器（serve 挂）每轮结束后往 `$LYTEBOAT_HOME/run-metrics/<日期>.jsonl` 追加一行，并写正在运行的轮次的心跳，不进模型请求也不进会话日志；读取器（`./reader`）给 Studio 的看板用 |
+| `lyteboat/plugins/turn-metrics` | `@lyteboat/turn-metrics` | 轮次指标：记录器（serve 挂）每轮结束后按这轮的结局往 `$LYTEBOAT_HOME/run-metrics/<日期>.jsonl` 追加一行，并写正在运行的轮次的心跳，不进模型请求也不进会话日志；读取器（`./reader`）给 Studio 的看板用 |
 | `lyteboat/plugins/agent-catalog` | `@lyteboat/agent-catalog` | agent 目录：扫描 agent 根目录，把每个 agent 声明成 dsh preset（没有 `agent.cordis.yml` 的 agent 跑它的 `lib/agent.js`，名字取 `agentName`），给出它的工作目录，报告挂载失败的 agent；`reload()` 按根目录现在的内容重新声明，`watch` 时目录一变就自动重载 |
 | `lyteboat/plugins/agent-def` | `@lyteboat/agent-def` | 业务 agent 的唯一声明 `lyteboatAgentDef({…})`：身份、人设、技能目录、技能路由、工具策略、模型请求参数、工具、准入、`render_a2ui` 工具、事件监听；它就是 agent 目录里的那一行，挂载时逐项交给负责它的宿主服务 |
 | `lyteboat/plugins/chat-api` | `@lyteboat/chat-api` | `/chat`：业务调用方的入口。消息经 dsh 的 session-controller 进会话，请求（owner、trace id、上下文）记在人类消息上；回答是一个 JSON 或 enterprise 事件流，卡片放在正文标记处；共享密钥鉴权、会话归属、重复 `message_id` 检查、断连取消；agent 行可以登记帧装饰器给帧加字段 |

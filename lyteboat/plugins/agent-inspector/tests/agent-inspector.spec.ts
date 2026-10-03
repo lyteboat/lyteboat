@@ -13,8 +13,8 @@ import SkillRegistry from '@deepseek-ai/dsh-skill'
 import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
 import AgentCatalogService from '@lyteboat/agent-catalog'
 import AgentInspectorService from '@lyteboat/agent-inspector'
-import AuxLlmService from '@lyteboat/aux-llm'
 import LyteboatDistroService from '@lyteboat/distro'
+import ModelSideCallService from '@lyteboat/model-side-call'
 import SkillRouterService from '@lyteboat/skill-router'
 import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testkit'
 import ToolPolicyService from '@lyteboat/tool-policy'
@@ -28,7 +28,7 @@ async function inspectorHost(): Promise<Context> {
   await ctx.plugin(SkillRegistry)
   await ctx.plugin(LyteboatDistroService)
   await ctx.plugin(ToolPolicyService)
-  await ctx.plugin(AuxLlmService)
+  await ctx.plugin(ModelSideCallService)
   await ctx.plugin(SkillRouterService, {})
   await ctx.plugin(AgentPresetRegistry, { default: 'none' })
   await ctx.plugin(AgentDefaultModelConfig, { provider: 'mock', model: 'mock' })

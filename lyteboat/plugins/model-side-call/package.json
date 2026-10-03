@@ -1,5 +1,5 @@
 {
-  "name": "@lyteboat/aux-llm",
+  "name": "@lyteboat/model-side-call",
   "version": "0.0.1",
   "private": true,
   "license": "MIT",

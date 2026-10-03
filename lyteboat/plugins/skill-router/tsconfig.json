@@ -14,7 +14,7 @@
     { "path": "../../../dsh/session/session-projection" },
     { "path": "../../../dsh/skill/skill" },
     { "path": "../../core/contracts" },
-    { "path": "../aux-llm" },
+    { "path": "../model-side-call" },
     { "path": "../tool-policy" }
   ]
 }

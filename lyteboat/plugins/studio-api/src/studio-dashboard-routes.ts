@@ -15,8 +15,8 @@ import type { AgentCatalogService } from '@lyteboat/agent-catalog'
 import type { AgentInspectorService } from '@lyteboat/agent-inspector'
 import type { StudioDashboardHealth, StudioDashboardRunning, StudioDashboardSummary } from '@lyteboat/contracts/studio'
 import type { EvalRecordsService } from '@lyteboat/eval-runner/records'
-import type { RunMetricsReaderService } from '@lyteboat/run-metrics/reader'
 import type { SessionIndexService } from '@lyteboat/session-index'
+import type { TurnMetricsReaderService } from '@lyteboat/turn-metrics/reader'
 import { studioWholeNumberOf } from './studio-auth-routes.ts'
 import { StudioApiError, studioCatalogSettled, type StudioApiCall, type StudioApiRoute } from './studio-api-router.ts'
 import { studioBucketMinutes, studioHealthWindow } from './studio-dashboard-health.ts'
@@ -27,7 +27,7 @@ interface StudioDashboardServices {
   catalog: AgentCatalogService
   inspector: AgentInspectorService
   sessions: SessionIndexService
-  metrics: RunMetricsReaderService
+  metrics: TurnMetricsReaderService
   evals: EvalRecordsService
 }
 
@@ -135,7 +135,7 @@ async function summaryAgents(services: StudioDashboardServices): Promise<StudioS
 
 /**
  * The routes.
- * @param services - the catalog, the inspector, the session index, the run-metrics reader, and the eval records.
+ * @param services - the catalog, the inspector, the session index, the turn-metrics reader, and the eval records.
  */
 export function studioDashboardRoutes(services: StudioDashboardServices): StudioApiRoute[] {
   const health = new StudioReusedAnswers<StudioDashboardHealth>(HEALTH_REUSE_MS)

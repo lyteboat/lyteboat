@@ -25,8 +25,8 @@ import { SessionSeq } from '@deepseek-ai/dsh-session'
 import type { SessionLogOffset } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-session-projection'
 import type { LyteboatTurnPart } from '@lyteboat/a2ui'
-import { LYTEBOAT_ASSISTANT_PROVIDER, LYTEBOAT_TURN_OUTCOME_OF_REASON } from '@lyteboat/contracts'
-import type { JsonValue, LyteboatAgentIdentity, LyteboatHeadlessReportPlan, LyteboatRequestOwner, LyteboatTurnOutcome } from '@lyteboat/contracts'
+import { LYTEBOAT_ASSISTANT_PROVIDER, LYTEBOAT_TURN_OUTCOME_KIND_OF_REASON } from '@lyteboat/contracts'
+import type { JsonValue, LyteboatAgentIdentity, LyteboatHeadlessReportPlan, LyteboatRequestOwner, LyteboatTurnOutcomeKind } from '@lyteboat/contracts'
 import type { LyteboatHeadlessResult } from '@lyteboat/contracts/cli'
 import type {} from '@lyteboat/agent-catalog'
 import type {} from '@lyteboat/history-import'
@@ -161,7 +161,7 @@ export default class LyteboatHeadlessHooks {
   /** The turn as one object, as `--result json` prints it. */
   private resultOf(plan: LyteboatHeadlessReportPlan, parts: readonly LyteboatTurnPart[]): LyteboatHeadlessResult {
     const { tools, answeredInLoop } = calledIn(plan.agent, plan.firstSeq)
-    const ended: LyteboatTurnOutcome = plan.reason === undefined ? 'errored' : LYTEBOAT_TURN_OUTCOME_OF_REASON[plan.reason.kind] ?? 'errored'
+    const ended: LyteboatTurnOutcomeKind = plan.reason === undefined ? 'errored' : LYTEBOAT_TURN_OUTCOME_KIND_OF_REASON[plan.reason.kind] ?? 'errored'
     const skill = this.ctx.sessionProjections.stateOf(plan.agent.session, 'lyteboatActiveSkill')?.active ?? undefined
     const model = this.ctx.agentDefaultModel.currentSelection()
     return {

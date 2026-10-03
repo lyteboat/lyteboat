@@ -11,8 +11,8 @@
     { "path": "../../../dsh/llm/llm" },
     { "path": "../../core/contracts" },
     { "path": "../a2ui" },
-    { "path": "../aux-llm" },
     { "path": "../intake-guard" },
+    { "path": "../model-side-call" },
     { "path": "../request-context" },
     { "path": "../skill-router" },
     { "path": "../tool-policy" }

@@ -1,0 +1,44 @@
+{
+  "name": "@lyteboat/turn-metrics",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "description": "lyteboat's turn metrics: the recorder a service mounts (one line per turn in a UTC day file, from the turn's outcome, and a heartbeat file of the running turns) and the reader the Studio mounts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@lyteboat/source": "./src/index.ts",
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./reader": {
+      "@lyteboat/source": "./src/reader.ts",
+      "types": "./lib/reader.d.ts",
+      "default": "./lib/reader.js"
+    }
+  },
+  "files": [
+    "lib"
+  ],
+  "dependencies": {
+    "@lyteboat/contracts": "workspace:*",
+    "@lyteboat/turn-outcome": "workspace:*",
+    "@deepseek-ai/dsh-home-paths": "catalog:dsh",
+    "@deepseek-ai/schemastery": "catalog:"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "catalog:cordis",
+    "@deepseek-ai/dsh-llm": "workspace:*",
+    "@deepseek-ai/dsh-session": "workspace:*",
+    "@deepseek-ai/dsh-session-projection": "workspace:*"
+  },
+  "devDependencies": {
+    "@lyteboat/testkit": "workspace:*",
+    "@deepseek-ai/cordis": "catalog:cordis",
+    "@deepseek-ai/dsh-agent": "workspace:*",
+    "@deepseek-ai/dsh-llm": "workspace:*",
+    "@deepseek-ai/dsh-session": "workspace:*",
+    "@deepseek-ai/dsh-session-projection": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*"
+  }
+}

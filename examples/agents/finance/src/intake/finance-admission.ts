@@ -90,7 +90,7 @@ export function intentOf(answer: string): FinanceIntent | undefined {
 /** What the admission reads. */
 export interface FinanceAdmissionDeps {
   customers: FinanceCustomerSource
-  auxLlm: LyteboatAgentHost['auxLlm']
+  modelSideCall: LyteboatAgentHost['modelSideCall']
   a2ui: LyteboatAgentHost['a2ui']
   /** Absolute path of the agent's a2ui templates root. */
   templates: string
@@ -104,7 +104,7 @@ export function financeAdmission(deps: FinanceAdmissionDeps): LyteboatAdmission 
   return {
     name: FINANCE_ADMISSION,
     admit: async ({ agent, text, context, signal }) => {
-      const outcome = await deps.auxLlm.generate({
+      const outcome = await deps.modelSideCall.generate({
         agent, purpose: 'intake', system: FINANCE_INTAKE_SYSTEM, prompt: financeIntakePrompt(agent, text), maxTokens: FINANCE_INTAKE_MAX_TOKENS, timeoutMs: FINANCE_INTAKE_TIMEOUT_MS, signal,
       })
       const intent = outcome.kind === 'answer' ? intentOf(outcome.text) : undefined

@@ -12,7 +12,7 @@
  */
 
 import { Fragment, useMemo } from 'react'
-import type { LyteboatTurnOutcome } from '@lyteboat/contracts'
+import type { LyteboatTurnOutcomeKind } from '@lyteboat/contracts'
 import type { StudioTimelineItem } from '@lyteboat/contracts/studio'
 import { ChevronRightIcon } from './studio-icons.tsx'
 import {
@@ -44,7 +44,7 @@ const STUDIO_TIMELINE_PILL: Record<StudioTimelineKind, string> = {
   'turn-end': 'END',
 }
 
-const STUDIO_TURN_OUTCOME_NOTE: Record<LyteboatTurnOutcome, string> = {
+const STUDIO_TURN_OUTCOME_NOTE: Record<LyteboatTurnOutcomeKind, string> = {
   completed: '模型已回答',
   rejected: '准入代答，本轮未调用模型',
   tool_stopped: '工具被拦下，本轮停止',

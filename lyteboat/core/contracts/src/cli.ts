@@ -9,8 +9,8 @@
  */
 
 import { z } from 'zod'
-import { LYTEBOAT_TURN_OUTCOMES, lyteboatAgentIdentitySchema, lyteboatAgentModelSchema } from './index.ts'
-import type { LyteboatAgentIdentity, LyteboatAgentModel, LyteboatTurnOutcome } from './index.ts'
+import { LYTEBOAT_TURN_OUTCOME_KINDS, lyteboatAgentIdentitySchema, lyteboatAgentModelSchema } from './index.ts'
+import type { LyteboatAgentIdentity, LyteboatAgentModel, LyteboatTurnOutcomeKind } from './index.ts'
 import type { StudioSkillRouting, StudioTool } from './studio.ts'
 
 /**
@@ -92,7 +92,7 @@ export type LyteboatInspectResult = LyteboatInspectMounted | LyteboatInspectUnmo
 /** What `lyteboat headless --agent <id> --result json` prints: the one turn it ran. */
 export type LyteboatHeadlessResult = {
   sessionId: string
-  outcome: LyteboatTurnOutcome
+  outcome: LyteboatTurnOutcomeKind
   /** The reply's text, cards as their `[card <area>]` lines. */
   text: string
   /** The areas of the cards the turn placed, in order. */
@@ -161,7 +161,7 @@ export const lyteboatInspectResultSchema: z.ZodType<LyteboatInspectResult> = z.d
 /** The schema of {@link LyteboatHeadlessResult}. */
 export const lyteboatHeadlessResultSchema: z.ZodType<LyteboatHeadlessResult> = z.strictObject({
   sessionId: z.string().min(1),
-  outcome: z.enum(LYTEBOAT_TURN_OUTCOMES),
+  outcome: z.enum(LYTEBOAT_TURN_OUTCOME_KINDS),
   text: z.string(),
   cards: z.array(z.string()),
   tools: z.array(z.string()),

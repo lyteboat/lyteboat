@@ -19,14 +19,19 @@
       name: '@lyteboat/tool-policy'
 
     # Side model calls (the router's, an intake classifier's), each recorded ignorable.
-    - id: lyteboat-aux-llm
-      name: '@lyteboat/aux-llm'
+    - id: lyteboat-model-side-call
+      name: '@lyteboat/model-side-call'
 
-    # The request a human message answers to, carried on its source; then the
-    # admission registry that records its verdict there and replies from it.
+    # The request a human message answers to, carried on its source.
     - id: lyteboat-request-context
       name: '@lyteboat/request-context'
 
+    # How each turn ended, folded once from the session log for every reader.
+    - id: lyteboat-turn-outcome
+      name: '@lyteboat/turn-outcome'
+
+    # The admission registry that records its verdict on the human message and
+    # replies from it.
     - id: lyteboat-intake-guard
       name: '@lyteboat/intake-guard'
 

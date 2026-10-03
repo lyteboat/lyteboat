@@ -6,7 +6,7 @@
 # roots and reloads them when a root changes; one that fails is reported on the
 # radar instead of stopping the Studio. The agent inspector reads an agent's
 # tools, skills, and routing from its standing scope; the session index reads
-# the sessions serve writes, with read handles only, the run-metrics reader
+# the sessions serve writes, with read handles only, the turn-metrics reader
 # the metrics serve's recorder writes, and the eval records the eval runs and
 # an agent's case files. The web server listens where startup says;
 # studio-auth signs people in (Studio's own accounts, or an authorizing
@@ -41,8 +41,8 @@
     - id: session-index
       name: '@lyteboat/session-index'
 
-    - id: run-metrics-reader
-      name: '@lyteboat/run-metrics/reader'
+    - id: turn-metrics-reader
+      name: '@lyteboat/turn-metrics/reader'
 
     - id: eval-records
       name: '@lyteboat/eval-runner/records'

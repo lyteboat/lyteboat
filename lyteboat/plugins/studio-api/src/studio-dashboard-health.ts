@@ -11,7 +11,7 @@
  * @module @lyteboat/studio-api/studio-dashboard-health
  */
 
-import type { LyteboatRunMetric } from '@lyteboat/contracts'
+import type { LyteboatTurnMetric } from '@lyteboat/contracts'
 import type { StudioHealthAggregate, StudioHealthSeriesPoint, StudioHealthWindow, StudioSkillRanking, StudioToolRanking } from '@lyteboat/contracts/studio'
 
 const RANKING_LIMIT = 6
@@ -58,11 +58,11 @@ function codePointOrder(a: string, b: string): number {
   return a < b ? -1 : a > b ? 1 : 0
 }
 
-function userOf(row: LyteboatRunMetric): string | undefined {
+function userOf(row: LyteboatTurnMetric): string | undefined {
   return row.owner === undefined || row.owner.id === '' ? undefined : `${row.owner.kind}:${row.owner.id}`
 }
 
-function skillsOf(row: LyteboatRunMetric): string[] {
+function skillsOf(row: LyteboatTurnMetric): string[] {
   return row.activatedSkills.length > 0 ? row.activatedSkills : row.activeSkill === undefined ? [] : [row.activeSkill]
 }
 
@@ -73,7 +73,7 @@ function average(values: readonly number[]): number | null {
 type ConcurrencyEvent = { time: number; start: boolean; user: string; run: string }
 
 /** Each turn's span as a start and an end, clipped to the window, in time order (an end before a start at the same time). */
-function concurrencyEvents(rows: readonly LyteboatRunMetric[], startedAt?: number, endedAt?: number): ConcurrencyEvent[] {
+function concurrencyEvents(rows: readonly LyteboatTurnMetric[], startedAt?: number, endedAt?: number): ConcurrencyEvent[] {
   const events: ConcurrencyEvent[] = []
   for (const row of rows) {
     const user = userOf(row)
@@ -98,7 +98,7 @@ function applyEvent(active: Map<string, Set<string>>, event: ConcurrencyEvent): 
   if (runs?.size === 0) active.delete(event.user)
 }
 
-function peakConcurrentUsers(rows: readonly LyteboatRunMetric[]): number {
+function peakConcurrentUsers(rows: readonly LyteboatTurnMetric[]): number {
   const active = new Map<string, Set<string>>()
   let peak = 0
   for (const event of concurrencyEvents(rows)) {
@@ -108,7 +108,7 @@ function peakConcurrentUsers(rows: readonly LyteboatRunMetric[]): number {
   return peak
 }
 
-function bucketPeaks(rows: readonly LyteboatRunMetric[], startedAt: number, endedAt: number, bucketMs: number): number[] {
+function bucketPeaks(rows: readonly LyteboatTurnMetric[], startedAt: number, endedAt: number, bucketMs: number): number[] {
   const events = concurrencyEvents(rows, startedAt, endedAt)
   const active = new Map<string, Set<string>>()
   const peaks: number[] = []
@@ -127,7 +127,7 @@ function bucketPeaks(rows: readonly LyteboatRunMetric[], startedAt: number, ende
 }
 
 /** The health of a set of turns. */
-export function studioHealthAggregate(rows: readonly LyteboatRunMetric[]): StudioHealthAggregate {
+export function studioHealthAggregate(rows: readonly LyteboatTurnMetric[]): StudioHealthAggregate {
   const count = rows.length
   const tools = rows.flatMap(row => row.tools).filter(tool => tool.name !== SKILL_LOAD_TOOL)
   const toolDurations = tools.flatMap(tool => tool.durationMs === undefined ? [] : [Math.max(0, studioRoundHalfEven(tool.durationMs))])
@@ -158,7 +158,7 @@ export function studioHealthAggregate(rows: readonly LyteboatRunMetric[]): Studi
   }
 }
 
-function rankTools(rows: readonly LyteboatRunMetric[]): StudioToolRanking[] {
+function rankTools(rows: readonly LyteboatTurnMetric[]): StudioToolRanking[] {
   const counts = new Map<string, number>()
   const durations = new Map<string, number[]>()
   for (const tool of rows.flatMap(row => row.tools)) {
@@ -172,7 +172,7 @@ function rankTools(rows: readonly LyteboatRunMetric[]): StudioToolRanking[] {
     .map(([name, count]) => ({ name, count, averageDurationMs: average(durations.get(name) ?? []) }))
 }
 
-function rankSkills(rows: readonly LyteboatRunMetric[]): StudioSkillRanking[] {
+function rankSkills(rows: readonly LyteboatTurnMetric[]): StudioSkillRanking[] {
   const steps = new Map<string, number[]>()
   for (const row of rows) {
     for (const skill of new Set(skillsOf(row))) {
@@ -190,10 +190,10 @@ function rankSkills(rows: readonly LyteboatRunMetric[]): StudioSkillRanking[] {
  * @param rows - the turns that started in the window.
  * @param bucketMinutes - from {@link studioBucketMinutes}.
  */
-export function studioHealthWindow(rows: readonly LyteboatRunMetric[], startedAt: number, endedAt: number, bucketMinutes: number): StudioHealthWindow {
+export function studioHealthWindow(rows: readonly LyteboatTurnMetric[], startedAt: number, endedAt: number, bucketMinutes: number): StudioHealthWindow {
   const bucketMs = bucketMinutes * MINUTE_MS
   const count = Math.ceil((endedAt - startedAt) / bucketMs)
-  const buckets: LyteboatRunMetric[][] = Array.from({ length: count }, () => [])
+  const buckets: LyteboatTurnMetric[][] = Array.from({ length: count }, () => [])
   for (const row of rows) {
     const index = Math.min(Math.floor((row.startedAt - startedAt) / bucketMs), count - 1)
     if (index >= 0) buckets[index]?.push(row)
