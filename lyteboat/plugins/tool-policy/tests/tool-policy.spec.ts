@@ -239,6 +239,29 @@ describe('state', () => {
     expect(JSON.stringify(adapter.requests[1]!.messages)).toContain('portfolio')
   })
 
+  it('fails the call, not the session, when the delta hook derives a path the state cannot hold', async () => {
+    const adapter = new MockAdapter([toolCallResponse('c1', 'lookup', {}), textResponse('done')])
+    const ctx = await harness(adapter)
+    ctx.toolPolicy.register(defineTool({
+      name: 'lookup', description: 'lookup', parameters: {},
+      output: {
+        schema: { type: 'object', additionalProperties: false, properties: { total: { type: 'number', required: true } } },
+        render: (_args, value) => [{ type: 'text', text: `sum ${value.total}` }],
+      },
+      execute: async () => ({ total: 5 }),
+    }), { stateDelta: (_args, value) => ({ 'portfolio..total': (value as { total: number }).total }) })
+    const agent = await ctx.agentLoop.create(SessionId('bad-delta'), { provider: 'mock', model: 'mock' })
+
+    await send(agent, 'go')
+    const events = agent.session.snapshotEvents()
+    const result = events.find((event): event is SessionEvent<'tool/result'> => event.type === 'tool/result')!
+    expect(result.data.message.isError).toBe(true)
+    expect(JSON.stringify(result.data.message.content)).toContain('state delta path \\"portfolio..total\\" has an empty segment')
+    expect(result.data.meta).toBeUndefined()
+    expect(events.at(-1)?.data).toMatchObject({ reason: { kind: 'completed' } })
+    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatState')).toEqual({})
+  })
+
   it('records the tool\'s own meta unchanged when the delta hook derives nothing', async () => {
     const adapter = new MockAdapter([toolCallResponse('c1', 'with_meta', {}), toolCallResponse('c2', 'without_meta', {}), textResponse('done')])
     const ctx = await harness(adapter)
