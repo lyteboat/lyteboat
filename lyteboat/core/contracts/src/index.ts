@@ -208,8 +208,8 @@ export interface LyteboatAuxLlmCallRecord {
 }
 
 /**
- * An admission function's decision on one request, made before the request
- * enters the loop and recorded on the request's human message.
+ * An admission function's decision on one request, made at its turn's first
+ * step; a `reply` is recorded on the request's human message, a pass is not.
  */
 export type LyteboatIntakeVerdict = {
   /** The admission function that decided. */
