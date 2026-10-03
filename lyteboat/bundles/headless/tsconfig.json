@@ -18,6 +18,6 @@
     {
       "path": "../../plugins/history-import"
     },
-    { "path": "../../plugins/intake-guard" }
+    { "path": "../../plugins/request-context" }
   ]
 }

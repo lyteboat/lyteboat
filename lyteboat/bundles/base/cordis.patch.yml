@@ -32,8 +32,8 @@
 
     # The admission registry that records its verdict on the human message and
     # replies from it.
-    - id: lyteboat-intake-guard
-      name: '@lyteboat/intake-guard'
+    - id: lyteboat-request-admission
+      name: '@lyteboat/request-admission'
 
     - id: lyteboat-skill-router
       name: '@lyteboat/skill-router'

@@ -1,7 +1,7 @@
 # Eval finance: 6/6 cases passed
 
 - mode: real
-- turns: 7/7 passed; checks: 30/30 passed
+- turns: 7/7 passed; checks: 31/31 passed
 - started 2026-10-01T16:26:41.665Z, took 25s
 
 | case | turn | message | result | failed checks |

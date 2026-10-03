@@ -10,7 +10,7 @@ import { defineContentToolFixture, type ToolDefinition } from '@deepseek-ai/dsh-
 import A2uiService from '@lyteboat/a2ui'
 import { lyteboatAgentDef, type LyteboatAgentDef, type LyteboatAgentHost } from '@lyteboat/agent-def'
 import LyteboatDistroService from '@lyteboat/distro'
-import IntakeGuardService from '@lyteboat/intake-guard'
+import RequestAdmissionService from '@lyteboat/request-admission'
 import ModelSideCallService from '@lyteboat/model-side-call'
 import RequestContextService from '@lyteboat/request-context'
 import SkillRouterService from '@lyteboat/skill-router'
@@ -28,7 +28,7 @@ async function harness(adapter: MockAdapter): Promise<Context> {
   await ctx.plugin(SkillRouterService)
   await ctx.plugin(A2uiService)
   await ctx.plugin(RequestContextService)
-  await ctx.plugin(IntakeGuardService)
+  await ctx.plugin(RequestAdmissionService)
   return ctx
 }
 
@@ -79,7 +79,7 @@ describe('lyteboatAgentDef', () => {
     expect(request?.temperature).toBe(0)
     expect(request?.maxTokens).toBe(321)
     expect(requestTurns).toEqual([1])
-    expect(ctx.intakeGuard.admissionFor(agent)?.name).toBe('desk-admission')
+    expect(ctx.requestAdmission.admissionFor(agent)?.name).toBe('desk-admission')
     expect(hosts[0]?.agentPath('assets/a2ui')).toBe(join(AGENTS, 'desk', 'assets', 'a2ui'))
   })
 
@@ -126,7 +126,7 @@ describe('lyteboatAgentDef', () => {
   it('computes the services it injects from the fields it has', () => {
     expect(lyteboatAgentDef({ agentId: 'minimal', agentName: 'Minimal', skillDirs: [] }).inject).toEqual([])
     expect(lyteboatAgentDef({ agentId: 'minimal', agentName: 'Minimal', persona: { prefix: 'hi' } }).inject).toEqual(['systemPrompt', 'skills'])
-    expect([...lyteboatAgentDef(DESK_DEF).inject].sort()).toEqual(['a2ui', 'intakeGuard', 'modelSideCall', 'requestContext', 'skillRouter', 'skills', 'systemPrompt', 'toolPolicy'])
+    expect([...lyteboatAgentDef(DESK_DEF).inject].sort()).toEqual(['a2ui', 'modelSideCall', 'requestAdmission', 'requestContext', 'skillRouter', 'skills', 'systemPrompt', 'toolPolicy'])
   })
 
   it('carries the identity the agent catalog reads, and names its fibers after the agent', () => {

@@ -34,8 +34,8 @@
   - 技能路由：`full` 把全部技能正文放进提示；`dynamic` 每轮用一次旁路模型调用选出技能，并在同一步生效；路由结果是 dsh 自己的技能调用消息，会话能重开、能续聊（`@lyteboat/skill-router`）。
   - 工具可见性、工具结果里的状态增量；agent 可以把它没有声明的继承工具一并隐藏（`@lyteboat/tool-policy`）。
   - A2UI 模板卡片：一个工具结果可以带多张卡，按发射模式立即出，或由回答里的 `[[card:区域]]` 标记放到位；卡片可以由 `render_a2ui` 工具出，也可以由 agent 自己的工具出（`@lyteboat/a2ui`）。
-  - 请求上下文：一条请求带着自己的上下文和准入判定进日志，会话内沿用（`@lyteboat/request-context`）。
-  - 准入前移：agent 登记准入函数，请求进循环前就放行或直接回复，回复可以带卡（`@lyteboat/intake-guard`）；底层的拒识钩子 `lyteboat/intake` 也可以直接用。
+  - 请求上下文：一条请求带着自己的上下文进日志，会话内沿用；准入直接回复时，判定也记在这条请求上（`@lyteboat/request-context`）。
+  - 请求准入：agent 登记准入函数，每轮第一步、调模型之前就放行或直接回复，回复可以带卡（`@lyteboat/request-admission`）；底层的拒识钩子 `lyteboat/intake` 也可以直接用。
   - 旁路模型调用留痕：路由、分类这类旁路调用在会话里留下完整的 prompt 和回答（`@lyteboat/model-side-call`）。
   - 轮次结局：每轮怎样结束，从会话日志折一次；`/chat`、评测、指标和会话页读同一份（`@lyteboat/turn-outcome`）。
   - 外部对话历史导入（`@lyteboat/history-import`）。
@@ -252,9 +252,9 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | `lyteboat/plugins/distro` | `@lyteboat/distro` | `lyteboatDistro` 服务：内核来自哪个 dsh 版本、这次构建带了哪些内核扩展 |
 | `lyteboat/plugins/tool-policy` | `@lyteboat/tool-policy` | 工具可见性、状态增量；`./agent` 在 agent 的组合文件里声明策略，`inherited: visible \| hidden` 决定没有声明点名的继承工具是否可见；`visible(scope)` 回答一个新 agent 在某个常驻作用域下、激活之前看得到的工具 |
 | `lyteboat/plugins/model-side-call` | `@lyteboat/model-side-call` | 旁路模型调用（技能路由、准入分类）：各自带超时，每次调用在会话里留一条可忽略的审计记录；在 `maxTokens` 处截断的回答算失败；`reasoningEffort` 配置旁路调用请求的推理强度 |
-| `lyteboat/plugins/request-context` | `@lyteboat/request-context` | 请求上下文：一条人类消息所回应的请求（请求 id、发起者、上下文、准入判定）记在它自己的 source 上；`lyteboatRequest` 投影保存会话的上下文和发起者 |
+| `lyteboat/plugins/request-context` | `@lyteboat/request-context` | 请求上下文：一条人类消息所回应的请求（请求 id、发起者、上下文，准入回复时还有判定）记在它自己的 source 上；`lyteboatRequest` 投影保存会话的上下文和发起者 |
 | `lyteboat/plugins/turn-outcome` | `@lyteboat/turn-outcome` | 轮次结局：`lyteboatTurnOutcomes` 投影从会话日志折出每轮的请求、步数、模型请求、旁路调用、工具调用和结局；`turnOutcome` 服务按轮次或请求 id 读它、等一轮结束，也能折一份存下的日志；`/chat`、评测、轮次指标和会话索引都读它 |
-| `lyteboat/plugins/intake-guard` | `@lyteboat/intake-guard` | 准入前移：agent 登记准入函数，调用方用 `submit` 提交每个请求，先准入，再把请求连同判定记进会话；循环里按记录的回复判定直接作答，没有经过准入的消息在循环内补做 |
+| `lyteboat/plugins/request-admission` | `@lyteboat/request-admission` | 请求准入：agent 登记准入函数，`requestAdmission` 服务在每轮第一步的 `lyteboat/intake` 上对人类消息跑它；回复判定不调模型就作答，并把判定和卡片记在这条消息的请求上，放行不记 |
 | `lyteboat/plugins/skill-router` | `@lyteboat/skill-router` | 技能加载模式与模型路由（`historyWindow`、`timeoutMs`、`maxTokens` 可配）；`./agent` 在 agent 的组合文件里声明模式 |
 | `lyteboat/plugins/a2ui` | `@lyteboat/a2ui` | A2UI 模板引擎、`render_a2ui` 工具、`lyteboatCards` 投影；一个结果可带多张卡，按出卡模式（立即、延迟、延迟丢弃）和正文里的 `[[card:<区域>]]` 标记排进一轮（`turnParts`）；`./agent` 在组合文件里挂上这个工具，agent 自己的工具用 `renderCard`、`cardsPresentationMeta`、`cardMarker` 出卡；默认组件目录不含业务词汇 |
 | `lyteboat/plugins/history-import` | `@lyteboat/history-import` | 外部对话历史的解析，以及 `lyteboat headless --agent … --history` 用的会话种子 |

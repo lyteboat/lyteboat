@@ -1130,12 +1130,12 @@ importers:
       '@lyteboat/headless':
         specifier: workspace:*
         version: link:../../../lyteboat/bundles/headless
-      '@lyteboat/intake-guard':
-        specifier: workspace:*
-        version: link:../../../lyteboat/plugins/intake-guard
       '@lyteboat/model-side-call':
         specifier: workspace:*
         version: link:../../../lyteboat/plugins/model-side-call
+      '@lyteboat/request-admission':
+        specifier: workspace:*
+        version: link:../../../lyteboat/plugins/request-admission
       '@lyteboat/request-context':
         specifier: workspace:*
         version: link:../../../lyteboat/plugins/request-context
@@ -1452,12 +1452,12 @@ importers:
       '@lyteboat/history-import':
         specifier: workspace:*
         version: link:../../plugins/history-import
-      '@lyteboat/intake-guard':
-        specifier: workspace:*
-        version: link:../../plugins/intake-guard
       '@lyteboat/model-side-call':
         specifier: workspace:*
         version: link:../../plugins/model-side-call
+      '@lyteboat/request-admission':
+        specifier: workspace:*
+        version: link:../../plugins/request-admission
       '@lyteboat/request-context':
         specifier: workspace:*
         version: link:../../plugins/request-context
@@ -1543,9 +1543,9 @@ importers:
       '@lyteboat/history-import':
         specifier: workspace:*
         version: link:../../plugins/history-import
-      '@lyteboat/intake-guard':
+      '@lyteboat/request-context':
         specifier: workspace:*
-        version: link:../../plugins/intake-guard
+        version: link:../../plugins/request-context
       commander:
         specifier: 'catalog:'
         version: 15.0.0
@@ -1880,12 +1880,12 @@ importers:
       '@lyteboat/contracts':
         specifier: workspace:*
         version: link:../../core/contracts
-      '@lyteboat/intake-guard':
-        specifier: workspace:*
-        version: link:../intake-guard
       '@lyteboat/model-side-call':
         specifier: workspace:*
         version: link:../model-side-call
+      '@lyteboat/request-admission':
+        specifier: workspace:*
+        version: link:../request-admission
       '@lyteboat/request-context':
         specifier: workspace:*
         version: link:../request-context
@@ -2124,7 +2124,38 @@ importers:
         specifier: workspace:*
         version: link:../../test-support/testkit
 
-  lyteboat/plugins/intake-guard:
+  lyteboat/plugins/model-side-call:
+    dependencies:
+      '@deepseek-ai/dsh-timeout':
+        specifier: 0.2.0-rc.2
+        version: 0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/schemastery':
+        specifier: 'catalog:'
+        version: 3.18.4
+      '@lyteboat/contracts':
+        specifier: workspace:*
+        version: link:../../core/contracts
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: catalog:cordis
+        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
+      '@deepseek-ai/dsh-agent':
+        specifier: workspace:*
+        version: link:../../../dsh/core/agent
+      '@deepseek-ai/dsh-llm':
+        specifier: workspace:*
+        version: link:../../../dsh/llm/llm
+      '@deepseek-ai/dsh-session':
+        specifier: workspace:*
+        version: link:../../../dsh/core/session
+      '@lyteboat/distro':
+        specifier: workspace:*
+        version: link:../distro
+      '@lyteboat/testkit':
+        specifier: workspace:*
+        version: link:../../test-support/testkit
+
+  lyteboat/plugins/request-admission:
     dependencies:
       '@deepseek-ai/dsh-scope':
         specifier: 0.2.0-rc.2
@@ -2145,37 +2176,6 @@ importers:
       '@deepseek-ai/dsh-agent-loop':
         specifier: workspace:*
         version: link:../../../dsh/core/agent-loop
-      '@deepseek-ai/dsh-llm':
-        specifier: workspace:*
-        version: link:../../../dsh/llm/llm
-      '@deepseek-ai/dsh-session':
-        specifier: workspace:*
-        version: link:../../../dsh/core/session
-      '@lyteboat/distro':
-        specifier: workspace:*
-        version: link:../distro
-      '@lyteboat/testkit':
-        specifier: workspace:*
-        version: link:../../test-support/testkit
-
-  lyteboat/plugins/model-side-call:
-    dependencies:
-      '@deepseek-ai/dsh-timeout':
-        specifier: 0.2.0-rc.2
-        version: 0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/schemastery':
-        specifier: 'catalog:'
-        version: 3.18.4
-      '@lyteboat/contracts':
-        specifier: workspace:*
-        version: link:../../core/contracts
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: catalog:cordis
-        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
-      '@deepseek-ai/dsh-agent':
-        specifier: workspace:*
-        version: link:../../../dsh/core/agent
       '@deepseek-ai/dsh-llm':
         specifier: workspace:*
         version: link:../../../dsh/llm/llm

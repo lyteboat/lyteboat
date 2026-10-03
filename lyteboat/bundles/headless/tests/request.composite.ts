@@ -1,8 +1,8 @@
 /**
  * The request a task carries: `--context` (inline or a file) rides the human
  * message's source, a continued session keeps it, and an admission function
- * decides before the loop, its verdict and card recorded on the request and its
- * reply printed without a model request.
+ * decides at the turn's first step: a reply is printed without a model request
+ * and recorded on the request with its card, a pass is not recorded.
  */
 import { writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -71,7 +71,7 @@ describe('lyteboat headless --context and admission (in process, scripted model)
     expect(inline.stderr).toContain('--context is not JSON')
   })
 
-  it('admits before the loop: a reply verdict and its card are recorded on the request, and printed without a model request', async () => {
+  it('answers a reply verdict without a model request, recording it and its card on the request', async () => {
     const target = fresh('admission')
     const before = model.requests.length
     const result = await headlessComposition(['--context', '{"channel":"本渠道"}', '帮我炒股'], target, [ADMISSION])
@@ -88,11 +88,11 @@ describe('lyteboat headless --context and admission (in process, scripted model)
     }])
   })
 
-  it('records a pass verdict and lets the model answer', async () => {
+  it('lets the model answer a pass and records no verdict', async () => {
     const target = fresh('admitted')
     const result = await headlessComposition(['看看我的资产'], target, [ADMISSION])
     expect(result.code, result.stderr).toBe(0)
     expect(result.stdout).toBe('REQUEST-OK\n')
-    expect(humanSources(target.home)).toEqual([{ kind: 'user', lyteboatRequest: { owner: { kind: 'operator', id: 'cli' }, intake: { by: 'example-admission', decision: 'pass' } } }])
+    expect(humanSources(target.home)).toEqual([{ kind: 'user', lyteboatRequest: { owner: { kind: 'operator', id: 'cli' } } }])
   })
 })

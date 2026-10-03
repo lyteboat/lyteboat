@@ -4,9 +4,10 @@
  * runner's plans (the kernel extension `headless-hooks`). Before the Agent
  * exists it composes the selected agent (its preset, joined in the setup
  * window), moves the session into the agent's working directory, and seeds an
- * imported history; it submits the task through `intakeGuard.submit` with its
- * request context; and it prints the turn with its cards placed (each as a
- * `[card <area>]` line), or with `result: json` as one
+ * imported history; it follows the task up as a human message carrying its
+ * request (`requestContext.message`), which the loop admits; and it prints
+ * the turn with its cards placed (each as a `[card <area>]` line), or with
+ * `result: json` as one
  * {@link LyteboatHeadlessResult} object, and the session id to stderr (with
  * `--json`, dsh's stream names it in its `session` event). It
  * publishes `headlessStartup`, which the runner row injects, only once it
@@ -30,7 +31,7 @@ import type { JsonValue, LyteboatAgentIdentity, LyteboatHeadlessReportPlan, Lyte
 import type { LyteboatHeadlessResult } from '@lyteboat/contracts/cli'
 import type {} from '@lyteboat/agent-catalog'
 import type {} from '@lyteboat/history-import'
-import type {} from '@lyteboat/intake-guard'
+import type {} from '@lyteboat/request-context'
 
 /** Who a task typed at the command line comes from. */
 const CLI_OWNER: LyteboatRequestOwner = { kind: 'operator', id: 'cli' }
@@ -84,7 +85,7 @@ function renderTurn(parts: readonly LyteboatTurnPart[]): string {
 
 export default class LyteboatHeadlessHooks {
   // lyteboatDistro: the plans ride the kernel extension headless-hooks.
-  static inject = ['lyteboatDistro', 'agentDefaultModel', 'agentPresets', 'agentCatalog', 'sessionProjections', 'historyImport', 'a2ui', 'intakeGuard']
+  static inject = ['lyteboatDistro', 'agentDefaultModel', 'agentPresets', 'agentCatalog', 'sessionProjections', 'historyImport', 'a2ui', 'requestContext']
   static Config: z<LyteboatHeadlessConfig> = z.object({
     task: z.string(),
     sessionId: z.string(),
@@ -117,9 +118,15 @@ export default class LyteboatHeadlessHooks {
       await next()
     })
     ctx.on('lyteboat/headless-submit', async (plan, next) => {
-      // Admission runs before the request enters the loop, so its verdict is recorded with the request.
+      // The loop admits the request at its first step; a reply records its verdict on this message.
       plan.deliver = async () => {
-        await ctx.intakeGuard.submit(plan.agent, { text: plan.task, context: headlessConfig.context, owner: CLI_OWNER, agent: this.identity }, new AbortController().signal)
+        // An empty context is none: the session's earlier context stays in force.
+        const context = headlessConfig.context === undefined || Object.keys(headlessConfig.context).length === 0 ? undefined : headlessConfig.context
+        plan.agent.followup(ctx.requestContext.message(plan.task, {
+          owner: CLI_OWNER,
+          ...this.identity === undefined ? {} : { agent: this.identity },
+          ...context === undefined ? {} : { context },
+        }))
       }
       await next()
     })

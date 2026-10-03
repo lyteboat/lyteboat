@@ -1,8 +1,8 @@
 /**
  * The finance agent in the business one-shot composition (in process, scripted DeepSeek
  * Messages server): each request names its customer in `--context` and is
- * admitted before the loop (the unauthorized card and the service scope
- * answer without the model); the persona is the whole system prompt, the
+ * admitted at its turn's first step (the unauthorized card and the service
+ * scope answer without a loop request); the persona is the whole system prompt, the
  * official tools are narrowed away, the routed skill's tool alone reaches the
  * model at temperature 0, and the cards are placed where the answer marks
  * them. A routed session reopens under dsh's persistence, and `--session-id`
@@ -78,7 +78,7 @@ describe('finance agent in the business one-shot composition (in process, script
     expect(stdout).toBe('FINANCE-OK\n[card allocation_diagnosis]\n[card allocation_plan]\n')
   })
 
-  it('nothing authorized: the admission answers with the unauthorized card before the loop', async () => {
+  it('nothing authorized: the admission answers with the unauthorized card at the turn\'s first step', async () => {
     const { requests, records, stdout } = await run('unauthorized', 'none-authorized', '看看我的资产')
     expect(requests.filter(isIntake)).toHaveLength(1)
     expect(requests.filter(isLoop)).toEqual([])

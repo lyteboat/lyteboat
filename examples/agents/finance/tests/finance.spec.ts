@@ -23,7 +23,7 @@ import SkillRouterService from '@lyteboat/skill-router'
 import ModelSideCallService from '@lyteboat/model-side-call'
 import A2uiService, { validateFullPayload } from '@lyteboat/a2ui'
 import RequestContextService from '@lyteboat/request-context'
-import IntakeGuardService from '@lyteboat/intake-guard'
+import RequestAdmissionService from '@lyteboat/request-admission'
 import FinanceAgent from '@lyteboat/agent-finance/agent'
 
 interface TurnPlan { skill: string; tool: string; args?: Record<string, unknown> }
@@ -92,16 +92,16 @@ async function harness(plans: ReadonlyMap<string, TurnPlan>, intents: ReadonlyMa
   await ctx.plugin(SkillRouterService)
   await ctx.plugin(A2uiService)
   await ctx.plugin(RequestContextService)
-  await ctx.plugin(IntakeGuardService)
+  await ctx.plugin(RequestAdmissionService)
   // The host's skill tool (dsh-tool-skill in a business mode), which finance's tool policy keeps visible.
   ctx.tools.register(defineContentToolFixture({ name: 'skill', description: 'Load a skill.', parameters: { name: { type: 'string', required: true } }, execute: async () => [{ type: 'text', text: 'loaded' }] }))
   const finance = await mountAgentStandingScope(ctx, FINANCE_DIR, FinanceAgent)
   return { ctx, adapter, finance }
 }
 
-/** One request as `lyteboat headless --agent` sends it: submitted (admitted, then followed up with its context and verdict), then settled. */
+/** One request as a caller sends it: followed up with its context, admitted at the turn's first step, then settled. */
 async function send(ctx: Context, agent: Agent, text: string, customer?: string): Promise<void> {
-  await ctx.intakeGuard.submit(agent, { text, context: customer === undefined ? undefined : { customer } }, AbortSignal.timeout(5000))
+  agent.followup(ctx.requestContext.message(text, customer === undefined ? {} : { context: { customer } }))
   await agent.whenIdle()
 }
 
@@ -151,7 +151,8 @@ describe('the finance agent on the unit host (scripted model)', () => {
     const { agent, ctx } = await askOnce('midlife-moderate', '区块链是什么', { skill: 'investor-education', tool: 'lookup_knowledge', args: { topic: '区块链' } })
     expect(results(agent)[0]?.text).toContain('status=fallback')
     expect(payloadsOf(agent)).toEqual([])
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatRequest')?.intake).toEqual({ by: 'finance-admission', decision: 'pass', verdict: 'education' })
+    // A pass is not recorded on the request; only a reply is.
+    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatRequest')?.intake).toBeNull()
   })
 
   it('every card passes strict A2UI validation when one session renders the overview and the diagnosis', async () => {

@@ -5,6 +5,8 @@
  * continued session keeps it, and the session reopens. The enterprise frames of
  * four scenarios are goldens: an overview with its card, a diagnosis with two,
  * education without a card, and a request the admission answers in the loop.
+ * A customer with nothing authorized gets the admission's card, its verdict
+ * logged on the request.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { postChat, streamChat, type ChatWireFrame } from '@lyteboat/testkit/chat-client'
@@ -73,6 +75,19 @@ describe('finance agent behind /chat (in process, scripted model)', () => {
       { kind: 'user', rpcId: 'm-1', lyteboatRequest: { requestId: 'm-1', owner: { kind: 'user', id: 'u-1' }, agent: FINANCE, traceId: 't-1', context: { customer: 'young-idle-cash' } } },
       { kind: 'user', rpcId: 'm-2', lyteboatRequest: { requestId: 'm-2', owner: { kind: 'user', id: 'u-1' }, agent: FINANCE } },
     ])
+    expect(reopenRefusal(records)).toBeUndefined()
+  })
+
+  it('answers a customer with nothing authorized with the unauthorized card, and logs the verdict on the request', async () => {
+    const before = model.requests.length
+    const reply = await postChat(chat, { agent_id: 'finance', user_id: 'u-2', message: '看看我的资产', message_id: 'm-3', context: { customer: 'none-authorized' } })
+    const sessionId = (reply.body as { session_id: string }).session_id
+
+    expect(reply.body).toMatchObject({ outcome: 'rejected', response: '您还没有授权任何账户，授权后我就能帮您看资产了。', cards: [{ area: 'unauthorized' }], tool_calls: [] })
+    expect(model.requests.slice(before).filter(isLoop)).toEqual([])
+    const records = await waitForSessionLog<LogRecord>(home, sessionId, log => log.some(record => record.type === 'turn/end'))
+    const human = records.find(record => record.type === 'user/message' && (record.data?.['source'] as { kind?: unknown } | undefined)?.kind === 'user')
+    expect(human?.data?.['source']).toMatchObject({ rpcId: 'm-3', lyteboatRequest: { requestId: 'm-3', context: { customer: 'none-authorized' }, intake: { by: 'finance-admission', decision: 'reply', verdict: 'unauthorized', cards: [{ area: 'unauthorized' }] } } })
     expect(reopenRefusal(records)).toBeUndefined()
   })
 

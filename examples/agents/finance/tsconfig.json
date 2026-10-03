@@ -24,7 +24,7 @@
       "path": "../../../lyteboat/plugins/agent-def"
     },
     {
-      "path": "../../../lyteboat/plugins/intake-guard"
+      "path": "../../../lyteboat/plugins/request-admission"
     }
   ]
 }

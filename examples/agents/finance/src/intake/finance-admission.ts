@@ -15,7 +15,7 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { LyteboatAgentHost } from '@lyteboat/agent-def'
 import { LYTEBOAT_HISTORY_IMPORT_SOURCE, type JsonValue } from '@lyteboat/contracts'
-import type { LyteboatAdmission } from '@lyteboat/intake-guard'
+import type { LyteboatAdmission } from '@lyteboat/request-admission'
 import type { FinanceCustomerSource } from '../data/finance-customer.ts'
 import { summarizeHoldings } from '../capabilities/finance-holdings.ts'
 

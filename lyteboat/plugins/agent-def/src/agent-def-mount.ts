@@ -16,7 +16,7 @@ import * as dshSkillFilesystem from '@deepseek-ai/dsh-skill-filesystem'
 import type { LlmCallConfig } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@lyteboat/a2ui'
-import type {} from '@lyteboat/intake-guard'
+import type {} from '@lyteboat/request-admission'
 import type {} from '@lyteboat/model-side-call'
 import type {} from '@lyteboat/request-context'
 import type {} from '@lyteboat/skill-router'
@@ -122,7 +122,7 @@ export async function mountLyteboatAgent(ctx: Context, agentDef: LyteboatAgentDe
     requestContext: { contextOf: (...contextArgs) => ctx.requestContext.contextOf(...contextArgs) },
     toolPolicy: { activate: (...activateArgs) => ctx.toolPolicy.activate(...activateArgs) },
   }
-  if (admission !== undefined) await step('admission', () => ctx.intakeGuard.register(admission(hostOfAgent())))
+  if (admission !== undefined) await step('admission', () => ctx.requestAdmission.register(admission(hostOfAgent())))
   if (tools !== undefined) {
     await step('tools', () => {
       for (const { definition, ...toolMeta } of checkedLyteboatAgentTools(tools(hostOfAgent()))) ctx.toolPolicy.register(definition, toolMeta)

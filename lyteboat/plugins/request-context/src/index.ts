@@ -1,7 +1,7 @@
 /**
  * @lyteboat/request-context — the request a human message answers to: the
  * caller's request id, the request context (who is asking, through which
- * channel, …), and the admission verdict when one ran before the loop. It
+ * channel, …), and the admission verdict when the admission answered it. It
  * rides the message's own `source` beside `kind: 'user'`, so dsh reads the
  * message as human input as before and the log keeps the request with the
  * words it came with. One host service, `ctx.requestContext`, writes such a
@@ -20,7 +20,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage, type UserMessage } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-session-projection'
 import { lyteboatRequestSchema } from '@lyteboat/contracts'
-import type { JsonValue, LyteboatRequest } from '@lyteboat/contracts'
+import type { JsonValue, LyteboatIntakeVerdict, LyteboatRequest } from '@lyteboat/contracts'
 import { lyteboatRequestOf, lyteboatRequestProjectionDefinition } from './request-projection.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -70,6 +70,18 @@ export class RequestContextService extends Service {
    */
   requestOf(message: UserMessage): LyteboatRequest | undefined {
     return lyteboatRequestOf(message.source)
+  }
+
+  /**
+   * A human message with an admission verdict recorded on its request, beside
+   * whatever the request already carries; the words and the id stay.
+   * @param message - the human message the verdict judged.
+   * @param intake - the verdict to record.
+   * @throws when the request the message carries fails the contract's schema.
+   */
+  withIntake(message: UserMessage, intake: LyteboatIntakeVerdict): UserMessage {
+    const request = lyteboatRequestSchema.parse({ ...this.requestOf(message), intake })
+    return { ...message, source: { ...message.source, kind: 'user', lyteboatRequest: request } }
   }
 
   /** The session's request context: the latest a request carried, empty before any. */

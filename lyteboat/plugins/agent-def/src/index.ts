@@ -19,7 +19,7 @@ import type { Scoped } from '@deepseek-ai/dsh-scope'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { A2uiService, RenderToolOptions } from '@lyteboat/a2ui'
 import type { LyteboatAgentDefIdentity, LyteboatInheritedToolVisibility, LyteboatToolMeta } from '@lyteboat/contracts'
-import type { LyteboatAdmission } from '@lyteboat/intake-guard'
+import type { LyteboatAdmission } from '@lyteboat/request-admission'
 import type { ModelSideCallService } from '@lyteboat/model-side-call'
 import type { RequestContextService } from '@lyteboat/request-context'
 import type { SkillRouterSettings } from '@lyteboat/skill-router'
@@ -100,7 +100,7 @@ export interface LyteboatAgentDef {
   modelRequest?: LyteboatAgentModelRequest
   /** The agent's own tools, in registration order. */
   tools?: (host: LyteboatAgentHost) => readonly LyteboatAgentTool[]
-  /** The admission that answers a request before the loop runs. */
+  /** The admission that may answer a request at its turn's first step, without a model request. */
   admission?: (host: LyteboatAgentHost) => LyteboatAdmission
   a2uiRenderTool?: LyteboatAgentA2uiRenderTool
   eventListeners?: (host: LyteboatAgentHost) => LyteboatAgentEventListeners
@@ -126,7 +126,7 @@ function injectedServicesOf(agentDef: LyteboatAgentDef): string[] {
   if (agentDef.skillDirs === undefined || agentDef.skillDirs.length > 0) services.add('skills')
   if (agentDef.skillRouting !== undefined) services.add('skillRouter')
   if (agentDef.toolPolicy !== undefined || hasHostHook) services.add('toolPolicy')
-  if (agentDef.admission !== undefined) services.add('intakeGuard')
+  if (agentDef.admission !== undefined) services.add('requestAdmission')
   if (agentDef.a2uiRenderTool !== undefined || hasHostHook) services.add('a2ui')
   if (hasHostHook) {
     services.add('modelSideCall')

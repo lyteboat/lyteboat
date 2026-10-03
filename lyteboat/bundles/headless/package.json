@@ -33,7 +33,7 @@
     "@lyteboat/agent-catalog": "workspace:*",
     "@lyteboat/contracts": "workspace:*",
     "@lyteboat/history-import": "workspace:*",
-    "@lyteboat/intake-guard": "workspace:*",
+    "@lyteboat/request-context": "workspace:*",
     "@deepseek-ai/dsh-agent-preset-registry": "catalog:dsh",
     "@deepseek-ai/dsh-cmdline": "catalog:dsh",
     "@deepseek-ai/schemastery": "catalog:",

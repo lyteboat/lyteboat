@@ -35,7 +35,7 @@
   },
   "peerDependencies": {
     "@lyteboat/a2ui": "workspace:*",
-    "@lyteboat/intake-guard": "workspace:*",
+    "@lyteboat/request-admission": "workspace:*",
     "@deepseek-ai/dsh-agent": "workspace:*"
   },
   "devDependencies": {
@@ -45,8 +45,8 @@
     "@lyteboat/distro": "workspace:*",
     "@lyteboat/eval": "workspace:*",
     "@lyteboat/headless": "workspace:*",
-    "@lyteboat/intake-guard": "workspace:*",
     "@lyteboat/model-side-call": "workspace:*",
+    "@lyteboat/request-admission": "workspace:*",
     "@lyteboat/request-context": "workspace:*",
     "@lyteboat/serve": "workspace:*",
     "@lyteboat/skill-router": "workspace:*",

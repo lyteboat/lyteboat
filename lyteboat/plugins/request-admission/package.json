@@ -1,9 +1,9 @@
 {
-  "name": "@lyteboat/intake-guard",
+  "name": "@lyteboat/request-admission",
   "version": "0.0.1",
   "private": true,
   "license": "MIT",
-  "description": "lyteboat's admission ahead of the loop: an agent registers an admission function, a caller submits each request through the service, which admits it and follows it up with the verdict recorded on the request; the loop replies from a recorded reply verdict without a model request, and admits in the loop what arrives unadmitted",
+  "description": "lyteboat's admission at the first step of each turn: an agent registers an admission function, which the service runs on the turn's human message on the lyteboat/intake waterfall; a reply verdict answers the turn without a model request and logs the message with the verdict on its request",
   "type": "module",
   "exports": {
     ".": {
