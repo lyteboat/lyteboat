@@ -50,7 +50,7 @@
 
 | id | 包 | 加了什么 | 退出条件 |
 |---|---|---|---|
-| `agent-loop-intake` | `@deepseek-ai/dsh-agent-loop` | `lyteboat/intake` waterfall：在收件箱认领之后、组装提示之前派发；`reply` 不发模型请求，在一步里用一条 assistant 消息（source 的 provider 为 `lyteboat`）作答。reply 往会话里写什么在 `dsh/core/agent-loop/src/lyteboat/intake-reply.ts` | 上游在组装前派发一个能不发请求就作答的 waterfall |
+| `agent-loop-intake` | `@deepseek-ai/dsh-agent-loop` | `lyteboat/intake` waterfall：在收件箱认领之后、组装提示之前派发；`reply` 不发模型请求，在一步里用一条 assistant 消息（source 的 provider 为 `lyteboat`）作答；reply 可以替换认领的消息，只许改 `source`。reply 往会话里写什么在 `dsh/core/agent-loop/src/lyteboat/intake-reply.ts` | 上游在组装前派发一个能不发请求就作答的 waterfall |
 | `agent-loop-pre-assemble` | `@deepseek-ai/dsh-agent-loop` | `lyteboat/pre-assemble` waterfall：`lyteboat/intake` 放行之后、组装系统提示之前派发，所以技能路由和工具激活作用于同一步的请求 | 上游在 `systemPrompt.assemble` 之前派发一个还能改本步提示和工具集的事件 |
 | `session-append-ignorable` | `@deepseek-ai/dsh-session` | `Session.append(type, data, { ignorable: true })`：给本构建不认识的非 surface 事件打上可忽略标记；认识的类型带这个标记直接抛错 | 上游给 `Session.append`（或别的写入口）一个设置 `SessionEvent.ignorable` 的办法 |
 | `session-controller-prompt-source` | `@deepseek-ai/dsh-api-session-controller` | `SessionPromptRequest.sourceFields`：`prompt` 把调用方的字段并进用户消息的 source；`kind`、`rpcId`、`clientTimeZone` 不能覆盖 | 上游让 prompt 能把调用方的字段带到用户消息的 source 上 |
