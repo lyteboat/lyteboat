@@ -28,7 +28,7 @@
 
 ### 0.3 框架替你做的事
 
-每个业务 profile 都带业务底座 `@lyteboat/base`，它在宿主平面发布这些服务（`lyteboat/bundles/base/cordis.patch.yml`）：`toolPolicy`（工具可见性、状态增量）、`modelSideCall`（旁路模型调用，每次在会话日志里留一条审计记录）、`requestContext`（请求上下文）、`requestAdmission`（准入）、`skillRouter`（参考实现的技能路由）、`a2ui`（参考实现的卡片模板引擎，以及一轮回答里卡片的排布）、`historyImport`（外部历史导入）。内核的 agent loop 在每一步组装 prompt 之前多派发两个 waterfall 事件：`lyteboat/intake`（拒识，直接回复且不请求模型）和 `lyteboat/pre-assemble`（路由技能、激活工具，并在同一步生效）（`dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.preStep`）。你只写业务。
+每个业务 profile 都带业务底座 `@lyteboat/base`，它在宿主平面发布这些服务（`lyteboat/bundles/base/cordis.patch.yml`）：`toolPolicy`（工具可见性、状态增量）、`modelSideCall`（旁路模型调用，每次在会话日志里留一条审计记录）、`requestContext`（请求上下文）、`requestAdmission`（准入）、`skillRouter`（参考实现的技能路由）、`a2ui`（参考实现的卡片模板引擎，以及一轮回答里卡片的排布）、`historyImport`（外部历史导入，`--history` 和 `/chat` 的 `history` 都用它）。内核的 agent loop 在每一步组装 prompt 之前多派发两个 waterfall 事件：`lyteboat/intake`（拒识，直接回复且不请求模型）和 `lyteboat/pre-assemble`（路由技能、激活工具，并在同一步生效）（`dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.preStep`）。你只写业务。
 
 和「一次请求」有关的三件事也由框架做：
 
@@ -60,7 +60,7 @@
 - **看 agent 由什么组成用 `lyteboat inspect`。** 它按业务模式的样子挂上 agent，打印工具（怎样到达模型）、技能和每个技能的检查、评测用例文件；挂不上就说明原因。不建 agent 实例，不调模型（§4.17）。
 - **交给运维用 `lyteboat release`。** agent 在 `agent.yml` 里声明版本和模型、录好基线之后，`lyteboat release` 检查基线并写下发布锁 `agent.release.json`，运维用 `lyteboat serve --release <锁>` 只服务这个 agent，目录里有一个文件变了就拒绝（§4.15）。
 - **多轮靠续会话。** 下一次运行加上 `--session-id <上次打出的 id>`，就在同一个会话上接着聊：dsh 的持久化层重开日志，新的一轮能看到前面的轮次，路由过的技能、它的工具、会话状态和请求上下文都还在（§4.10）。要在 agent 自己的组合下续聊，用的就是这个办法。
-- **也可以导入外部历史。** 用 `--history <file>` 把外部系统的几轮对话导入成一个新会话的已结束轮次，再跑一轮，例如 `node lyteboat/apps/cli/lib/bin.js headless --agents ./examples/agents --agent finance --context '{"customer":"young-idle-cash"}' --history lyteboat/bundles/headless/tests/fixtures/history/rounds.json "继续刚才的话题"`（`CLAUDE.md`「Commands」，`lyteboat/bundles/headless/src/index.ts` `LyteboatHeadlessHooks`）。`--history` 只能开新会话，不能和 `--session-id` 一起用（`lyteboat/bundles/headless/src/startup.ts` `LyteboatHeadlessStartup`）。
+- **也可以导入外部历史。** 用 `--history <file>` 把外部系统的几轮对话导入成一个新会话的已结束轮次，再跑一轮，例如 `node lyteboat/apps/cli/lib/bin.js headless --agents ./examples/agents --agent finance --context '{"customer":"young-idle-cash"}' --history lyteboat/bundles/headless/tests/fixtures/history/rounds.json "继续刚才的话题"`（`CLAUDE.md`「Commands」，`lyteboat/bundles/headless/src/index.ts` `LyteboatHeadlessHooks`）。`--history` 只能开新会话，不能和 `--session-id` 一起用（`lyteboat/bundles/headless/src/startup.ts` `LyteboatHeadlessStartup`）。`/chat` 也收外部历史：请求带上 `history`，会话里缺的轮次按 trace id 并入，新会话和已有会话都可以（§4.13）。
 
 ### 0.5 五步走
 
@@ -924,7 +924,7 @@ export function policyDeskVerdict(text: string): Omit<LyteboatIntakeVerdict, 'by
 **更底层的钩子：`lyteboat/intake`。** 准入函数下面是内核的 `lyteboat/intake` waterfall，它也可以直接监听：在声明的 `eventListeners` 里写 `'lyteboat/intake': async (payload, next) => …`（§1.3）。仓库里直接监听它的只有测试：启动器 e2e 的夹具 `lyteboat/apps/cli/tests/fixtures/plugins/intake-gate.mjs` `apply`，以及内核自己的测试 `dsh/core/agent-loop/tests/lyteboat/intake.spec.ts`。监听返回 `{ kind: 'reply', plugin, content }` 时，这一步不请求模型直接作答（签名见 §7.5）。和准入函数比：
 
 - 判定不记在请求上，日志里只有那条助手消息；
-- 它在**每一步**都派发，包括工具之后的续步，那时 `messages` 是 `[]`（`dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.preStep`），所以监听要自己只看 `source.kind === 'user'` 的文本；
+- 它在**每一步**都派发，包括工具之后的续步，那时 `messages` 是 `[]`（`dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.preStep`），所以监听要自己只看 `source.kind === 'user'` 的文本。导入的历史轮次也经过 `lyteboat/intake`，source kind 是 `plugin:lyteboat-history-import`，由 history-import 照记录作答，监听不要碰它们（§4.13）；
 - 不命中时**必须** `return next()`，否则会挡住排在它后面的所有监听器（§4.4）；
 - 仓库外的插件如果用它，要声明 `inject: ['lyteboatDistro']`，这样在官方 dsh 上不会加载（`dsh-compat/COMPAT.md` §4，`.claude/rules/kernel.md`的 The contract only grows 一条）。request-admission 自己就这样声明（`lyteboat/plugins/request-admission/src/index.ts` `RequestAdmissionService`），上面那个夹具也是。
 
@@ -2003,12 +2003,15 @@ curl -s http://127.0.0.1:8080/chat -H 'content-type: application/json' \
 | `message`（必填） | 这句话，不能是空白 |
 | `session_id` | 续聊已有的会话；不给就为 `agent_id` 新建一个。不是这个 `user_id` 经 `/chat` 发起的会话（别的用户的，操作者在命令行建的，评测建的，没记发起者的）一律按不存在处理（404，`lyteboat/plugins/chat-api/src/chat-session-owner.ts`），会话属于另一个 agent 时 409 |
 | `message_id` | 这条消息的 id，记成请求的 `requestId`；同一会话里重复就 409，不给就生成一个 |
-| `trace_id` | 记成请求的 `traceId` |
+| `trace_id` | 记成请求的 `traceId`；带 `history` 时必填 |
 | `stream` | `true` 时回 enterprise 事件流，否则回一个 JSON |
 | `protocol` | 可省略；给了只能是 `enterprise` |
 | `context` | 请求上下文（JSON 对象），和 `--context` 一样记在人类消息上、不给模型看，agent 的代码用 `host.requestContext.contextOf(agent)` 读；续聊时不带就沿用 |
+| `history` | 外部系统里之前的对话，条目格式和 `--history` 读的文件相同：`{ role, traceId, parts: [{ type?, text }], createTime? }`。没给 `trace_id` 就回 400 `invalid_request`，消息是 `trace_id: required with history`。怎样并入见下文 |
 
 **消息怎么进会话。** chat-api 不直接驱动 Agent：它经 dsh 的 session-controller 新建会话或核对续聊的会话，再用 `sessionController.prompt`（`queue` 模式）把消息交给 agent，`requestId`、`owner`、agent 的身份 `agent`、`traceId`、`context` 经 `ctx.requestContext.sourceFields(...)` 记在人类消息的 `source.lyteboatRequest` 上（`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService.sessionFor`、`ChatApiService.answer`）。同一会话的消息排队，一条一轮。准入和 `lyteboat headless --agent` 一样在每轮第 1 步的 `lyteboat/intake` 上做（§1.2、§2.11）：`reply` 的判定连同卡片记在这条消息上，回答里有这些卡，这一轮的 `outcome` 是 `rejected`（`lyteboat/plugins/turn-outcome/src/turn-outcome-projection.ts` `endTurn`）。
+
+**外部历史怎样并入。** 请求带 `history` 时，chat-api 做完自己的检查（会话、发起者、agent、重复的消息 id），先调用 `ctx.historyImport.enqueue(agent, ctx.historyImport.parse(history))`，再把这句话交给 `sessionController.prompt`（`lyteboat/plugins/chat-api/src/index.ts`）。`parse` 照 `--history` 的轮次规则清洗：格式不对的条目、半轮、空文本的轮次都丢掉，记一条 warn（`lyteboat/plugins/history-import/src/round-history.ts` `parseHistoryRounds`）。`enqueue` 跳过三种轮次：trace id 已在会话里的，还在收件箱里排队的，同一列表里重复的。会话里有哪些 trace id 由 `lyteboatTraceIds` 投影记着，来源是请求的 `traceId` 和导入过的轮次（`lyteboat/plugins/history-import/src/trace-ids-projection.ts`）。其余每轮写成一条 user 消息 `followup`，各占一轮，排在这句话前面。这一轮第 1 步的 `lyteboat/intake` 上，history-import 用记下的回答作答，不请求模型（`lyteboat/plugins/history-import/src/index.ts` `HistoryImportService`）。收件箱自己的记录之外，日志节点和 `--history` 的种子相同，只是 user 消息的 source 多一个 `traceId`；下一次模型请求看到的也一样。这些轮次算导入的历史：结局不会是 `rejected`，不写轮次指标，Studio 里单独标出、不计数。`/chat` 的回答和事件流只给这个请求自己的那一轮。
 
 **两种回答。** 不带 `stream` 时，这一轮结束后返回一个 JSON：`session_id`、`message_id`、`outcome`（`completed`、`rejected`、`tool_stopped`、`stopped_by_limit`、`aborted`、`errored`，即 contracts 的 `LyteboatTurnOutcomeKind`）、`response`（回答文字）、`cards`（每张 `{ area, surface_id, a2ui }`）、`tool_calls`，出错时另有 `error`（`index.ts` `ChatApiService.body`）。`"stream": true` 时返回 enterprise 事件流（SSE，每帧是 `protocol: 'AGUI'` 的信封，`id` 从 1 数起）：`run_started`；至多一对 `reasoning_*`（思考增量和工具调用）；至多一对 `text_message_*`（文字增量，卡片是 `ui_protocol: 'A2UI'` 的帧，插在它在这一轮里的位置）；最后恰好一个 `run_finished`（`data.extra.run_outcome` 就是 `outcome`）或 `run_error`；空闲时发 `: keep-alive` 注释（`lyteboat/plugins/chat-api/src/enterprise-frames.ts`）。两种回答里卡片的位置都由 `ctx.a2ui.liveTurn()` 排出，规则和 `lyteboat headless --agent` 的 stdout 相同（§2.9、§7.3）。流式的调用方中途断开，正在跑的这一轮被取消，排在它后面的消息照样各自作答（`index.ts` `ChatApiService.cancelTurn`）。请求没被接受时回 HTTP 状态和 `{ error: { code, message, retryable } }`（`chat-request.ts` `ChatApiError`）。`GET /agents` 列出挂上的 agent（`id`、`name`、`description`，`agent.yml` 声明了版本时还有 `version`，`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService.agents`）和挂不上的原因，鉴权同 `/chat`。
 
