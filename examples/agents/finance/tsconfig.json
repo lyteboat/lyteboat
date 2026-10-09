@@ -21,7 +21,7 @@
       "path": "../../../lyteboat/plugins/a2ui"
     },
     {
-      "path": "../../../lyteboat/plugins/agent-def"
+      "path": "../../../lyteboat/plugins/agent-definition"
     },
     {
       "path": "../../../lyteboat/plugins/request-admission"

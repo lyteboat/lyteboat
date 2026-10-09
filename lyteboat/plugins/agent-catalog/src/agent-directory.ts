@@ -217,7 +217,7 @@ export async function readAgentDefIdentity(agentDefSource: AgentDefSource): Prom
     case 'entry-module': {
       const identity = await agentDefIdentityOf(agentDefSource.modulePath)
       if (identity === undefined) {
-        throw new Error(`agent-catalog: ${agentDefSource.modulePath} must default-export lyteboatAgentDef({…}) from @lyteboat/agent-def, or its directory must list its rows in ${AGENT_COMPOSITION_FILE}`)
+        throw new Error(`agent-catalog: ${agentDefSource.modulePath} must default-export lyteboatAgentDef({…}) from @lyteboat/agent-definition, or its directory must list its rows in ${AGENT_COMPOSITION_FILE}`)
       }
       return identity
     }

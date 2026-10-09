@@ -42,7 +42,7 @@
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"
   },
   "devDependencies": {
-    "@lyteboat/agent-def": "workspace:*",
+    "@lyteboat/agent-definition": "workspace:*",
     "@lyteboat/base": "workspace:*",
     "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",

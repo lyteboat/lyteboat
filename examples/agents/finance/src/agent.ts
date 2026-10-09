@@ -11,7 +11,7 @@
  */
 
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { lyteboatAgentDef, type LyteboatAgentHost } from '@lyteboat/agent-def'
+import { lyteboatAgentDef, type LyteboatAgentHost } from '@lyteboat/agent-definition'
 import { loadKnowledge } from './capabilities/investor-knowledge.ts'
 import { FixtureCustomerSource, type FinanceCustomerSource } from './data/finance-customer.ts'
 import { FINANCE_PERSONA } from './finance-persona.ts'

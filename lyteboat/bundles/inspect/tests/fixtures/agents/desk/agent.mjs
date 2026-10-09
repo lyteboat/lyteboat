@@ -3,7 +3,7 @@
 // `lookup_quote` only once the quote-lookup skill (which requires it) is active;
 // every inherited tool but `skill` stays hidden.
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import { lyteboatAgentDef } from '@lyteboat/agent-def'
+import { lyteboatAgentDef } from '@lyteboat/agent-definition'
 
 const TEXT = { schema: { type: 'string' }, render: (_args, value) => [{ type: 'text', text: value }] }
 

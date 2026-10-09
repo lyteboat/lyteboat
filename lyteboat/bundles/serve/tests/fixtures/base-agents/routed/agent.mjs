@@ -2,7 +2,7 @@
 // (a business composition lends an agent no skill root), dynamic skill
 // routing, and the official todo_write tool, which its composition brings as a
 // dsh row, made `auto` so a skill can require it.
-import { lyteboatAgentDef } from '@lyteboat/agent-def'
+import { lyteboatAgentDef } from '@lyteboat/agent-definition'
 
 export default lyteboatAgentDef({
   agentId: 'routed',

@@ -1,5 +1,5 @@
 /**
- * @lyteboat/agent-def — a business agent's one declaration. An agent module
+ * @lyteboat/agent-definition — a business agent's one declaration. An agent module
  * default-exports `lyteboatAgentDef({…})`, which returns the plugin class that
  * is the agent directory's one row, mounted once in the agent's standing scope
  * by dsh's preset registry (not once per session). Mounted, the row checks the
@@ -10,7 +10,7 @@
  * the row, withdrawn when the agent unloads, and reaches only the sessions of
  * this agent. The agent loop, compaction, history, and the other runtime rows
  * stay where the host and the bundles put them.
- * @module @lyteboat/agent-def
+ * @module @lyteboat/agent-definition
  */
 
 import { Service, type Context, type Events } from '@deepseek-ai/cordis'
