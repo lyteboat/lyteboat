@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/agent-catalog",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's agent catalog: scans agent roots, reads each agent's manifest (agent.yml), declares each agent directory to dsh's agent preset registry with the directory as its base URL, and reports the agents that fail to read or mount",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/agent-catalog"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -43,5 +48,8 @@
     "@deepseek-ai/dsh-skill": "workspace:*",
     "@deepseek-ai/dsh-session-projection": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

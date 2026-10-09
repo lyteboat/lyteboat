@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/testkit",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's test harness: the unit host (dsh's invariants, the dsh services, the kernel's agent loop) and the in-process MockAdapter for unit tests, in-process composition boots for bundle and agent tests, per-file scratch homes and workspaces, the session-log reader and its reopen check, the scripted DeepSeek Messages model, a /chat client, and launcher spawning for e2e tests",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/test-support/testkit"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -95,5 +100,8 @@
     "@deepseek-ai/dsh-session-projection": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/studio-web",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat Studio's pages: a React single-page app (src/client) built into lib/web and served at /studio on the host web server under a strict CSP",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/studio-web"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -30,5 +35,8 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^7.13.1"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

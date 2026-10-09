@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/distro",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's distribution marker: the lyteboatDistro service naming the dsh release lyteboat's kernel was imported from and the kernel extensions it carries",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/distro"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -23,5 +28,8 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "catalog:cordis"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

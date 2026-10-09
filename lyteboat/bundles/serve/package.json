@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/serve",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's service bundle over dsh-base: serve every agent of the --agents directories over HTTP (POST /chat, GET /agents, GET /health) through dsh's session controller",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/bundles/serve"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -52,5 +57,8 @@
     "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

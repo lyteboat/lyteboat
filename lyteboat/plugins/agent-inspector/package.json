@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/agent-inspector",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's agent inspector: an agent's tools (what reaches the model and how), skills, and skill routing, read from its standing scope without creating an agent instance or writing to disk",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/agent-inspector"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -35,5 +40,8 @@
     "@deepseek-ai/dsh-agent-default-model": "catalog:dsh",
     "@deepseek-ai/dsh-agent-preset-registry": "catalog:dsh",
     "@deepseek-ai/dsh-tools": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

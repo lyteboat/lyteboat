@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/eval",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's eval bundle over dsh-base: run an agent's eval cases through dsh's session controller, record them, replay them without a model, and compare two runs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/bundles/eval"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -50,5 +55,8 @@
     "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

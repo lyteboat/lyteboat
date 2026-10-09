@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/request-context",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's request context: the request a human message answers to (request id, context, admission verdict) rides the message's own source, and the lyteboatRequest projection keeps the session's context",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/request-context"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -29,5 +34,8 @@
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-session-projection": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

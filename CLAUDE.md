@@ -244,6 +244,7 @@ Conventions:
 | Make a Studio account (password on stdin) | `node lyteboat/apps/cli/lib/bin.js studio account add admin --role admin < pw.txt` |
 | Serve the Studio workshop | `node lyteboat/apps/cli/lib/bin.js studio --agents ./examples/agents` (pages at `/studio/`, API at `/api/studio`; `--port`, `--host`, `--trusted-host`, `--gateway-secret-env`) |
 | Composed plugin tree | `node lyteboat/apps/cli/lib/bin.js config dump --profile serve` |
+| Pack the npm release (after a build; `--check` installs it outside the repository and runs finance) | `pnpm run release:pack -- --check` |
 
 All lyteboat data lives under `$LYTEBOAT_HOME` (default `~/.lyteboat`); the launcher exports it as `DSH_HOME` before any dsh package loads, so a user's `~/.dsh` is never touched. The shared agent root (`DSH_AGENTS_HOME`, default `~/.agents`) stays as the user has it: the native profiles read its skills as dsh does, and the business base turns dsh's default skill roots off. Set `DSH_TELEMETRY_DISABLED=1` in tests and CI.
 

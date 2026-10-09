@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/studio-api",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat Studio's HTTP API under /api/studio on the host web server: the Host allowlist and security headers, sign-in, role checks, users, the system page, and the agent radar, with an audit log of every change",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/studio-api"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -49,5 +54,8 @@
     "@deepseek-ai/dsh-session-persistence-jsonl": "workspace:*",
     "@deepseek-ai/dsh-skill": "workspace:*",
     "@types/js-yaml": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

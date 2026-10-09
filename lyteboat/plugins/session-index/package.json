@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/session-index",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's session index: an agent's stored sessions listed, searched, folded into a timeline, and read as stored, through read handles that never take a session's write ownership",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/session-index"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -38,5 +43,8 @@
     "@deepseek-ai/dsh-session-persistence": "workspace:*",
     "@deepseek-ai/dsh-session-persistence-jsonl": "workspace:*",
     "@deepseek-ai/dsh-skill": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

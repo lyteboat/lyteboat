@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/eval-runner",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's eval runner: an agent's cases, each a new session whose turns go through dsh's session controller, checked turn by turn from the session log, recorded in a real run and replayed without a model or a key; ./records reads the runs on disk and the case files for the Studio",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/eval-runner"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -49,5 +54,8 @@
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
     "@types/js-yaml": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

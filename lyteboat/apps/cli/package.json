@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/cli",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "The lyteboat launcher: profile templates, patch stack, and boot over the official DeepSeek Harness packages",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/apps/cli"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "bin": {
     "lyteboat": "lib/bin.js"
@@ -108,5 +113,8 @@
     "@deepseek-ai/dsh-llm-mock-server": "catalog:dsh",
     "@deepseek-ai/dsh-session-persistence": "workspace:*",
     "@types/js-yaml": "catalog:"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

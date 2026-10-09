@@ -192,6 +192,17 @@ A business agent is a directory `examples/agents/<id>/`, named by its id. Busine
 
 The [agent development guide](docs/03-agent-development.md) walks through every step with a runnable example; [`examples/agents/finance`](examples/agents/finance) is a working agent kept deliberately minimal, there to exercise the end-to-end flow.
 
+### Using the npm packages from another repository
+
+A business agent can live in a repository of its own that depends only on the `@lyteboat/*` packages on npm. Such a repository uses pnpm and lists one config dependency in `pnpm-workspace.yaml`; its integrity is `npm view @lyteboat/pnpm-plugin-kernel@0.1.0 dist.integrity`:
+
+```yaml
+configDependencies:
+  "@lyteboat/pnpm-plugin-kernel": "0.1.0+sha512-…"
+```
+
+lyteboat does not republish the kernel packages it changes under names of its own. With this entry, pnpm installs the official `@deepseek-ai/dsh-*` packages and applies lyteboat's patches; the plugin also pins dsh and cordis to the tracked versions and hoists `@deepseek-ai/*` and `@lyteboat/*` to the root `node_modules`. List `@lyteboat/cli` (the `lyteboat` command) and the packages the agent's code imports, usually `@lyteboat/agent-definition`, `@lyteboat/a2ui`, `@lyteboat/contracts`, `@lyteboat/request-admission`, and `@deepseek-ai/dsh-tools`, plus `@lyteboat/testkit` for unit tests, all `@lyteboat/*` at one version. The agent directory is written as in the previous section, and `lyteboat serve --agents ./agents` runs it.
+
 ### Data and session logs
 
 - All lyteboat data lives under `$LYTEBOAT_HOME` (default `~/.lyteboat`). The launcher exports that directory as `DSH_HOME` before any dsh package loads, so your own `~/.dsh` is never touched. The shared agent root `~/.agents` (`DSH_AGENTS_HOME`) stays as you have it: the native base reads its skills as the official dsh does, and a business agent reads only the skills in its own directory.
@@ -275,6 +286,7 @@ Dependencies point down only: `apps` → `bundles` → `plugins` → `core`; `ex
 | `pnpm run dsh-compat` | G4–G6: installs the official release and lyteboat side by side outside the repository and compares them (needs the network) |
 | `pnpm run check` | lint + test + dsh-compat |
 | `pnpm run dist:delta` | Lists what lyteboat carries on top of the imported dsh tag |
+| `pnpm run release:pack` | After a build, packs the 28 published packages as tarballs, the kernel patch package `@lyteboat/pnpm-plugin-kernel` included; `-- --check` also installs them outside the repository the way a consumer does and runs the finance example's inspect and eval replay (needs the network) |
 
 Syncing a new dsh release, promoting a package into the kernel, and running G3 and the persistence gate are covered in the [distribution conventions](docs/02-distribution.md).
 

@@ -6,6 +6,11 @@ lyteboat has no releases. The tracked dsh release is in `dsh.upstream.json`.
 
 lyteboat is an agent harness for business agents, built as Cordis plugins on DeepSeek Harness (dsh) 0.2.0-rc.2, and a distribution of dsh: it owns the source of dsh's kernel packages under their published names and promises plugins written against dsh the protocol, interfaces, and behavior of that release (`dsh-compat/COMPAT.md`).
 
+### Release
+
+- Every package under `lyteboat/` is published to npm at one version (0.1.0 first) under the `@lyteboat` scope; `@lyteboat/agent-def` is renamed `@lyteboat/agent-definition` before the first release. `pnpm run release:pack` packs them, and `-- --check` installs the tarballs outside the repository and runs the finance example's inspect and eval replay.
+- The kernel is not published under names of its own. `@lyteboat/pnpm-plugin-kernel`, a pnpm config dependency, carries one patch per kernel package lyteboat's build changes (the difference between the official tarball of the tracked release and lyteboat's pack of it): a project that lists it installs the official `@deepseek-ai/dsh-*` packages with the patches applied, every dsh and cordis package pinned to the tracked release, and `@deepseek-ai/*` and `@lyteboat/*` hoisted.
+
 ### Kernel
 
 - 16 dsh packages under `dsh/` (`dsh/kernel.json`: `dsh-llm`, `dsh-session`, `dsh-system-prompt`, `dsh-tools`, `dsh-skill`, `dsh-agent`, `dsh-agent-loop`, `dsh-session-projection`, `dsh-session-persistence`, `dsh-session-persistence-jsonl`, `dsh-compaction`, `dsh-compaction-basic`, `dsh-agent-loop-testkit`, `dsh-api-session-controller`, and the bundle packages `dsh-base` and `dsh-headless`), imported from dsh-v0.2.0-rc.2 and resolved by name for the whole dependency graph; their bundles build byte for byte as npm publishes them. Every other dsh package is installed from npm at the tracked version.

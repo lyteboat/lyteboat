@@ -192,6 +192,17 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 
 完整步骤和一个可运行的例子见[开发业务 agent](docs/03-agent-development.md)，现成的示例是 [`examples/agents/finance`](examples/agents/finance)：一个刻意做到最小、只为跑通端到端流程的金融智能体。
 
+### 在独立仓库里用 npm 包
+
+业务 agent 也可以放在自己的仓库里，只依赖 npm 上的 `@lyteboat/*`。这样的仓库用 pnpm，在 `pnpm-workspace.yaml` 里写一项 config dependency，完整性校验值用 `npm view @lyteboat/pnpm-plugin-kernel@0.1.0 dist.integrity` 查：
+
+```yaml
+configDependencies:
+  "@lyteboat/pnpm-plugin-kernel": "0.1.0+sha512-…"
+```
+
+轻舟改过的内核包不换名字另发。有了这一项，pnpm 照常装官方的 `@deepseek-ai/dsh-*`，再打上轻舟的补丁；它还把 dsh 和 cordis 钉在所跟踪的版本，并把 `@deepseek-ai/*`、`@lyteboat/*` 提升到根 `node_modules`。依赖里写 `@lyteboat/cli`（提供 `lyteboat` 命令）和 agent 代码 import 的包，通常是 `@lyteboat/agent-definition`、`@lyteboat/a2ui`、`@lyteboat/contracts`、`@lyteboat/request-admission` 和 `@deepseek-ai/dsh-tools`，单测再加 `@lyteboat/testkit`。所有 `@lyteboat/*` 用同一个版本。agent 目录的写法同上一节，`lyteboat serve --agents ./agents` 照常运行。
+
 ### 数据与会话日志
 
 - 轻舟的全部数据在 `$LYTEBOAT_HOME` 下（默认 `~/.lyteboat`）。启动器在加载任何 dsh 包之前把它导出为 `DSH_HOME`，不会碰你自己的 `~/.dsh`。共享的 agent 配置根 `~/.agents`（`DSH_AGENTS_HOME`）保持你自己的设置：原生底座和官方 dsh 一样从这里读 skill，业务 agent 只读自己目录里的 skill。
@@ -273,6 +284,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | `pnpm run dsh-compat` | G4–G6：在仓库外装官方版与轻舟两棵安装树做对比（需要联网） |
 | `pnpm run check` | lint + test + dsh-compat |
 | `pnpm run dist:delta` | 列出轻舟在所导入的 dsh tag 之上带了哪些改动 |
+| `pnpm run release:pack` | 构建之后，把要发布的 28 个包打成 tarball，含内核补丁包 `@lyteboat/pnpm-plugin-kernel`；加 `-- --check` 再在仓库外按使用方的方式装一遍，跑金融智能体的 inspect 和评测回放（需要联网） |
 
 同步新的 dsh 版本、把包晋升进内核、跑 G3 与持久化闸门，见[发行版约定](docs/02-distribution.md)。
 

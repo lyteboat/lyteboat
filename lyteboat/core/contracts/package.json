@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/contracts",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's contract extensions over the dsh seams: tool and skill metadata, the kernel's lyteboat/* step events, log nodes, projection keys, and the zod schemas of the JSON envelopes lyteboat writes",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/core/contracts"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -41,5 +46,8 @@
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-session-projection": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }
