@@ -2,7 +2,7 @@
   "agent": {
     "id": "finance",
     "version": "1.0.0",
-    "digest": "sha256:2ee483e5681694a2c06693d0be5456d33111ebdf4e9e74d8b4f0706d2d45b2d9"
+    "digest": "sha256:4d4415ee5ad7a0f743d1957456cf5cb2e480b70cd451fff62543a4c8bd8a743c"
   },
   "model": {
     "provider": "deepseek-official",
