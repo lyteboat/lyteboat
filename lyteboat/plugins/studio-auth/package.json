@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/studio-auth",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat Studio's sign-in: operator-managed accounts (scrypt), admin/editor/viewer role grants, signed bearer tokens, and gateway mode",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/studio-auth"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -31,5 +36,8 @@
   "devDependencies": {
     "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

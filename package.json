@@ -20,7 +20,8 @@
     "dist:import": "node --import tsx scripts/dist/import-upstream.ts",
     "dist:delta": "node --import tsx scripts/dist/delta-report.ts",
     "dist:overlay": "node --import tsx scripts/dist/overlay.ts",
-    "contract:check": "node --import tsx scripts/dist/contract-check.ts"
+    "contract:check": "node --import tsx scripts/dist/contract-check.ts",
+    "release:pack": "node --import tsx scripts/dist/release-pack.ts"
   },
   "devDependencies": {
     "@lyteboat/testkit": "workspace:*",

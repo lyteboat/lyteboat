@@ -183,7 +183,7 @@ Without `stream`, the answer is one JSON body: `session_id`, `message_id`, `outc
 
 A business agent is a directory `examples/agents/<id>/`, named by its id. Business agents are not part of the distribution: they build on `lyteboat/`, and nothing in `lyteboat/` depends on them.
 
-- `src/agent.ts`: the agent's one declaration, a default export of `lyteboatAgentDef({…})` (`@lyteboat/agent-def`): `agentId` (the directory name), `agentName`, and whichever it uses of persona, skill routing, tool policy, model request parameters, business tools, admission, and event listeners. Each applies to this agent's sessions only; besides dsh's `skill` tool, the business modes give an agent no tool it does not declare.
+- `src/agent.ts`: the agent's one declaration, a default export of `lyteboatAgentDef({…})` (`@lyteboat/agent-definition`): `agentId` (the directory name), `agentName`, and whichever it uses of persona, skill routing, tool policy, model request parameters, business tools, admission, and event listeners. Each applies to this agent's sessions only; besides dsh's `skill` tool, the business modes give an agent no tool it does not declare.
 - The rest of `src/`: business code (tools, admission, pure logic), compiled to `lib/`; the framework loads `lib/agent.js`.
 - `assets/`: the non-code files read at runtime, beside `src/` and `lib/`: `skills/` (one `SKILL.md` per skill, mounted from here by default), `a2ui/` (card templates), `sample-data/`.
 - `agent.yml` (optional): the manifest: display fields such as the description, plus the version (`version`) and the model it is evaluated on (`model`); an unknown key fails at load.
@@ -191,6 +191,17 @@ A business agent is a directory `examples/agents/<id>/`, named by its id. Busine
 - `evals/`: eval cases (where `lyteboat eval` looks by default) and a baseline recorded against the real model, which the composition test replays without a key.
 
 The [agent development guide](docs/03-agent-development.md) walks through every step with a runnable example; [`examples/agents/finance`](examples/agents/finance) is a working agent kept deliberately minimal, there to exercise the end-to-end flow.
+
+### Using the npm packages from another repository
+
+A business agent can live in a repository of its own that depends only on the `@lyteboat/*` packages on npm. Such a repository uses pnpm and lists one config dependency in `pnpm-workspace.yaml`; its integrity is `npm view @lyteboat/pnpm-plugin-kernel@0.1.0 dist.integrity`:
+
+```yaml
+configDependencies:
+  "@lyteboat/pnpm-plugin-kernel": "0.1.0+sha512-…"
+```
+
+lyteboat does not republish the kernel packages it changes under names of its own. With this entry, pnpm installs the official `@deepseek-ai/dsh-*` packages and applies lyteboat's patches; the plugin also pins dsh and cordis to the tracked versions and hoists `@deepseek-ai/*` and `@lyteboat/*` to the root `node_modules`. List `@lyteboat/cli` (the `lyteboat` command) and the packages the agent's code imports, usually `@lyteboat/agent-definition`, `@lyteboat/a2ui`, `@lyteboat/contracts`, `@lyteboat/request-admission`, and `@deepseek-ai/dsh-tools`, plus `@lyteboat/testkit` for unit tests, all `@lyteboat/*` at one version. The agent directory is written as in the previous section, and `lyteboat serve --agents ./agents` runs it.
 
 ### Data and session logs
 
@@ -254,7 +265,7 @@ Dependencies point down only: `apps` → `bundles` → `plugins` → `core`; `ex
 | `lyteboat/plugins/session-index` | `@lyteboat/session-index` | An agent's stored sessions, read only (by its working directory, never taking a session's write ownership): listed, searched, folded into a timeline, or read as stored; the Studio's Sessions pages use it |
 | `lyteboat/plugins/turn-metrics` | `@lyteboat/turn-metrics` | Turn metrics: the recorder (mounted by serve) appends one line per turn, from its outcome, to `$LYTEBOAT_HOME/run-metrics/<day>.jsonl` after it ends and keeps a heartbeat of the running turns, outside model requests and the session log; the reader (`./reader`) serves the Studio's Dashboard |
 | `lyteboat/plugins/agent-catalog` | `@lyteboat/agent-catalog` | The agent catalog: scans agent roots, declares each agent as a dsh preset with its working directory (an agent without `agent.cordis.yml` runs its `lib/agent.js`, named by its `agentName`), and reports the agents that fail to mount; `reload()` declares them again from what the roots hold now, and `watch` reloads whenever a root changes |
-| `lyteboat/plugins/agent-def` | `@lyteboat/agent-def` | A business agent's one declaration, `lyteboatAgentDef({…})`: identity, persona, skill directories, skill routing, tool policy, model request parameters, tools, admission, the `render_a2ui` tool, event listeners; it is the agent directory's row, which hands each declaration to the host service that owns it when it mounts |
+| `lyteboat/plugins/agent-definition` | `@lyteboat/agent-definition` | A business agent's one declaration, `lyteboatAgentDef({…})`: identity, persona, skill directories, skill routing, tool policy, model request parameters, tools, admission, the `render_a2ui` tool, event listeners; it is the agent directory's row, which hands each declaration to the host service that owns it when it mounts |
 | `lyteboat/plugins/chat-api` | `@lyteboat/chat-api` | `/chat`, a business caller's entry: each message enters its session through dsh's session controller with its request (owner, trace id, context) on the human message, after any external history it brings is queued; the answer is one JSON body or the enterprise event stream with its cards where the answer marks them; shared-secret auth, session ownership, duplicate `message_id` refusal, and cancellation when the caller leaves; an agent row may register a frame decorator that adds fields to its frames |
 | `lyteboat/plugins/eval-runner` | `@lyteboat/eval-runner` | Evals: reads the cases (YAML, checked strictly), runs every case as a new session whose turns go through the session controller, and checks each turn from the session log; a real run records the sessions, a replay plays them back with no model; writes the run and its report and compares two runs; `./records` reads the runs and case files on disk for the Studio |
 | `lyteboat/plugins/studio-auth` | `@lyteboat/studio-auth` | Studio's sign-in: accounts an operator makes from the command line (scrypt passwords), admin/editor/viewer role grants (nobody changes their own, the last admin stays one), signed tokens, gateway mode (a shared-secret header and a user-id header), and login throttling (five failures of one username from one address lock it for 30 seconds); `./accounts` serves the account commands |
@@ -275,6 +286,7 @@ Dependencies point down only: `apps` → `bundles` → `plugins` → `core`; `ex
 | `pnpm run dsh-compat` | G4–G6: installs the official release and lyteboat side by side outside the repository and compares them (needs the network) |
 | `pnpm run check` | lint + test + dsh-compat |
 | `pnpm run dist:delta` | Lists what lyteboat carries on top of the imported dsh tag |
+| `pnpm run release:pack` | After a build, packs the 28 published packages as tarballs, the kernel patch package `@lyteboat/pnpm-plugin-kernel` included; `-- --check` also installs them outside the repository the way a consumer does and runs the finance example's inspect and eval replay (needs the network) |
 
 Syncing a new dsh release, promoting a package into the kernel, and running G3 and the persistence gate are covered in the [distribution conventions](docs/02-distribution.md).
 

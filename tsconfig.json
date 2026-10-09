@@ -84,7 +84,7 @@
       "path": "./lyteboat/plugins/agent-catalog"
     },
     {
-      "path": "./lyteboat/plugins/agent-def"
+      "path": "./lyteboat/plugins/agent-definition"
     },
     {
       "path": "./lyteboat/plugins/chat-api"

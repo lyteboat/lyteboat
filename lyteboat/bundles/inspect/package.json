@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/inspect",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's inspect bundle over dsh-base: mount one agent the way the business modes do and print what it is made of (its tools and how each reaches the model, its skills and their checks, its eval case files), or why it did not mount",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/bundles/inspect"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -42,10 +47,13 @@
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"
   },
   "devDependencies": {
-    "@lyteboat/agent-def": "workspace:*",
+    "@lyteboat/agent-definition": "workspace:*",
     "@lyteboat/base": "workspace:*",
     "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

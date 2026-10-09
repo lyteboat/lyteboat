@@ -7,7 +7,7 @@
  * `satisfies`, so an option an owner adds or removes fails this package's
  * build rather than an agent's mount. The persona is dsh-persona's
  * configuration, which that plugin validates when it mounts.
- * @module @lyteboat/agent-def/agent-def-schema
+ * @module @lyteboat/agent-definition/agent-def-schema
  */
 
 import { z } from 'zod'

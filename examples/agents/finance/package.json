@@ -28,7 +28,7 @@
     "assets"
   ],
   "dependencies": {
-    "@lyteboat/agent-def": "workspace:*",
+    "@lyteboat/agent-definition": "workspace:*",
     "@lyteboat/contracts": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*",
     "zod": "catalog:"

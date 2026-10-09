@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/model-side-call",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's side model calls: one prompt a plugin sends for an agent (a routing decision, an intake classification) under its own deadline, recorded in the agent's session as an ignorable lyteboat/aux-llm-call record. Config: reasoningEffort, the effort every side call requests (an id the routes' adapter defines)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/model-side-call"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -33,5 +38,8 @@
     "@deepseek-ai/dsh-agent": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

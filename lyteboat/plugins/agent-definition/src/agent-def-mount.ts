@@ -4,7 +4,7 @@
  * it, in the order the agent's rows ran before they were one declaration, so
  * the model sees the same tools and prompt in the same order. A step that
  * fails names its field.
- * @module @lyteboat/agent-def/agent-def-mount
+ * @module @lyteboat/agent-definition/agent-def-mount
  */
 
 import { existsSync, statSync } from 'node:fs'

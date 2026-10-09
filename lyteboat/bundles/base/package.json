@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/base",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's business base over dsh-base: lyteboat's host services (distro marker, tool policy, side calls, request context, turn outcome, admission, skill router, a2ui, history import), and a business agent gets only the capabilities its own composition declares, so the coding tools and the services behind them, the sandbox and approval rows, the host's skill roots, and the rows that leak the machine's configuration into model requests are off in every business mode (serve, eval, studio, inspect)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/bundles/base"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     "./cordis.patch.yml": "./cordis.patch.yml",
@@ -28,5 +33,8 @@
     "@lyteboat/skill-router": "workspace:*",
     "@lyteboat/tool-policy": "workspace:*",
     "@lyteboat/turn-outcome": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

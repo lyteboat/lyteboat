@@ -1,9 +1,14 @@
 {
-  "name": "@lyteboat/agent-def",
-  "version": "0.0.1",
-  "private": true,
+  "name": "@lyteboat/agent-definition",
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's business-agent definition: lyteboatAgentDef({…}) checks one declaration (identity, persona, skills, skill routing, tool policy, model request overrides, tools, admission, the render_a2ui tool, event listeners) and returns the one row an agent directory mounts in the agent's standing scope, which hands each declaration to the host service that owns it",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/agent-definition"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -45,5 +50,8 @@
     "@deepseek-ai/dsh-skill": "workspace:*",
     "@deepseek-ai/dsh-skill-filesystem": "catalog:dsh",
     "@deepseek-ai/dsh-tools": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

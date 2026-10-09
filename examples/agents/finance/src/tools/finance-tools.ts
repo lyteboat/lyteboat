@@ -5,7 +5,7 @@
  * @module @lyteboat/agent-finance/tools/finance-tools
  */
 
-import type { LyteboatAgentTool } from '@lyteboat/agent-def'
+import type { LyteboatAgentTool } from '@lyteboat/agent-definition'
 import { defineAllocationDiagnosisTool } from './allocation-diagnosis-tool.ts'
 import { defineAssetOverviewTool } from './asset-overview-tool.ts'
 import type { FinanceToolDeps } from './finance-tool-support.ts'

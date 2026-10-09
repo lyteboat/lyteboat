@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/studio",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's Studio workshop bundle over dsh-base and @lyteboat/base: the agents of the --agents directories inspected without running a session, behind Studio's own sign-in and roles, on /api/studio; `lyteboat studio account` manages the accounts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/bundles/studio"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -50,11 +55,14 @@
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"
   },
   "devDependencies": {
-    "@lyteboat/agent-def": "workspace:*",
+    "@lyteboat/agent-definition": "workspace:*",
     "@lyteboat/base": "workspace:*",
     "@lyteboat/serve": "workspace:*",
     "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

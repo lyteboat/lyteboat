@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/turn-metrics",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's turn metrics: the recorder a service mounts (one line per turn in a UTC day file, from the turn's outcome, and a heartbeat file of the running turns) and the reader the Studio mounts",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/turn-metrics"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -42,5 +47,8 @@
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-session-projection": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

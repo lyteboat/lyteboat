@@ -183,7 +183,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 
 一个业务 agent 是一个目录 `examples/agents/<id>/`，目录名就是 id。业务 agent 不属于发行版：它建在 `lyteboat/` 之上，`lyteboat/` 里没有任何包依赖它。
 
-- `src/agent.ts`：agent 的唯一声明，默认导出 `lyteboatAgentDef({…})`（`@lyteboat/agent-def`）：`agentId`（即目录名）、`agentName`，以及要用到的人设、技能路由、工具策略、模型请求参数、业务工具、准入函数、事件监听。每一项只作用于这个 agent 的会话；业务模式除了 dsh 的 `skill` 工具，不给 agent 它没声明的工具。
+- `src/agent.ts`：agent 的唯一声明，默认导出 `lyteboatAgentDef({…})`（`@lyteboat/agent-definition`）：`agentId`（即目录名）、`agentName`，以及要用到的人设、技能路由、工具策略、模型请求参数、业务工具、准入函数、事件监听。每一项只作用于这个 agent 的会话；业务模式除了 dsh 的 `skill` 工具，不给 agent 它没声明的工具。
 - `src/` 里其余的业务代码：工具、准入、纯逻辑，编译到 `lib/`；框架加载 `lib/agent.js`。
 - `assets/`：运行时读的非代码文件，与 `src/`、`lib/` 同级：`skills/`（每个技能一个 `SKILL.md`，默认从这里挂载）、`a2ui/`（卡片模板）、`sample-data/`（示例数据）。
 - `agent.yml`（可选）：清单，描述、排序等展示信息，以及版本（`version`）和评测用的模型（`model`）；未知键加载时报错。
@@ -191,6 +191,17 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 - `evals/`：评测用例（`lyteboat eval` 默认读这里）和一份真模型录下的基线，组合测试免 key 回放它。
 
 完整步骤和一个可运行的例子见[开发业务 agent](docs/03-agent-development.md)，现成的示例是 [`examples/agents/finance`](examples/agents/finance)：一个刻意做到最小、只为跑通端到端流程的金融智能体。
+
+### 在独立仓库里用 npm 包
+
+业务 agent 也可以放在自己的仓库里，只依赖 npm 上的 `@lyteboat/*`。这样的仓库用 pnpm，在 `pnpm-workspace.yaml` 里写一项 config dependency，完整性校验值用 `npm view @lyteboat/pnpm-plugin-kernel@0.1.0 dist.integrity` 查：
+
+```yaml
+configDependencies:
+  "@lyteboat/pnpm-plugin-kernel": "0.1.0+sha512-…"
+```
+
+轻舟改过的内核包不换名字另发。有了这一项，pnpm 照常装官方的 `@deepseek-ai/dsh-*`，再打上轻舟的补丁；它还把 dsh 和 cordis 钉在所跟踪的版本，并把 `@deepseek-ai/*`、`@lyteboat/*` 提升到根 `node_modules`。依赖里写 `@lyteboat/cli`（提供 `lyteboat` 命令）和 agent 代码 import 的包，通常是 `@lyteboat/agent-definition`、`@lyteboat/a2ui`、`@lyteboat/contracts`、`@lyteboat/request-admission` 和 `@deepseek-ai/dsh-tools`，单测再加 `@lyteboat/testkit`。所有 `@lyteboat/*` 用同一个版本。agent 目录的写法同上一节，`lyteboat serve --agents ./agents` 照常运行。
 
 ### 数据与会话日志
 
@@ -252,7 +263,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | `lyteboat/plugins/session-index` | `@lyteboat/session-index` | 只读地列出、查找一个 agent 存下的会话（按它的工作目录，不拿写所有权），把一个会话折成时间线或原样读出；Studio 的会话页用它 |
 | `lyteboat/plugins/turn-metrics` | `@lyteboat/turn-metrics` | 轮次指标：记录器（serve 挂）每轮结束后按这轮的结局往 `$LYTEBOAT_HOME/run-metrics/<日期>.jsonl` 追加一行，并写正在运行的轮次的心跳，不进模型请求也不进会话日志；读取器（`./reader`）给 Studio 的看板用 |
 | `lyteboat/plugins/agent-catalog` | `@lyteboat/agent-catalog` | agent 目录：扫描 agent 根目录，把每个 agent 声明成 dsh preset（没有 `agent.cordis.yml` 的 agent 跑它的 `lib/agent.js`，名字取 `agentName`），给出它的工作目录，报告挂载失败的 agent；`reload()` 按根目录现在的内容重新声明，`watch` 时目录一变就自动重载 |
-| `lyteboat/plugins/agent-def` | `@lyteboat/agent-def` | 业务 agent 的唯一声明 `lyteboatAgentDef({…})`：身份、人设、技能目录、技能路由、工具策略、模型请求参数、工具、准入、`render_a2ui` 工具、事件监听；它就是 agent 目录里的那一行，挂载时逐项交给负责它的宿主服务 |
+| `lyteboat/plugins/agent-definition` | `@lyteboat/agent-definition` | 业务 agent 的唯一声明 `lyteboatAgentDef({…})`：身份、人设、技能目录、技能路由、工具策略、模型请求参数、工具、准入、`render_a2ui` 工具、事件监听；它就是 agent 目录里的那一行，挂载时逐项交给负责它的宿主服务 |
 | `lyteboat/plugins/chat-api` | `@lyteboat/chat-api` | `/chat`：业务调用方的入口。消息经 dsh 的 session-controller 进会话，请求（owner、trace id、上下文）记在人类消息上，请求带的外部历史先排进会话；回答是一个 JSON 或 enterprise 事件流，卡片放在正文标记处；共享密钥鉴权、会话归属、重复 `message_id` 检查、断连取消；agent 行可以登记帧装饰器给帧加字段 |
 | `lyteboat/plugins/eval-runner` | `@lyteboat/eval-runner` | 评测：读用例（YAML，严格校验），每个用例一个新会话、逐轮经 session-controller 提交，从会话日志读出每轮的表现并检查；real 模式录下会话，replay 模式不调模型、按录音回放；写出运行结果与报告，比较两次运行；`./records` 给 Studio 读磁盘上的运行与用例文件 |
 | `lyteboat/plugins/studio-auth` | `@lyteboat/studio-auth` | Studio 的登录：运维用命令建的账户（scrypt 口令）、admin/editor/viewer 角色授予（不能改自己的角色，至少留一个 admin）、签名令牌、网关模式（共享密钥头加用户 id 头）、登录限流（同一用户名与来源连续 5 次失败，锁 30 秒）；`./accounts` 给账户命令用 |
@@ -273,6 +284,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | `pnpm run dsh-compat` | G4–G6：在仓库外装官方版与轻舟两棵安装树做对比（需要联网） |
 | `pnpm run check` | lint + test + dsh-compat |
 | `pnpm run dist:delta` | 列出轻舟在所导入的 dsh tag 之上带了哪些改动 |
+| `pnpm run release:pack` | 构建之后，把要发布的 28 个包打成 tarball，含内核补丁包 `@lyteboat/pnpm-plugin-kernel`；加 `-- --check` 再在仓库外按使用方的方式装一遍，跑金融智能体的 inspect 和评测回放（需要联网） |
 
 同步新的 dsh 版本、把包晋升进内核、跑 G3 与持久化闸门，见[发行版约定](docs/02-distribution.md)。
 

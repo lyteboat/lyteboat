@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/request-admission",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's admission at the first step of each turn: an agent registers an admission function, which the service runs on the turn's human message on the lyteboat/intake waterfall; a reply verdict answers the turn without a model request and logs the message with the verdict on its request",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/request-admission"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -32,5 +37,8 @@
     "@deepseek-ai/dsh-agent-loop": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

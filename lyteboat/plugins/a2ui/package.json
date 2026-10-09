@@ -1,9 +1,14 @@
 {
   "name": "@lyteboat/a2ui",
-  "version": "0.0.1",
-  "private": true,
+  "version": "0.1.0",
   "license": "MIT",
   "description": "lyteboat's A2UI template engine (a port of the reference template mode: manifest resolution, transforms DSL, walker, contract validation) and the render_a2ui tool that folds rendered cards into the lyteboatCards projection",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lyteboat/lyteboat.git",
+    "directory": "lyteboat/plugins/a2ui"
+  },
+  "homepage": "https://github.com/lyteboat/lyteboat#readme",
   "type": "module",
   "exports": {
     ".": {
@@ -38,5 +43,8 @@
     "@deepseek-ai/dsh-session-projection": "workspace:*",
     "@deepseek-ai/dsh-system-prompt": "workspace:*",
     "@deepseek-ai/dsh-tools": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public"
   }
 }

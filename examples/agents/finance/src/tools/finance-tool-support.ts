@@ -8,7 +8,7 @@
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { cardMarker, cardsPresentationMeta } from '@lyteboat/a2ui'
-import type { LyteboatAgentHost } from '@lyteboat/agent-def'
+import type { LyteboatAgentHost } from '@lyteboat/agent-definition'
 import type { JsonValue, LyteboatResultCard } from '@lyteboat/contracts'
 import type { FinanceCustomer, FinanceCustomerSource } from '../data/finance-customer.ts'
 import type { KnowledgeEntry } from '../capabilities/investor-knowledge.ts'

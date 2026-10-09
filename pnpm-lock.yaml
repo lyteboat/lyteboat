@@ -1084,9 +1084,9 @@ importers:
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../../dsh/core/tools
-      '@lyteboat/agent-def':
+      '@lyteboat/agent-definition':
         specifier: workspace:*
-        version: link:../../../lyteboat/plugins/agent-def
+        version: link:../../../lyteboat/plugins/agent-definition
       '@lyteboat/contracts':
         specifier: workspace:*
         version: link:../../../lyteboat/core/contracts
@@ -1544,9 +1544,9 @@ importers:
       '@deepseek-ai/cordis-plugin-loader':
         specifier: catalog:cordis
         version: 1.0.5(@deepseek-ai/cordis@4.0.4)(node-addon-require-builtin@0.1.6)
-      '@lyteboat/agent-def':
+      '@lyteboat/agent-definition':
         specifier: workspace:*
-        version: link:../../plugins/agent-def
+        version: link:../../plugins/agent-definition
       '@lyteboat/base':
         specifier: workspace:*
         version: link:../base
@@ -1663,9 +1663,9 @@ importers:
       '@deepseek-ai/cordis-plugin-loader':
         specifier: catalog:cordis
         version: 1.0.5(@deepseek-ai/cordis@4.0.4)(node-addon-require-builtin@0.1.6)
-      '@lyteboat/agent-def':
+      '@lyteboat/agent-definition':
         specifier: workspace:*
-        version: link:../../plugins/agent-def
+        version: link:../../plugins/agent-definition
       '@lyteboat/base':
         specifier: workspace:*
         version: link:../base
@@ -1793,7 +1793,7 @@ importers:
         specifier: 'catalog:'
         version: 4.0.9
 
-  lyteboat/plugins/agent-def:
+  lyteboat/plugins/agent-definition:
     dependencies:
       '@deepseek-ai/dsh-scope':
         specifier: 0.2.0-rc.2

@@ -1,7 +1,7 @@
 // The policy agent's definition: its persona, and a tool policy that hides
 // everything it inherits from the host but the official todo_write tool, which
 // its composition brings as a dsh row.
-import { lyteboatAgentDef } from '@lyteboat/agent-def'
+import { lyteboatAgentDef } from '@lyteboat/agent-definition'
 
 export default lyteboatAgentDef({
   agentId: 'policy',
