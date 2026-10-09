@@ -17,9 +17,9 @@
   ],
   "dependencies": {
     "@lyteboat/a2ui": "workspace:*",
-    "@lyteboat/aux-llm": "workspace:*",
     "@lyteboat/contracts": "workspace:*",
-    "@lyteboat/intake-guard": "workspace:*",
+    "@lyteboat/model-side-call": "workspace:*",
+    "@lyteboat/request-admission": "workspace:*",
     "@lyteboat/request-context": "workspace:*",
     "@lyteboat/skill-router": "workspace:*",
     "@lyteboat/tool-policy": "workspace:*",

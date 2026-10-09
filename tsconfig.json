@@ -57,13 +57,16 @@
       "path": "./lyteboat/plugins/tool-policy"
     },
     {
-      "path": "./lyteboat/plugins/aux-llm"
+      "path": "./lyteboat/plugins/model-side-call"
     },
     {
       "path": "./lyteboat/plugins/request-context"
     },
     {
-      "path": "./lyteboat/plugins/intake-guard"
+      "path": "./lyteboat/plugins/turn-outcome"
+    },
+    {
+      "path": "./lyteboat/plugins/request-admission"
     },
     {
       "path": "./lyteboat/plugins/skill-router"
@@ -96,7 +99,7 @@
       "path": "./lyteboat/plugins/session-index"
     },
     {
-      "path": "./lyteboat/plugins/run-metrics"
+      "path": "./lyteboat/plugins/turn-metrics"
     },
     {
       "path": "./lyteboat/plugins/studio-auth"
@@ -106,9 +109,6 @@
     },
     {
       "path": "./lyteboat/plugins/studio-web"
-    },
-    {
-      "path": "./lyteboat/bundles/headless"
     },
     {
       "path": "./lyteboat/bundles/serve"

@@ -19,6 +19,7 @@ import type { LyteboatRequest } from '@lyteboat/contracts'
 import SessionIndexService from '@lyteboat/session-index'
 import { MockAdapter, createLyteboatUnitHost } from '@lyteboat/testkit'
 import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
+import TurnOutcomeService from '@lyteboat/turn-outcome'
 import { SessionLogBuilder } from './session-log-builder.ts'
 
 afterEach(() => { vi.useRealTimers() })
@@ -41,6 +42,7 @@ async function indexFixture(): Promise<IndexFixture> {
   await ctx.plugin(AgentPresetRegistry, { default: 'none' })
   await ctx.plugin(AgentDefaultModelConfig, { provider: 'mock', model: 'mock' })
   await ctx.plugin(AgentCatalogService, { roots: [join(root, 'agents')], workdirsDir: join(root, 'workdirs') })
+  await ctx.plugin(TurnOutcomeService)
   await ctx.plugin(SessionIndexService)
   await ctx.agentCatalog.whenReady()
   const workdir = (agentId: string): string => ctx.agentCatalog.get(agentId)?.workdir ?? ''

@@ -11,6 +11,7 @@
     { "path": "../../../dsh/session/session-persistence" },
     { "path": "../../../dsh/skill/skill" },
     { "path": "../../core/contracts" },
-    { "path": "../agent-catalog" }
+    { "path": "../agent-catalog" },
+    { "path": "../turn-outcome" }
   ]
 }

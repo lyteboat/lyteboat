@@ -54,7 +54,7 @@ export default lyteboatAgentDef({
   modelRequest: { temperature: 0 },
   admission: host => financeAdmission({
     customers: financeCustomersOf(host),
-    auxLlm: host.auxLlm,
+    modelSideCall: host.modelSideCall,
     a2ui: host.a2ui,
     templates: financeTemplatesDirOf(host),
   }),

@@ -7,7 +7,7 @@
  */
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import type { LyteboatRunMetric } from '@lyteboat/contracts'
+import type { LyteboatTurnMetric } from '@lyteboat/contracts'
 import { studioBucketMinutes, studioHealthAggregate, studioHealthWindow, studioPercentile, studioRoundHalfEven } from '../src/studio-dashboard-health.ts'
 
 interface GoldenRow {
@@ -19,7 +19,7 @@ interface GoldenRow {
   first_content_ms: number
   turn_count: number
   active_skill_id: string | null
-  outcome: LyteboatRunMetric['outcome']
+  outcome: LyteboatTurnMetric['outcome']
   error_type: string | null
   activated_skill_ids: string[]
   tool_calls: { name: string; duration_ms: number; is_error: boolean }[]
@@ -35,7 +35,7 @@ interface Golden {
 const golden = JSON.parse(readFileSync(new URL('./fixtures/dashboard-health.json', import.meta.url), 'utf8')) as Golden
 
 /** A row of the original as the recorder writes it: its skill-reading tool is dsh's `skill`, a user is an owner. */
-function metricOf(row: GoldenRow): LyteboatRunMetric {
+function metricOf(row: GoldenRow): LyteboatTurnMetric {
   return {
     agentId: 'agent', sessionId: row.session_id, turn: 1,
     ...row.user_id === '' ? {} : { owner: { kind: 'user' as const, id: row.user_id } },

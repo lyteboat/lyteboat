@@ -13,6 +13,7 @@
     { "path": "../../core/contracts" },
     { "path": "../a2ui" },
     { "path": "../agent-catalog" },
-    { "path": "../request-context" }
+    { "path": "../request-context" },
+    { "path": "../turn-outcome" }
   ]
 }

@@ -26,6 +26,13 @@ export interface LyteboatIntakeReply {
   plugin: string
   /** The reply's blocks. A tool call cannot be replied: nothing would execute it. */
   content: Exclude<ContentBlock, { type: 'tool-call' }>[]
+  /**
+   * The claimed messages as the reply logs them, when the deciding plugin
+   * records something on them (its verdict, say): the same messages in the
+   * same order, of which only `source` may differ. Absent, the claimed
+   * messages are logged as they are.
+   */
+  messages?: UserMessage[]
 }
 
 /** An intake listener's verdict: let the step proceed, or answer it. */

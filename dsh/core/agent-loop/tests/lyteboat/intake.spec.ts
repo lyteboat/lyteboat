@@ -90,6 +90,67 @@ describe('lyteboat/intake', () => {
     expect(systemNodes[1]?.surfaceOp).toEqual({ op: 'replace', startSeq: systemNodes[0]?.seq, endSeq: systemNodes[0]?.seq })
   })
 
+  it('logs the claimed messages as the reply records them when only their source changed', async () => {
+    const adapter = new MockAdapter([])
+    const ctx = await harness(adapter)
+    ctx.on('lyteboat/intake', async (payload): Promise<LyteboatIntakeDecision> => ({
+      kind: 'reply',
+      plugin: 'test-gate',
+      content: [{ type: 'text', text: '不提供股票建议' }],
+      messages: payload.messages.map(message => ({ ...message, source: { ...message.source, verdict: 'reply' } })),
+    }))
+    const agent = await ctx.agentLoop.create(SessionId('intake-messages'), { provider: 'mock', model: 'mock' })
+
+    await send(agent, '帮我买股票')
+    const events = agent.session.snapshotEvents()
+    const claimed = events.find((event): event is SessionEvent<'agent/inbox/spliced'> => event.type === 'agent/inbox/spliced')
+    const logged = events.find((event): event is SessionEvent<'user/message'> => event.type === 'user/message')
+    expect(logged?.data.id).toBe(claimed?.data.inserted[0]?.id)
+    expect(logged?.data.content).toEqual([{ type: 'text', text: '帮我买股票' }])
+    expect(logged?.data.source).toEqual({ kind: 'user', verdict: 'reply' })
+    expect((events.at(-1) as SessionEvent<'turn/end'>).data.reason).toEqual({ kind: 'completed' })
+  })
+
+  it('fails the turn when a reply rewrites what the user said', async () => {
+    const adapter = new MockAdapter([])
+    const ctx = await harness(adapter)
+    ctx.on('lyteboat/intake', async (payload): Promise<LyteboatIntakeDecision> => ({
+      kind: 'reply',
+      plugin: 'test-gate',
+      content: [{ type: 'text', text: '好的' }],
+      messages: payload.messages.map(message => ({ ...message, content: [{ type: 'text', text: '帮我看看资产' }] })),
+    }))
+    const agent = await ctx.agentLoop.create(SessionId('intake-rewrite'), { provider: 'mock', model: 'mock' })
+
+    await send(agent, '帮我买股票')
+    const events = agent.session.snapshotEvents()
+    expect(events.some(event => event.type === 'user/message' || event.type === 'assistant/message')).toBe(false)
+    expect((events.at(-1) as SessionEvent<'turn/end'>).data.reason).toMatchObject({
+      kind: 'error',
+      error: { message: expect.stringContaining('only its source may change') },
+    })
+  })
+
+  it('fails the turn when a reply logs other messages than the step claimed', async () => {
+    const adapter = new MockAdapter([])
+    const ctx = await harness(adapter)
+    ctx.on('lyteboat/intake', async (): Promise<LyteboatIntakeDecision> => ({
+      kind: 'reply',
+      plugin: 'test-gate',
+      content: [{ type: 'text', text: '好的' }],
+      messages: [createUserMessage({ content: [{ type: 'text', text: '帮我买股票' }], source: { kind: 'user' } })],
+    }))
+    const agent = await ctx.agentLoop.create(SessionId('intake-other'), { provider: 'mock', model: 'mock' })
+
+    await send(agent, '帮我买股票')
+    const events = agent.session.snapshotEvents()
+    expect(events.some(event => event.type === 'user/message')).toBe(false)
+    expect((events.at(-1) as SessionEvent<'turn/end'>).data.reason).toMatchObject({
+      kind: 'error',
+      error: { message: expect.stringContaining('was claimed') },
+    })
+  })
+
   it('passes by default, so a loop with no listener behaves as upstream', async () => {
     const adapter = new MockAdapter([textResponse('ok')])
     const ctx = await harness(adapter)

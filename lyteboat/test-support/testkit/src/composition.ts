@@ -63,9 +63,6 @@ function inactiveModeRunner(ctx: Context): string | undefined {
 /** The launcher disables telemetry export when `DSH_TELEMETRY_DISABLED` is set, as tests do. */
 const QUIET: readonly PatchOptions[] = [{ id: 'session-telemetry-otel', disabled: true }]
 
-/** The `headless-agent` profile's bundle layers, in the order the launcher's profile template lists them. */
-export const LYTEBOAT_HEADLESS_AGENT_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless', '@lyteboat/base', '@lyteboat/headless']
-
 /** The `serve` profile's bundle layers, in the order the launcher's profile template lists them. */
 export const LYTEBOAT_SERVE_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-base', '@lyteboat/base', '@lyteboat/serve']
 
@@ -80,11 +77,11 @@ export const LYTEBOAT_INSPECT_BUNDLES: readonly string[] = ['@deepseek-ai/dsh-ba
 
 /** What to boot and how. */
 export interface CompositionOptions {
-  /** Bundle packages in layer order, e.g. {@link LYTEBOAT_HEADLESS_AGENT_BUNDLES}. */
+  /** Bundle packages in layer order, e.g. {@link LYTEBOAT_SERVE_BUNDLES}. */
   bundles: readonly string[]
   /** Layers above the bundles: row overrides and inserted rows (see {@link pluginFileRow}). */
   patches?: readonly PatchOptions[]
-  /** The inner arguments, as they would follow the mode's command (`lyteboat headless`, `lyteboat serve`, …) on a command line. */
+  /** The inner arguments, as they would follow the mode's command (`lyteboat serve`, `lyteboat eval`, …) on a command line. */
   args: readonly string[]
   /** The working directory the tree sees. */
   cwd: string
@@ -116,18 +113,6 @@ export type { PatchOptions }
 export function pluginFileRow(file: string): PatchOptions {
   const absolute = resolve(file)
   return { insert: [{ id: `plugin:${absolute}`, name: pathToFileURL(absolute).href }] }
-}
-
-/**
- * The session id a business `lyteboat headless` composition prints to stderr (`lyteboat: session <id>`).
- * @param stderr - the run's captured stderr.
- * @returns the id.
- * @throws when the run printed no id; the message carries the stderr.
- */
-export function printedSessionId(stderr: string): string {
-  const id = /^lyteboat: session (\S+)$/mu.exec(stderr)?.[1]
-  if (id === undefined) throw new Error(`no "lyteboat: session <id>" line in stderr:\n${stderr}`)
-  return id
 }
 
 interface Capture {

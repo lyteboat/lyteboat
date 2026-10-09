@@ -32,7 +32,7 @@
     "@lyteboat/agent-catalog": "workspace:*",
     "@lyteboat/contracts": "workspace:*",
     "@lyteboat/chat-api": "workspace:*",
-    "@lyteboat/run-metrics": "workspace:*",
+    "@lyteboat/turn-metrics": "workspace:*",
     "@deepseek-ai/dsh-agent-preset-registry": "catalog:dsh",
     "@deepseek-ai/dsh-api-session-controller": "workspace:*",
     "@deepseek-ai/dsh-client-connection": "catalog:dsh",

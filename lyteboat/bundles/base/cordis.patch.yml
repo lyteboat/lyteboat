@@ -1,6 +1,5 @@
 # The @lyteboat/base bundle patch: the business base, applied right after
-# dsh-base (and dsh-headless in the one-shot) and before the mode bundle
-# (headless, serve, eval, studio, inspect).
+# dsh-base and before the mode bundle (serve, eval, studio, inspect).
 # dsh-base's own agent-loop row stays: its package resolves to lyteboat's
 # kernel (dsh/core/agent-loop), which dispatches lyteboat/intake and
 # lyteboat/pre-assemble. lyteboat's service rows sit on the host plane, where
@@ -19,16 +18,21 @@
       name: '@lyteboat/tool-policy'
 
     # Side model calls (the router's, an intake classifier's), each recorded ignorable.
-    - id: lyteboat-aux-llm
-      name: '@lyteboat/aux-llm'
+    - id: lyteboat-model-side-call
+      name: '@lyteboat/model-side-call'
 
-    # The request a human message answers to, carried on its source; then the
-    # admission registry that records its verdict there and replies from it.
+    # The request a human message answers to, carried on its source.
     - id: lyteboat-request-context
       name: '@lyteboat/request-context'
 
-    - id: lyteboat-intake-guard
-      name: '@lyteboat/intake-guard'
+    # How each turn ended, folded once from the session log for every reader.
+    - id: lyteboat-turn-outcome
+      name: '@lyteboat/turn-outcome'
+
+    # The admission registry that records its verdict on the human message and
+    # replies from it.
+    - id: lyteboat-request-admission
+      name: '@lyteboat/request-admission'
 
     - id: lyteboat-skill-router
       name: '@lyteboat/skill-router'
@@ -82,11 +86,6 @@
   disabled: true
 - id: ptc-runtime
   disabled: true
-# With no PTC runtime the registry presents tools natively, whatever mode the
-# environment asks dsh-headless for (DSH_TOOLS_MODE).
-- id: tools
-  config:
-    mode: native
 - id: workflow-ptc
   disabled: true
 - id: tool-workflow
@@ -153,11 +152,7 @@
   config:
     includeDefaultRoots: false
 
-# The persona is the agent's; the host adds none, not even the harness's name
-# (dsh-headless, listed before this bundle in the one-shot, sets a coding
-# agent's prefix and suffix).
+# The persona is the agent's; the host adds none, not even the harness's name.
 - id: system-prompt
   config:
-    personaPrefix: ''
-    personaSuffix: ''
     includeHarnessIdentity: false

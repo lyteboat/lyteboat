@@ -23,6 +23,7 @@
     "@lyteboat/agent-catalog": "workspace:*",
     "@lyteboat/contracts": "workspace:*",
     "@lyteboat/request-context": "workspace:*",
+    "@lyteboat/turn-outcome": "workspace:*",
     "@deepseek-ai/dsh-brand": "catalog:dsh",
     "@deepseek-ai/dsh-home-paths": "catalog:dsh",
     "@deepseek-ai/dsh-llm-replay": "catalog:dsh",

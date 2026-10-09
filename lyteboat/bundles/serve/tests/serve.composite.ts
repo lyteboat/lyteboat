@@ -3,6 +3,7 @@
  * over two fixture agents and the scripted model: `/chat` answers in one JSON
  * body or as the enterprise stream through dsh's session controller, records
  * the request on the human message, continues and queues within a session,
+ * imports the history a request brings as turns of their own once each,
  * cancels the turn of a caller that left, refuses what it cannot answer
  * with the status the protocol names, and records each turn's run metric.
  */
@@ -123,7 +124,9 @@ describe('lyteboat serve (in process, scripted model)', () => {
     expect(loop?.toolNames).toEqual(['skill'])
     // No runtime context either: no sandbox or approval policy, no state.
     expect(loop?.body.messages).toEqual([{ role: 'user', content: [{ type: 'text', text: 'what do you see' }] }])
+    // The kernel's dsh-base keeps the session uploads off.
     expect(loop?.body['dsh_plugin_packages']).toBeUndefined()
+    expect(loop?.body['dsh_session_log']).toBeUndefined()
   })
 
   it('streams the enterprise frames in protocol order, each tagged by the agent\'s frame decorator', async () => {
@@ -153,6 +156,40 @@ describe('lyteboat serve (in process, scripted model)', () => {
     const loop = model.requests.slice(before).filter(request => request.purpose === 'loop')
     expect(loop[0]?.body.messages.filter(message => message.role === 'user').map(message => message.content.find(block => block.type === 'text')?.text)).toEqual(['one', 'two'])
     expect(again).toEqual({ status: 409, body: { error: { code: 'message_duplicate', message: 'message "m-one" was already sent in this session', retryable: false } } })
+  })
+
+  it('imports the history a request brings as turns of their own before its question, and not again when it comes back', async () => {
+    const entry = (role: string, traceId: string, text: string) => ({ role, traceId, parts: [{ type: 'text', text }] })
+    const history = [
+      entry('user', 'trace-0001', '看看资产'), entry('assistant', 'trace-0001', '总额 100'),
+      entry('user', 'trace-0002', '风险如何'), entry('assistant', 'trace-0002', '偏高'),
+      // The round the caller is still waiting on: half, so dropped.
+      entry('user', 'trace-0003', '继续刚才的话题'),
+    ]
+    const before = model.requests.length
+
+    const first = await postChat(chat, { agent_id: 'alpha', user_id: 'u-history', message: '继续刚才的话题', trace_id: 'trace-0003', history })
+    const sessionId = (first.body as { session_id: string }).session_id
+    const again = await postChat(chat, {
+      agent_id: 'alpha', user_id: 'u-history', message: 'and now', trace_id: 'trace-0004', session_id: sessionId,
+      history: [...history.slice(0, 4), entry('assistant', 'trace-0003', 'OK:继续刚才的话题')],
+    })
+    const untraced = await postChat(chat, { agent_id: 'alpha', user_id: 'u-history', message: 'no trace', session_id: sessionId, history })
+
+    expect(first.body).toMatchObject({ outcome: 'completed', response: 'OK:继续刚才的话题', cards: [], tool_calls: [] })
+    expect(again.body).toMatchObject({ outcome: 'completed', response: 'OK:and now' })
+    expect(untraced).toEqual({ status: 400, body: { error: { code: 'invalid_request', message: 'trace_id: required with history', retryable: false } } })
+    const loop = model.requests.slice(before).filter(request => request.purpose === 'loop')
+    const said = (request: RecordedRequest | undefined): string[] => (request?.body.messages ?? []).map(message => `${message.role}:${message.content.find(block => block.type === 'text')?.text ?? ''}`)
+    expect(said(loop[0])).toEqual(['user:看看资产', 'assistant:总额 100', 'user:风险如何', 'assistant:偏高', 'user:继续刚才的话题'])
+    expect(said(loop[1])).toEqual([...said(loop[0]), 'assistant:OK:继续刚才的话题', 'user:and now'])
+    const records = await waitForSessionLog<LogRecord>(home, sessionId, log => turnEnds(log).length === 4)
+    const sources = records.filter(record => record.type === 'user/message').map(record => record.data?.['source'] as { kind: string; traceId?: string; lyteboatRequest?: { traceId?: string } })
+    expect(sources.map(source => source.traceId ?? source.lyteboatRequest?.traceId)).toEqual(['trace-0001', 'trace-0002', 'trace-0003', 'trace-0004'])
+    expect(sources.slice(0, 2)).toEqual([{ kind: 'plugin:lyteboat-history-import', traceId: 'trace-0001' }, { kind: 'plugin:lyteboat-history-import', traceId: 'trace-0002' }])
+    const answers = records.filter(record => record.type === 'assistant/message').map(record => record.data?.['message'] as { source: { provider: string; model: string } } | undefined)
+    expect(answers.slice(0, 2).map(answer => `${String(answer?.source.provider)}/${String(answer?.source.model)}`)).toEqual(['lyteboat/history-import', 'lyteboat/history-import'])
+    expect(reopenRefusal(records)).toBeUndefined()
   })
 
   it('queues a message sent while the session answers another, and answers each with its own turn', async () => {
@@ -293,6 +330,17 @@ describe('lyteboat serve startup (in process)', () => {
 
     expect(result.code).not.toBe(0)
     expect(result.stderr).toContain('beta: agent.yml declares model deepseek-official/deepseek-pro, but this process runs deepseek-official/deepseek-flash')
+  })
+
+  it('stops with the agent catalog\'s diagnosis when an agent does not mount', async () => {
+    const run = scratch.run('unmountable', { 'agents/unmountable/agent.cordis.yml': "- id: gone\n  name: '@lyteboat/no-such-package'\n" })
+    const target = { cwd: run.workspace, home: run.home, env: { DSH_TELEMETRY_DISABLED: '1' } }
+
+    const result = await bootComposition({ bundles: LYTEBOAT_SERVE_BUNDLES, args: ['--agents', join(run.workspace, 'agents'), '--port', '0'], ...target })
+
+    expect(result.code).toBe(1)
+    expect(result.stderr).toContain('agent-catalog: 1 agent(s) failed')
+    expect(result.stderr).toContain('@lyteboat/no-such-package')
   })
 
   it('refuses a chat-api config key it does not have', async () => {

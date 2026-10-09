@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "license": "MIT",
-  "description": "lyteboat's external history import: entries grouped into rounds by trace id (half rounds dropped, the first duplicate role kept, ordered by create time) turned into a session seed of closed turns",
+  "description": "lyteboat's external history import: entries grouped into rounds by trace id (half rounds dropped, the first duplicate role kept, ordered by create time); each round a session lacks, by trace id, queued as a turn of its own and answered on the lyteboat/intake waterfall without a model request",
   "type": "module",
   "exports": {
     ".": {
@@ -20,12 +20,18 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "catalog:cordis",
+    "@deepseek-ai/dsh-agent": "workspace:*",
+    "@deepseek-ai/dsh-agent-loop": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*"
+    "@deepseek-ai/dsh-session": "workspace:*",
+    "@deepseek-ai/dsh-session-projection": "workspace:*"
   },
   "devDependencies": {
+    "@lyteboat/distro": "workspace:*",
     "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
+    "@deepseek-ai/dsh-agent": "workspace:*",
+    "@deepseek-ai/dsh-agent-loop": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
     "@deepseek-ai/dsh-session-projection": "workspace:*"

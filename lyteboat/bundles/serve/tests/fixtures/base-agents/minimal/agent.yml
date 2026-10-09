@@ -1,0 +1,3 @@
+name: 最小示例
+description: 只有人设、继承宿主工具的最小 agent，用于业务底座各服务的接线测试。
+order: 1

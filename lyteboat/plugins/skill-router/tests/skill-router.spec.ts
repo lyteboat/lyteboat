@@ -13,8 +13,8 @@ import { SessionId, SessionLogOffset, SessionSeq, buildForkSeed, type SessionEve
 import SkillRegistry, { renderSkillContent } from '@deepseek-ai/dsh-skill'
 import { defineContentToolFixture, type ToolDefinition } from '@deepseek-ai/dsh-tools'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testkit'
-import AuxLlmService from '@lyteboat/aux-llm'
 import LyteboatDistroService from '@lyteboat/distro'
+import ModelSideCallService from '@lyteboat/model-side-call'
 import ToolPolicyService from '@lyteboat/tool-policy'
 import type { LyteboatActiveSkillState } from '@lyteboat/contracts'
 import SkillRouterService, { lyteboatActiveSkillProjectionDefinition, type Config } from '@lyteboat/skill-router'
@@ -24,7 +24,7 @@ async function harness(adapter: MockAdapter, config: Config): Promise<Context> {
   await ctx.plugin(SkillRegistry)
   await ctx.plugin(LyteboatDistroService)
   await ctx.plugin(ToolPolicyService)
-  await ctx.plugin(AuxLlmService)
+  await ctx.plugin(ModelSideCallService)
   await ctx.plugin(SkillRouterService, config)
   ctx.skills.register({ name: 'asset-overview', description: '资产总览与配置诊断', content: 'BODY-ASSET', source: 'custom', metadata: { lyteboat: { requiredTools: ['lookup_assets'] } } })
   ctx.skills.register({ name: 'market-news', description: '市场行情与新闻', content: 'BODY-NEWS', source: 'custom', metadata: { lyteboat: { requiredTools: ['fetch_news'] } } })

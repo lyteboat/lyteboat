@@ -14,8 +14,8 @@
   },
   "files": ["lib"],
   "dependencies": {
-    "@lyteboat/aux-llm": "workspace:*",
     "@lyteboat/contracts": "workspace:*",
+    "@lyteboat/model-side-call": "workspace:*",
     "@lyteboat/tool-policy": "workspace:*",
     "@deepseek-ai/dsh-scope": "catalog:dsh",
     "@deepseek-ai/dsh-skill": "workspace:*",

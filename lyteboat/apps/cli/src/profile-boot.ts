@@ -142,7 +142,7 @@ export function ensureProfileInitialized(name: string, home: string = resolveDsh
  * lists, and report every other skipped bundle the way dsh's launcher does.
  * dsh skips a bundle it cannot resolve, or whose dsh peers the running
  * release does not satisfy, and boots the rest; without `@lyteboat/base` or
- * its mode bundle (`@lyteboat/headless`, `@lyteboat/serve`, …) that is a different application than the profile names.
+ * its mode bundle (`@lyteboat/serve`, `@lyteboat/eval`, …) that is a different application than the profile names.
  * @param name - the profile name.
  * @param profile - the bundles dsh skipped while loading it.
  * @throws when a skipped bundle is one the profile's lyteboat template lists.

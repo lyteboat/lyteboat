@@ -10,8 +10,8 @@
     { "path": "../agent-catalog" },
     { "path": "../agent-inspector" },
     { "path": "../eval-runner" },
-    { "path": "../run-metrics" },
     { "path": "../session-index" },
-    { "path": "../studio-auth" }
+    { "path": "../studio-auth" },
+    { "path": "../turn-metrics" }
   ]
 }

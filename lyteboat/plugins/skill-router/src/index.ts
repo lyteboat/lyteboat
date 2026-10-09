@@ -19,7 +19,7 @@
  * `lyteboatActiveSkill` projection folds skill-invocation messages and
  * successful `skill` tool calls from the log, so a resumed session restores
  * its tools, and a body compaction has shadowed is injected again. The router
- * call goes through `ctx.auxLlm`, which records it (prompt, answer or failure)
+ * call goes through `ctx.modelSideCall`, which records it (prompt, answer or failure)
  * as an ignorable `lyteboat/aux-llm-call`.
  * @module @lyteboat/skill-router
  */
@@ -37,9 +37,9 @@ import type { SkillDefinition, SkillInvocationSource, SkillViewOptions } from '@
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
-import type { AuxLlmRoute } from '@lyteboat/aux-llm'
 import type {} from '@lyteboat/tool-policy'
 import { LYTEBOAT_SKILLS_SECTION_ORDER, lyteboatActiveSkillStateSchema, lyteboatSkillMetaSchema } from '@lyteboat/contracts'
+import type { ModelSideCallRoute } from '@lyteboat/model-side-call'
 import type { LyteboatActiveSkillState, LyteboatSkillMeta, LyteboatStepPayload } from '@lyteboat/contracts'
 import { SKILL_ROUTER_SYSTEM_PROMPT, buildRoutePrompt, renderHistory, resolveRouteDecision } from './router.ts'
 import type { RouteCandidate, RouteDecision } from './router.ts'
@@ -201,7 +201,7 @@ function userText(messages: LyteboatStepPayload['messages']): string {
 /** Host service: skill load modes, LLM routing, and the active skill's presence in the conversation. */
 export class SkillRouterService extends Service {
   // lyteboatDistro: routing and activation run in the kernel extension agent-loop-pre-assemble.
-  static inject = ['skills', 'auxLlm', 'sessionProjections', 'systemPrompt', 'tools', 'toolPolicy', 'lyteboatDistro']
+  static inject = ['skills', 'modelSideCall', 'sessionProjections', 'systemPrompt', 'tools', 'toolPolicy', 'lyteboatDistro']
   // The loader applies a class plugin's static Config, not the module's.
   static Config = Config
 
@@ -344,24 +344,24 @@ export class SkillRouterService extends Service {
       current,
       userInput,
     })
-    const route: AuxLlmRoute | undefined = settings.provider !== undefined && settings.model !== undefined
+    const route: ModelSideCallRoute | undefined = settings.provider !== undefined && settings.model !== undefined
       ? { provider: settings.provider, model: settings.model }
       : undefined
     const decision = await this.decide(agent, route, prompt, candidates.map(candidate => candidate.name), current, settings, signal)
     return decision.skill
   }
 
-  /** One router call through `ctx.auxLlm`; every failure keeps the current skill. */
+  /** One router call through `ctx.modelSideCall`; every failure keeps the current skill. */
   private async decide(
     agent: Agent,
-    route: AuxLlmRoute | undefined,
+    route: ModelSideCallRoute | undefined,
     prompt: string,
     candidates: readonly string[],
     current: string | null,
     settings: SkillRouterSettings,
     signal: AbortSignal,
   ): Promise<RouteDecision> {
-    const outcome = await this.ctx.auxLlm.generate({
+    const outcome = await this.ctx.modelSideCall.generate({
       agent,
       purpose: SKILL_ROUTER_PURPOSE,
       ...route === undefined ? {} : { route },

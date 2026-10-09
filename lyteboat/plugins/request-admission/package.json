@@ -1,0 +1,36 @@
+{
+  "name": "@lyteboat/request-admission",
+  "version": "0.0.1",
+  "private": true,
+  "license": "MIT",
+  "description": "lyteboat's admission at the first step of each turn: an agent registers an admission function, which the service runs on the turn's human message on the lyteboat/intake waterfall; a reply verdict answers the turn without a model request and logs the message with the verdict on its request",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@lyteboat/source": "./src/index.ts",
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
+  },
+  "files": ["lib"],
+  "dependencies": {
+    "@lyteboat/contracts": "workspace:*",
+    "@lyteboat/request-context": "workspace:*",
+    "@deepseek-ai/dsh-scope": "catalog:dsh"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "catalog:cordis",
+    "@deepseek-ai/dsh-agent": "workspace:*",
+    "@deepseek-ai/dsh-agent-loop": "workspace:*",
+    "@deepseek-ai/dsh-llm": "workspace:*"
+  },
+  "devDependencies": {
+    "@lyteboat/distro": "workspace:*",
+    "@lyteboat/testkit": "workspace:*",
+    "@deepseek-ai/cordis": "catalog:cordis",
+    "@deepseek-ai/dsh-agent": "workspace:*",
+    "@deepseek-ai/dsh-agent-loop": "workspace:*",
+    "@deepseek-ai/dsh-llm": "workspace:*",
+    "@deepseek-ai/dsh-session": "workspace:*"
+  }
+}

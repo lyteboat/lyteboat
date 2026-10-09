@@ -19,8 +19,10 @@ extensions:
     surface: >-
       The `lyteboat/intake` waterfall, dispatched after the inbox claim and before prompt assembly; a
       `reply` answers the claimed messages with an assistant message (source provider `lyteboat`) inside
-      one step and no model request. A session's first request starts a new request series on every
-      route, so the empty head a reply or a history seed leaves is replaced. Exports
+      one step and no model request. A reply may carry the claimed messages as it logs them (`messages`):
+      the same messages in the same order with only `source` changed, or the turn fails. A session's
+      first request starts a new request series on every route, so the empty head a reply or a history
+      seed leaves is replaced. Exports
       LYTEBOAT_ASSISTANT_PROVIDER, LyteboatIntakeDecision, LyteboatIntakeReply, LyteboatStepPayload.
     contract:
       - events › @deepseek-ai/dsh-agent-loop › lyteboat/intake
@@ -100,6 +102,7 @@ extensions:
       - api › @deepseek-ai/dsh-headless › exports › . › LyteboatHeadlessReportPlan
     exit: >-
       Upstream's one-shot runner lets a plugin compose and place the Agent it creates, submit the task,
-      and shape what it prints; then @lyteboat/headless uses those seams instead.
+      and shape what it prints; then a plugin uses those seams instead. No lyteboat row listens to
+      these waterfalls.
     tests:
       - dsh/bundle/headless/tests/lyteboat/headless-hooks.spec.ts

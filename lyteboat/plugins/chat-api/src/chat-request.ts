@@ -56,6 +56,8 @@ export interface ChatRequest {
   traceId: string | undefined
   stream: boolean
   context: { [key: string]: JsonValue } | undefined
+  /** History entries from an earlier conversation, as the caller sent them; always with a trace id. */
+  history: JsonValue[] | undefined
 }
 
 const chatRequestSchema = z.strictObject({
@@ -68,6 +70,11 @@ const chatRequestSchema = z.strictObject({
   stream: z.boolean().optional(),
   protocol: z.literal('enterprise').optional(),
   context: z.record(z.string(), z.json()).optional(),
+  history: z.array(z.json()).optional(),
+}).refine(body => body.history === undefined || body.trace_id !== undefined, {
+  // The session knows the rounds it answered itself by their requests' trace ids.
+  message: 'required with history',
+  path: ['trace_id'],
 })
 
 /**
@@ -97,8 +104,9 @@ export function parseChatRequest(text: string): ChatRequest {
     messageId: body.message_id,
     traceId: body.trace_id,
     stream: body.stream ?? false,
-    // zod's JSON type is JSON: the cast only names it.
+    // zod's JSON type is JSON: the casts only name it.
     context: body.context as { [key: string]: JsonValue } | undefined,
+    history: body.history as JsonValue[] | undefined,
   }
 }
 

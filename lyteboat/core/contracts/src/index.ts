@@ -2,8 +2,8 @@
  * lyteboat's contract extensions over the dsh seams. Types, constants,
  * declaration merging, and the zod schemas of the JSON types declared here; no
  * other runtime behavior: the tool and skill metadata lyteboat plugins consume, the
- * `lyteboat/*` step and one-shot events (declared by lyteboat's kernel agent loop
- * and one-shot runner, re-exported here), the log nodes lyteboat plugins append, the envelopes their facts ride,
+ * `lyteboat/*` step events (declared by lyteboat's kernel agent loop,
+ * re-exported here), the log nodes lyteboat plugins append, the envelopes their facts ride,
  * and the projection keys they publish. Declared here, by declaration merging onto
  * the dsh maps, so that providers and consumers depend on this package and
  * never on each other — the same rule dsh applies to its own seams. A reader
@@ -48,7 +48,6 @@ const lyteboatJsonObjectSchema = z.record(z.string(), lyteboatJsonValueSchema)
  */
 export { LYTEBOAT_ASSISTANT_PROVIDER } from '@deepseek-ai/dsh-agent-loop'
 export type { LyteboatIntakeDecision, LyteboatIntakeReply, LyteboatStepPayload } from '@deepseek-ai/dsh-agent-loop'
-export type { LyteboatHeadlessReportPlan, LyteboatHeadlessStartPlan, LyteboatHeadlessSubmitPlan } from '@deepseek-ai/dsh-headless'
 
 /** One extension of the kernel contract that this lyteboat build carries, as dsh-compat/contract/extensions.yml registers it. */
 export interface LyteboatDistroExtension {
@@ -88,7 +87,7 @@ declare module '@deepseek-ai/cordis' {
  */
 export const LYTEBOAT_HISTORY_IMPORT_SOURCE = 'plugin:lyteboat-history-import'
 
-/** `source.kind` of the one user message a side model call sends (`@lyteboat/aux-llm`; the call is recorded, the message is not). */
+/** `source.kind` of the one user message a side model call sends (`@lyteboat/model-side-call`; the call is recorded, the message is not). */
 export const LYTEBOAT_AUX_LLM_SOURCE = 'plugin:lyteboat-aux-llm'
 
 /** Where the `lyteboat:state` runtime context (`@lyteboat/tool-policy`) sits among dsh's (sandbox 110, approval 115, delegation 120). */
@@ -208,8 +207,8 @@ export interface LyteboatAuxLlmCallRecord {
 }
 
 /**
- * An admission function's decision on one request, made before the request
- * enters the loop and recorded on the request's human message.
+ * An admission function's decision on one request, made at its turn's first
+ * step; a `reply` is recorded on the request's human message, a pass is not.
  */
 export type LyteboatIntakeVerdict = {
   /** The admission function that decided. */
@@ -233,8 +232,9 @@ export const lyteboatIntakeVerdictSchema: z.ZodType<LyteboatIntakeVerdict> = z.o
 
 /**
  * Who a request comes from: `user`, an end user the caller names (`/chat`'s
- * `user_id`); `operator`, a person at a lyteboat surface (the command
- * line); `system`, lyteboat itself (an eval run). Only a `user`
+ * `user_id`); `operator`, a person at a lyteboat surface (an older
+ * lyteboat's command line wrote it; no surface writes it now); `system`,
+ * lyteboat itself (an eval run). Only a `user`
  * owner can continue a session over `/chat`. Not dsh's `source.kind: 'user'`,
  * which says a human message came from the conversation's human side, whoever
  * sent it.
@@ -466,33 +466,139 @@ export const lyteboatRequestStateSchema: z.ZodType<LyteboatRequestState> = z.obj
  * turn stopped), `stopped_by_limit` (a step reached its output-token ceiling),
  * `aborted` (cancelled), `errored` (failed).
  */
-export type LyteboatTurnOutcome = 'completed' | 'rejected' | 'tool_stopped' | 'stopped_by_limit' | 'aborted' | 'errored'
+export type LyteboatTurnOutcomeKind = 'completed' | 'rejected' | 'tool_stopped' | 'stopped_by_limit' | 'aborted' | 'errored'
 
 /**
- * A turn's outcome by the kind of its `turn/end` reason. A kind not listed is
- * `errored`: `error`; `interrupted` and `forked`, which close a turn after the
- * fact; and any reason a plugin merges into dsh's open reason map. A
- * `completed` turn whose answer came from the admission in the loop (an
+ * A turn's outcome kind by the kind of its `turn/end` reason. A kind not
+ * listed is `errored`: `error`; `interrupted` and `forked`, which close a turn
+ * after the fact; and any reason a plugin merges into dsh's open reason map. A
+ * `completed` turn the admission answered (an admission verdict `reply`, or an
  * assistant message with provider {@link LYTEBOAT_ASSISTANT_PROVIDER}) is
- * `rejected`.
+ * `rejected`, except in imported history.
  */
-export const LYTEBOAT_TURN_OUTCOME_OF_REASON: { readonly [reason: string]: LyteboatTurnOutcome } = {
+export const LYTEBOAT_TURN_OUTCOME_KIND_OF_REASON: { readonly [reason: string]: LyteboatTurnOutcomeKind } = {
   completed: 'completed',
   blocked: 'tool_stopped',
   'max-tokens': 'stopped_by_limit',
   aborted: 'aborted',
 }
 
-/** The turn outcomes, as a list. */
-export const LYTEBOAT_TURN_OUTCOMES = ['completed', 'rejected', 'tool_stopped', 'stopped_by_limit', 'aborted', 'errored'] as const satisfies readonly LyteboatTurnOutcome[]
+/** The turn outcome kinds, as a list. */
+export const LYTEBOAT_TURN_OUTCOME_KINDS = ['completed', 'rejected', 'tool_stopped', 'stopped_by_limit', 'aborted', 'errored'] as const satisfies readonly LyteboatTurnOutcomeKind[]
 
 /**
- * One turn a service ran, as its run-metrics recorder appends it to
+ * One turn as `@lyteboat/turn-outcome` folds it from the session log, from its
+ * `turn/start` to its `turn/end`: the request it answered, the counts, the
+ * tool calls, and how it ended. It carries no message text, tool arguments,
+ * cards, or skills: those stay in the log and in their own projections.
+ */
+export type LyteboatTurnOutcome = {
+  turn: number
+  /** The seq of the turn's `turn/start`. */
+  fromSeq: number
+  /** The seq of the turn's `turn/end`; absent while the turn runs. */
+  toSeq?: number
+  /** When the turn started (epoch ms). */
+  startedAt: number
+  endedAt?: number
+  /** Whether the turn is imported history: it lies in the session's inherited prefix, or its human message is an imported round's question. */
+  imported: boolean
+  /**
+   * The request of the turn's first human message, when it carries one or the
+   * session controller's request id. The turn takes it when it claims the
+   * message from the agent's inbox, so a turn that fails before the message is
+   * logged still has it; the logged message adds the admission's decision.
+   */
+  request?: {
+    /** The request's own id, else the session controller's `rpcId`. */
+    requestId?: string
+    owner?: LyteboatRequestOwner
+    agentId?: string
+    traceId?: string
+    /** The admission's decision recorded on the message. */
+    intake?: LyteboatIntakeVerdict['decision']
+  }
+  /** Whether an assistant message of the turn came from the admission in the loop (provider {@link LYTEBOAT_ASSISTANT_PROVIDER}). */
+  answeredByAdmission: boolean
+  steps: number
+  /** Model answers and failed attempts that streamed. */
+  modelRequests: number
+  /** Side model calls (`lyteboat/aux-llm-call`) made while the turn was open. */
+  auxCalls: number
+  /** When the first content arrived: the first answer text streamed, an answer with text, or an immediate card. */
+  firstContentAt?: number
+  /** Every tool call of the turn in log order, dsh's `skill` tool included, paired with its result. */
+  tools: { callId: string; name: string; calledAt: number; durationMs?: number; isError: boolean; errorCode?: string }[]
+  /** Set at `turn/end`. */
+  kind?: LyteboatTurnOutcomeKind
+  /** Why an `errored` turn failed, from a `turn/end` reason `error`. */
+  error?: { code: string; message: string }
+}
+
+const lyteboatTurnOutcomeRequestSchema: z.ZodType<NonNullable<LyteboatTurnOutcome['request']>> = z.object({
+  requestId: z.string().exactOptional(),
+  owner: lyteboatRequestOwnerSchema.exactOptional(),
+  agentId: z.string().exactOptional(),
+  traceId: z.string().exactOptional(),
+  intake: z.enum(['pass', 'reply']).exactOptional(),
+})
+
+/** The schema of {@link LyteboatTurnOutcome}. */
+export const lyteboatTurnOutcomeSchema: z.ZodType<LyteboatTurnOutcome> = z.object({
+  turn: z.number(),
+  fromSeq: z.number(),
+  toSeq: z.number().exactOptional(),
+  startedAt: z.number(),
+  endedAt: z.number().exactOptional(),
+  imported: z.boolean(),
+  request: lyteboatTurnOutcomeRequestSchema.exactOptional(),
+  answeredByAdmission: z.boolean(),
+  steps: z.number(),
+  modelRequests: z.number(),
+  auxCalls: z.number(),
+  firstContentAt: z.number().exactOptional(),
+  tools: z.array(z.object({
+    callId: z.string(),
+    name: z.string(),
+    calledAt: z.number(),
+    durationMs: z.number().exactOptional(),
+    isError: z.boolean(),
+    errorCode: z.string().exactOptional(),
+  })),
+  kind: z.enum(LYTEBOAT_TURN_OUTCOME_KINDS).exactOptional(),
+  error: z.object({ code: z.string(), message: z.string() }).exactOptional(),
+})
+
+/** The `lyteboatTurnOutcomes` fold state: the session's turns in log order. */
+export type LyteboatTurnOutcomesState = {
+  /** Events below this seq are inherited (imported history). */
+  importedBelowSeq: number
+  /**
+   * The messages pending in the agent's inbox, in its order per list (dsh's
+   * `agent/inbox/spliced`): each one's request, null for a message that is
+   * not a person's. A claim removes them, which tells the turn its request.
+   */
+  queued: { 'next-turn': (NonNullable<LyteboatTurnOutcome['request']> | null)[]; 'next-step': (NonNullable<LyteboatTurnOutcome['request']> | null)[] }
+  turns: LyteboatTurnOutcome[]
+}
+
+/** The schema of {@link LyteboatTurnOutcomesState}. */
+export const lyteboatTurnOutcomesStateSchema: z.ZodType<LyteboatTurnOutcomesState> = z.object({
+  importedBelowSeq: z.number(),
+  queued: z.object({
+    'next-turn': z.array(lyteboatTurnOutcomeRequestSchema.nullable()),
+    'next-step': z.array(lyteboatTurnOutcomeRequestSchema.nullable()),
+  }),
+  turns: z.array(lyteboatTurnOutcomeSchema),
+})
+
+/**
+ * One turn a service ran, as its turn-metrics recorder appends it to
  * `$LYTEBOAT_HOME/run-metrics/<YYYY-MM-DD>.jsonl` (the UTC day the turn
  * started), one line each, after the turn's `turn/end`. It carries counts and
  * timings, no message text: the Studio's dashboard reads it.
  */
-export type LyteboatRunMetric = {
+export type LyteboatTurnMetric = {
   agentId: string
   sessionId: string
   turn: number
@@ -511,13 +617,13 @@ export type LyteboatRunMetric = {
   activatedSkills: string[]
   /** The skill active when the turn ended. */
   activeSkill?: string
-  outcome: LyteboatTurnOutcome
+  outcome: LyteboatTurnOutcomeKind
   /** The failure code of an `errored` turn. */
   errorCode?: string
 }
 
-/** The schema of {@link LyteboatRunMetric}. */
-export const lyteboatRunMetricSchema: z.ZodType<LyteboatRunMetric> = z.object({
+/** The schema of {@link LyteboatTurnMetric}. */
+export const lyteboatTurnMetricSchema: z.ZodType<LyteboatTurnMetric> = z.object({
   agentId: z.string(),
   sessionId: z.string(),
   turn: z.number(),
@@ -531,7 +637,7 @@ export const lyteboatRunMetricSchema: z.ZodType<LyteboatRunMetric> = z.object({
   tools: z.array(z.object({ name: z.string(), durationMs: z.number().exactOptional(), isError: z.boolean(), errorCode: z.string().exactOptional() })),
   activatedSkills: z.array(z.string()),
   activeSkill: z.string().exactOptional(),
-  outcome: z.enum(LYTEBOAT_TURN_OUTCOMES),
+  outcome: z.enum(LYTEBOAT_TURN_OUTCOME_KINDS),
   errorCode: z.string().exactOptional(),
 })
 
@@ -541,15 +647,15 @@ export const lyteboatRunMetricSchema: z.ZodType<LyteboatRunMetric> = z.object({
  * turn's start and end and every ten seconds. A reader treats a file whose
  * heartbeat is older than 30 seconds as a process that is gone.
  */
-export type LyteboatRunHeartbeat = {
+export type LyteboatTurnHeartbeat = {
   host: string
   pid: number
   heartbeatAt: number
   turns: { agentId: string; sessionId: string; turn: number; startedAt: number }[]
 }
 
-/** The schema of {@link LyteboatRunHeartbeat}. */
-export const lyteboatRunHeartbeatSchema: z.ZodType<LyteboatRunHeartbeat> = z.object({
+/** The schema of {@link LyteboatTurnHeartbeat}. */
+export const lyteboatTurnHeartbeatSchema: z.ZodType<LyteboatTurnHeartbeat> = z.object({
   host: z.string(),
   pid: z.number(),
   heartbeatAt: z.number(),
@@ -570,11 +676,28 @@ export const lyteboatActiveSkillStateSchema: z.ZodType<LyteboatActiveSkillState>
   loading: z.record(z.string(), z.string()),
 })
 
+/** The `lyteboatTraceIds` fold state. */
+export interface LyteboatTraceIdsState {
+  /** Every trace id the session's requests and imported rounds carry, once each, in log order. */
+  traceIds: string[]
+}
+
+/** The schema of {@link LyteboatTraceIdsState}. */
+export const lyteboatTraceIdsStateSchema: z.ZodType<LyteboatTraceIdsState> = z.object({
+  traceIds: z.array(z.string()),
+})
+
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
-    /** Imported history rounds, written by `@lyteboat/history-import` into a session seed. */
-    'plugin:lyteboat-history-import': { kind: typeof LYTEBOAT_HISTORY_IMPORT_SOURCE }
-    /** A side model call's prompt, owned by `@lyteboat/aux-llm`. */
+    /** An imported history round's question, queued by `@lyteboat/history-import` as a turn of its own. */
+    'plugin:lyteboat-history-import': {
+      kind: typeof LYTEBOAT_HISTORY_IMPORT_SOURCE
+      /** The round's trace id; a log from an older lyteboat, which imported history as a session seed, may lack it. */
+      traceId?: string
+      /** The round's answer, carried while the message waits in the inbox; the turn logs the message without it. */
+      answer?: string
+    }
+    /** A side model call's prompt, owned by `@lyteboat/model-side-call`. */
     'plugin:lyteboat-aux-llm': { kind: typeof LYTEBOAT_AUX_LLM_SOURCE }
     /** A human message that carries its request (context, verdict), written by the caller through `@lyteboat/request-context`. */
     'lyteboat-request': { kind: 'user'; lyteboatRequest: LyteboatRequest }
@@ -585,7 +708,7 @@ declare module '@deepseek-ai/dsh-session/types' {
   interface SessionEventMap {
     /**
      * One side model call a plugin made for the agent, appended ignorable by
-     * `@lyteboat/aux-llm`: no reader needs it to rebuild the session.
+     * `@lyteboat/model-side-call`: no reader needs it to rebuild the session.
      */
     'lyteboat/aux-llm-call': LyteboatAuxLlmCallRecord
   }
@@ -601,6 +724,10 @@ declare module '@deepseek-ai/dsh-session-projection/types' {
     lyteboatCards: LyteboatCard[]
     /** The request context and the latest verdict, folded from human messages that carry a request. Owned by `@lyteboat/request-context`. */
     lyteboatRequest: LyteboatRequestState
+    /** Each turn's request, counts, tool calls, and outcome, folded from the log; host-only. Owned by `@lyteboat/turn-outcome`. */
+    lyteboatTurnOutcomes: LyteboatTurnOutcomesState
+    /** The trace ids the session already holds, from its requests and imported rounds; host-only. Owned by `@lyteboat/history-import`. */
+    lyteboatTraceIds: LyteboatTraceIdsState
   }
   interface SessionProjectionMap {
     /** Session tool state as the client sees it: the fold state itself. */

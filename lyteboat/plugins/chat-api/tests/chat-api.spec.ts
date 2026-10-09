@@ -32,7 +32,17 @@ describe('parseChatRequest', () => {
   it('reads the request fields, with stream off unless asked', () => {
     const request = parseChatRequest(JSON.stringify({ agent_id: 'finance', user_id: 'u-1', message: '看看我的资产', trace_id: 't-1', context: { customer: 'c-1' } }))
 
-    expect(request).toEqual({ agentId: 'finance', userId: 'u-1', message: '看看我的资产', sessionId: undefined, messageId: undefined, traceId: 't-1', stream: false, context: { customer: 'c-1' } })
+    expect(request).toEqual({ agentId: 'finance', userId: 'u-1', message: '看看我的资产', sessionId: undefined, messageId: undefined, traceId: 't-1', stream: false, context: { customer: 'c-1' }, history: undefined })
+  })
+
+  it('reads history as the caller sent it when the request has a trace id, and refuses it without one', () => {
+    const history = [{ role: 'user', traceId: 'trace-0001', parts: [{ type: 'text', text: '看看资产' }] }, { role: 'assistant', traceId: 'trace-0001', parts: [{ text: '总额 100' }] }]
+
+    const request = parseChatRequest(JSON.stringify({ agent_id: 'finance', user_id: 'u-1', message: '继续', trace_id: 't-3', history }))
+
+    expect(request.history).toEqual(history)
+    expect(() => parseChatRequest(JSON.stringify({ agent_id: 'finance', user_id: 'u-1', message: '继续', history }))).toThrow(expect.objectContaining({ code: 'invalid_request', status: 400, message: 'trace_id: required with history' }) as Error)
+    expect(() => parseChatRequest(JSON.stringify({ agent_id: 'finance', user_id: 'u-1', message: '继续', trace_id: 't-3', history: { role: 'user' } }))).toThrow(ChatApiError)
   })
 
   it('refuses a body that is not JSON, a blank message, an unknown field, or another protocol, naming the problem', () => {
@@ -47,7 +57,7 @@ describe('parseChatRequest', () => {
 
     expect(refusal('{').message).toBe('the body is not JSON')
     expect(refusal(JSON.stringify({ agent_id: 'finance', user_id: 'u-1', message: '  ' }))).toMatchObject({ code: 'invalid_request', status: 400, message: 'message: message must not be blank' })
-    expect(refusal(JSON.stringify({ agent_id: 'finance', user_id: 'u-1', message: 'hi', history: [] })).code).toBe('invalid_request')
+    expect(refusal(JSON.stringify({ agent_id: 'finance', user_id: 'u-1', message: 'hi', channel: 'app' })).code).toBe('invalid_request')
     expect(refusal(JSON.stringify({ agent_id: 'finance', user_id: 'u-1', message: 'hi', protocol: 'internal' })).code).toBe('invalid_request')
   })
 })

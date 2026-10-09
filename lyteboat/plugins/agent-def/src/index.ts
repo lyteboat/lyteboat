@@ -18,9 +18,9 @@ import type { Config as DshPersonaConfig } from '@deepseek-ai/dsh-persona'
 import type { Scoped } from '@deepseek-ai/dsh-scope'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type { A2uiService, RenderToolOptions } from '@lyteboat/a2ui'
-import type { AuxLlmService } from '@lyteboat/aux-llm'
 import type { LyteboatAgentDefIdentity, LyteboatInheritedToolVisibility, LyteboatToolMeta } from '@lyteboat/contracts'
-import type { LyteboatAdmission } from '@lyteboat/intake-guard'
+import type { LyteboatAdmission } from '@lyteboat/request-admission'
+import type { ModelSideCallService } from '@lyteboat/model-side-call'
 import type { RequestContextService } from '@lyteboat/request-context'
 import type { SkillRouterSettings } from '@lyteboat/skill-router'
 import type { LyteboatToolPolicy, ToolPolicyService } from '@lyteboat/tool-policy'
@@ -76,7 +76,7 @@ export interface LyteboatAgentHost {
   /** Renders a card from a templates directory. */
   readonly a2ui: Pick<A2uiService, 'renderCard'>
   /** Side model calls (an admission classifier), each recorded in the session log. */
-  readonly auxLlm: Pick<AuxLlmService, 'generate'>
+  readonly modelSideCall: Pick<ModelSideCallService, 'generate'>
   /** The context of the request a message answers to. */
   readonly requestContext: Pick<RequestContextService, 'contextOf'>
   /** Makes declared `auto` tools visible to one agent instance, such as from a `lyteboat/pre-assemble` listener. */
@@ -100,7 +100,7 @@ export interface LyteboatAgentDef {
   modelRequest?: LyteboatAgentModelRequest
   /** The agent's own tools, in registration order. */
   tools?: (host: LyteboatAgentHost) => readonly LyteboatAgentTool[]
-  /** The admission that answers a request before the loop runs. */
+  /** The admission that may answer a request at its turn's first step, without a model request. */
   admission?: (host: LyteboatAgentHost) => LyteboatAdmission
   a2uiRenderTool?: LyteboatAgentA2uiRenderTool
   eventListeners?: (host: LyteboatAgentHost) => LyteboatAgentEventListeners
@@ -126,10 +126,10 @@ function injectedServicesOf(agentDef: LyteboatAgentDef): string[] {
   if (agentDef.skillDirs === undefined || agentDef.skillDirs.length > 0) services.add('skills')
   if (agentDef.skillRouting !== undefined) services.add('skillRouter')
   if (agentDef.toolPolicy !== undefined || hasHostHook) services.add('toolPolicy')
-  if (agentDef.admission !== undefined) services.add('intakeGuard')
+  if (agentDef.admission !== undefined) services.add('requestAdmission')
   if (agentDef.a2uiRenderTool !== undefined || hasHostHook) services.add('a2ui')
   if (hasHostHook) {
-    services.add('auxLlm')
+    services.add('modelSideCall')
     services.add('requestContext')
   }
   return [...services]

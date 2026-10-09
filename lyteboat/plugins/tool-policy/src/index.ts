@@ -11,11 +11,12 @@
  *   agent's restriction is recomputed after every `lyteboat/pre-assemble` and
  *   reissued only when the denied set changed;
  * - state: a tool registered with `stateDelta` carries its delta on the
- *   result's presentation meta (`meta.lyteboat.stateDelta`); the `lyteboatState`
- *   projection folds it straight from the `tool/result` node (successful,
- *   top-level calls only) and renders it to the model as the `lyteboat:state`
- *   runtime context. No lyteboat node is written: dsh's persistence refuses logs
- *   with event types it does not know.
+ *   result's presentation meta (`meta.lyteboat.stateDelta`), and a delta the
+ *   state cannot hold fails the call instead; the `lyteboatState` projection
+ *   folds it straight from the `tool/result` node (successful, top-level calls
+ *   only) and renders it to the model as the `lyteboat:state` runtime context.
+ *   No lyteboat node is written: dsh's persistence refuses logs with event
+ *   types it does not know.
  *
  * Only inherited tools can be hidden — dsh's `restrict` never filters an
  * agent's own layer — so register and declare through the host or a preset
@@ -33,7 +34,7 @@ import type {} from '@deepseek-ai/dsh-session-projection'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { LYTEBOAT_STATE_CONTEXT_ORDER } from '@lyteboat/contracts'
 import type { LyteboatInheritedToolVisibility, LyteboatToolMeta, JsonValue } from '@lyteboat/contracts'
-import { lyteboatStateProjectionDefinition, isJsonObject, renderLyteboatState } from './state.ts'
+import { lyteboatStateProjectionDefinition, isJsonObject, mergeStateDelta, renderLyteboatState } from './state.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -82,6 +83,9 @@ function withStateDelta(definition: ToolDefinition, stateDelta: NonNullable<Lyte
         // dsh refuses an undefined presentation meta, so a call with neither a delta
         // nor a meta of the tool's own records an empty object.
         if (delta === undefined) return base ?? {}
+        // The lyteboatState fold refuses a delta it cannot merge, and a refused result
+        // stops every projection of the session; thrown here, dsh fails the call instead.
+        mergeStateDelta({}, delta)
         if (base === undefined) return { lyteboat: { stateDelta: delta } }
         // A tool's own `lyteboat` object (a rendered card) merges with the delta instead of losing it.
         if (isJsonObject(base)) return { ...base, lyteboat: { ...isJsonObject(base['lyteboat']) ? base['lyteboat'] : {}, stateDelta: delta } }

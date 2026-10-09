@@ -27,8 +27,8 @@
     "@deepseek-ai/dsh-tools": "workspace:*"
   },
   "devDependencies": {
-    "@lyteboat/aux-llm": "workspace:*",
     "@lyteboat/distro": "workspace:*",
+    "@lyteboat/model-side-call": "workspace:*",
     "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis",

@@ -29,6 +29,18 @@ describe('the request on a human message', () => {
     expect(ctx.requestContext.requestOf(plain)).toBeUndefined()
   })
 
+  it('adds a verdict beside the request a message carries, and gives a bare message a request of its own', async () => {
+    const ctx = await harness(new MockAdapter([]))
+    const verdict = { by: 'gate', decision: 'reply' as const, text: '帮不了。' }
+
+    const carried = ctx.requestContext.withIntake(ctx.requestContext.message('看看我的资产', { requestId: 'r-1', context: { customer: 'c-1' } }), verdict)
+    const bare = ctx.requestContext.withIntake(createUserMessage({ content: [{ type: 'text', text: '你好' }], source: { kind: 'user' } }), verdict)
+
+    expect(carried.source).toEqual({ kind: 'user', lyteboatRequest: { requestId: 'r-1', context: { customer: 'c-1' }, intake: verdict } })
+    expect(carried.content).toEqual([{ type: 'text', text: '看看我的资产' }])
+    expect(bare.source).toEqual({ kind: 'user', lyteboatRequest: { intake: verdict } })
+  })
+
   it('rejects a malformed request and reads nothing from another kind of source', () => {
     const malformed = createUserMessage({ content: [], source: { kind: 'user', lyteboatRequest: { context: 'not an object' } } as never })
     const otherKind = createUserMessage({ content: [], source: { kind: 'runtime-context', lyteboatRequest: { context: {} } } as never })

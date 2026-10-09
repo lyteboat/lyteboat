@@ -8,29 +8,33 @@ const ANNOUNCE_PLUGIN = fileURLToPath(new URL('./fixtures/plugins/announce.mjs',
 
 const parse = (argv: string[]) => parseLyteboatArgs(argv, { lyteboat: '0.0.1', dsh: '0.0.0-test' })
 
-/** Capture the process exit code while muting Commander's output. */
-function exitCode(argv: string[]): number {
+/** Capture the process exit code and what Commander wrote to stderr, muting its output. */
+function exitOf(argv: string[]): { code: number; stderr: string } {
   const exit = vi.spyOn(process, 'exit').mockImplementation(() => { throw new Error('exit') })
   vi.spyOn(process.stdout, 'write').mockReturnValue(true)
-  vi.spyOn(process.stderr, 'write').mockReturnValue(true)
+  let stderr = ''
+  vi.spyOn(process.stderr, 'write').mockImplementation((chunk: string | Uint8Array) => { stderr += String(chunk); return true })
   try {
     parse(argv)
     throw new Error(`expected ${JSON.stringify(argv)} to exit`)
   } catch {
-    return exit.mock.calls.at(-1)?.[0] as number
+    return { code: exit.mock.calls.at(-1)?.[0] as number, stderr }
   } finally {
     vi.restoreAllMocks()
   }
 }
 
+const exitCode = (argv: string[]): number => exitOf(argv).code
+
 afterEach(() => { vi.restoreAllMocks() })
 
 describe('parseLyteboatArgs', () => {
-  it('boots the business one-shot when the inner arguments name an agent, with them handed to the app verbatim', () => {
-    expect(parse(['headless', '--agents', './agents', '--agent', 'finance', 'summarize', 'this']))
-      .toEqual({ mode: 'profile', profile: 'headless-agent', plugins: [], patches: [], args: ['--agents', './agents', '--agent', 'finance', 'summarize', 'this'] })
-    expect(parse(['headless', '--patch', 'a.yml', '--patch', 'b.yml', '--agent=finance', 'hello']))
-      .toEqual({ mode: 'profile', profile: 'headless-agent', plugins: [], patches: ['a.yml', 'b.yml'], args: ['--agent=finance', 'hello'] })
+  it('refuses a business agent on the one-shot, pointing to serve, unless a profile is named', () => {
+    expect(exitOf(['headless', '--agents', './agents', '--agent', 'finance', 'summarize', 'this'])).toEqual({
+      code: 1,
+      stderr: 'error: lyteboat headless answers with dsh\'s own agent and runs no business agent; serve one with lyteboat serve --agents <dir> and POST /chat, or run its eval cases with lyteboat eval\n',
+    })
+    expect(exitCode(['headless', '--patch', 'a.yml', '--agent=finance', 'hello'])).toBe(1)
     expect(parse(['headless', '--profile', 'custom', '--agent', 'finance', 'hello']))
       .toEqual({ mode: 'profile', profile: 'custom', plugins: [], patches: [], args: ['--agent', 'finance', 'hello'] })
   })
@@ -76,11 +80,11 @@ describe('parseLyteboatArgs', () => {
   })
 
   it('resolves config dumps', () => {
-    expect(parse(['config', 'dump'])).toEqual({ mode: 'dump-config', profile: 'headless-agent', defaultOnly: false, patches: [], plugins: [] })
+    expect(parse(['config', 'dump'])).toEqual({ mode: 'dump-config', profile: 'serve', defaultOnly: false, patches: [], plugins: [] })
     expect(parse(['config', 'dump', '--profile', 'studio', '--default']))
       .toEqual({ mode: 'dump-config', profile: 'studio', defaultOnly: true, patches: [], plugins: [] })
     expect(parse(['config', 'dump', '--patch', 'x.yml']))
-      .toEqual({ mode: 'dump-config', profile: 'headless-agent', defaultOnly: false, patches: ['x.yml'], plugins: [] })
+      .toEqual({ mode: 'dump-config', profile: 'serve', defaultOnly: false, patches: ['x.yml'], plugins: [] })
   })
 
   it('exits on usage errors, help, and version', () => {

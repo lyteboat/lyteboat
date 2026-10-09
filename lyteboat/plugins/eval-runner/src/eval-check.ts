@@ -6,7 +6,7 @@
  */
 
 import { isDeepStrictEqual } from 'node:util'
-import type { JsonValue, LyteboatTurnOutcome } from '@lyteboat/contracts'
+import type { JsonValue, LyteboatTurnOutcomeKind } from '@lyteboat/contracts'
 import type { EvalExpect } from './eval-case.ts'
 
 /** What one turn showed, read from the session after it ended. */
@@ -17,7 +17,7 @@ export interface EvalObservation {
   tools: string[]
   /** The areas of the cards the turn shows, in order. */
   cards: string[]
-  outcome: LyteboatTurnOutcome
+  outcome: LyteboatTurnOutcomeKind
   /** The answer text, cards left out. */
   text: string
   /** The model calls the loop made in the turn. */

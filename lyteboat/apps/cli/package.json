@@ -15,7 +15,6 @@
   "dependencies": {
     "@lyteboat/base": "workspace:*",
     "@lyteboat/eval": "workspace:*",
-    "@lyteboat/headless": "workspace:*",
     "@lyteboat/inspect": "workspace:*",
     "@lyteboat/serve": "workspace:*",
     "@lyteboat/studio": "workspace:*",

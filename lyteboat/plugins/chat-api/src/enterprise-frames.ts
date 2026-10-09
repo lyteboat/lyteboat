@@ -7,7 +7,7 @@
  * @module @lyteboat/chat-api/enterprise-frames
  */
 
-import type { JsonValue, LyteboatTurnOutcome } from '@lyteboat/contracts'
+import type { JsonValue, LyteboatTurnOutcomeKind } from '@lyteboat/contracts'
 
 /** The events of an enterprise stream. */
 export type ChatEnterpriseEvent =
@@ -134,7 +134,7 @@ export class ChatEnterpriseWriter {
   }
 
   /** The turn ended: close what is open, then `run_finished`. */
-  finish(outcome: LyteboatTurnOutcome): void {
+  finish(outcome: LyteboatTurnOutcomeKind): void {
     if (this.finished) return
     this.closeText()
     this.closeReasoning()

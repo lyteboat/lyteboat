@@ -12,7 +12,7 @@
  */
 
 import { Fragment, useMemo, useState } from 'react'
-import type { LyteboatTurnOutcome } from '@lyteboat/contracts'
+import type { LyteboatTurnOutcomeKind } from '@lyteboat/contracts'
 import type { StudioEvalCaseResult, StudioEvalRun, StudioEvalTurnResult } from '@lyteboat/contracts/studio'
 import { formatStudioEvalTurnsPassed } from './studio-evals-format.ts'
 import { StudioEvalsEmpty, StudioEvalsFilterChip, StudioEvalsStatusPill } from './studio-evals-primitives.tsx'
@@ -21,7 +21,7 @@ import { CheckIcon, CloseIcon } from './studio-icons.tsx'
 
 type StudioEvalsCaseFilter = 'all' | 'passed' | 'failed'
 
-const STUDIO_EVAL_OUTCOME_PILL: Record<LyteboatTurnOutcome, string> = {
+const STUDIO_EVAL_OUTCOME_PILL: Record<LyteboatTurnOutcomeKind, string> = {
   completed: 'evals-pill-ok',
   rejected: 'evals-pill-warn',
   tool_stopped: 'evals-pill-info',

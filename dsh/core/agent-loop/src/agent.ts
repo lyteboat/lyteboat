@@ -33,7 +33,7 @@ import { joinContextSections, renderContextSections, renderPrompt } from '@deeps
 import type { PromptAssembly } from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-session-projection'
 import type { Context } from '@deepseek-ai/cordis'
-import { appendLyteboatIntakeReply } from './lyteboat/intake-reply.ts'
+import { appendLyteboatIntakeReply, lyteboatIntakeMessages } from './lyteboat/intake-reply.ts'
 import type { LyteboatIntakeDecision, LyteboatIntakeReply } from './lyteboat/step-hooks.ts'
 import { ReactLoopInbox } from './inbox.ts'
 import { RuntimeContextProjection } from './runtime-context.ts'
@@ -281,7 +281,7 @@ export class ReactLoopAgent implements Agent {
       (): Promise<LyteboatIntakeDecision> => Promise.resolve<LyteboatIntakeDecision>({ kind: 'pass' }),
     )
     signal.throwIfAborted()
-    if (intake.kind === 'reply') return { kind: 'reply', messages: claimed, reply: intake }
+    if (intake.kind === 'reply') return { kind: 'reply', messages: lyteboatIntakeMessages(claimed, intake), reply: intake }
     await this.dispatch.waterfall(
       'lyteboat/pre-assemble', { messages: claimed, ...position, signal },
       (): Promise<void> => Promise.resolve(),

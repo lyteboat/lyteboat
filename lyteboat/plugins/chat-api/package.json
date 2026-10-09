@@ -3,7 +3,7 @@
   "version": "0.0.1",
   "private": true,
   "license": "MIT",
-  "description": "lyteboat's /chat endpoint on the host web server: a caller's message reaches an agent through dsh's session controller with its request on the source, and the answer returns as JSON or an enterprise event stream with cards placed",
+  "description": "lyteboat's /chat endpoint on the host web server: a caller's message reaches an agent through dsh's session controller with its request on the source, after the history it brings is queued as turns of their own, and the answer returns as JSON or an enterprise event stream with cards placed",
   "type": "module",
   "exports": {
     ".": {
@@ -17,7 +17,9 @@
     "@lyteboat/a2ui": "workspace:*",
     "@lyteboat/agent-catalog": "workspace:*",
     "@lyteboat/contracts": "workspace:*",
+    "@lyteboat/history-import": "workspace:*",
     "@lyteboat/request-context": "workspace:*",
+    "@lyteboat/turn-outcome": "workspace:*",
     "@deepseek-ai/dsh-brand": "catalog:dsh",
     "@deepseek-ai/dsh-credentials": "catalog:dsh",
     "@deepseek-ai/dsh-scope": "catalog:dsh",

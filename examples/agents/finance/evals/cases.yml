@@ -66,6 +66,7 @@ cases:
     turns:
       - message: 看看我的资产
         expect:
+          cards: { areas: [unauthorized] }
           outcome: rejected
           model_requests: { max: 0 }
           text: { includes: [授权] }

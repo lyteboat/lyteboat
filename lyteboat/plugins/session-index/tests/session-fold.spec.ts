@@ -5,9 +5,16 @@
  * compaction and pruning, and imported history.
  */
 import { describe, expect, it } from 'vitest'
+import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
 import type { LyteboatRequest } from '@lyteboat/contracts'
-import { foldSession, SESSION_SLOW_CALL_MS } from '../src/session-fold.ts'
+import { foldTurnOutcomes } from '@lyteboat/turn-outcome'
+import { foldSession as foldSessionWith, SESSION_SLOW_CALL_MS } from '../src/session-fold.ts'
 import { SessionLogBuilder } from './session-log-builder.ts'
+
+/** The fold the session index makes: the turns' outcomes come from the turn outcome's fold of the same log. */
+function foldSession(header: SessionHeader, inherited: number, events: readonly SessionEvent[]): ReturnType<typeof foldSessionWith> {
+  return foldSessionWith(header, inherited, events, foldTurnOutcomes(inherited, events))
+}
 
 const request = (id: string, extra: Partial<LyteboatRequest> = {}): LyteboatRequest => ({ requestId: id, owner: { kind: 'user', id: 'alice' }, traceId: `trace-${id}`, context: { customer: 'c1' }, ...extra })
 const CARD = { surfaceId: 's-1', area: 'overview', emission: 'immediate', payload: { title: 'x' } }
@@ -106,6 +113,18 @@ describe('foldSession', () => {
     expect(items.filter(item => item.kind === 'user').map(item => item.kind === 'user' && item.imported)).toEqual([true, false])
     expect(items.find(item => item.kind === 'assistant')).toMatchObject({ imported: true, answeredByAdmission: true })
     expect(summary).toMatchObject({ seeded: true, rejectedCount: 0, owner: { kind: 'operator', id: 'cli' }, firstMessage: '上次的问题', lastUserMessage: '继续' })
+  })
+
+  it('marks a queued round\'s turn as imported history in a session no seed started, and leaves it out of the counts', () => {
+    const log = new SessionLogBuilder(1_000)
+      .turnStart().stepStart().user('现在的问题', request('r1')).stepStart().assistant('现在的回答').turnEnd()
+      .turnStart().stepStart().imported('上次的问题').assistant('上次的回答', { byAdmission: true }).turnEnd()
+
+    const { summary, items } = foldSession(log.header('s1', '/w'), 0, log.events)
+
+    expect(items.filter(item => item.kind === 'assistant').map(item => item.kind === 'assistant' && [item.imported, item.answeredByAdmission])).toEqual([[false, false], [true, true]])
+    expect(items.filter(item => item.kind === 'turn-end').map(item => item.kind === 'turn-end' && item.outcome)).toEqual(['completed', 'completed'])
+    expect(summary).toMatchObject({ seeded: false, rejectedCount: 0, turnCount: 2 })
   })
 
   it('shows a person\'s late answer to a question as their message, in the counts and the search', () => {

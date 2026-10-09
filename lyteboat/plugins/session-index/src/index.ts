@@ -26,6 +26,7 @@ import type {
   StudioSessionsAnswer,
   StudioSessionSummary,
 } from '@lyteboat/contracts/studio'
+import type {} from '@lyteboat/turn-outcome'
 import { foldSession, type SessionSearchFacts } from './session-fold.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -83,7 +84,7 @@ function matchOf(session: IndexedSession, text: string): Pick<StudioSessionMatch
 
 /** Host service: an agent's stored sessions, read only. */
 export class SessionIndexService extends Service {
-  static inject = ['sessionPersistence', 'agentCatalog']
+  static inject = ['sessionPersistence', 'agentCatalog', 'turnOutcome']
 
   private readonly folds = new Map<string, { revision: SessionPersistenceRevision; session: IndexedSession }>()
   private readonly listings = new Map<string, { at: number; sessions: IndexedSession[] }>()
@@ -137,7 +138,7 @@ export class SessionIndexService extends Service {
   async detail(agentId: string, sessionId: string): Promise<StudioSessionDetail | undefined> {
     const stored = await this.storedOf(agentId, sessionId)
     if (stored === undefined) return undefined
-    const folded = foldSession(stored.header, stored.inheritedEventCount, stored.events)
+    const folded = this.fold(stored)
     return this.belongs(folded, agentId) ? { summary: folded.summary, items: folded.items } : undefined
   }
 
@@ -150,9 +151,14 @@ export class SessionIndexService extends Service {
   async raw(agentId: string, sessionId: string): Promise<StudioSessionRaw | undefined> {
     const stored = await this.storedOf(agentId, sessionId)
     if (stored === undefined) return undefined
-    if (!this.belongs(foldSession(stored.header, stored.inheritedEventCount, stored.events), agentId)) return undefined
+    if (!this.belongs(this.fold(stored), agentId)) return undefined
     // Headers and events are lossless JSON by dsh's storage contract; the cast only widens their static types.
     return { header: stored.header as unknown as JsonValue, inheritedEventCount: stored.inheritedEventCount, events: stored.events as unknown as JsonValue[] }
+  }
+
+  /** One stored session folded, its turns' outcomes as the turn outcome folds the same log. */
+  private fold(stored: StoredSession): ReturnType<typeof foldSession> {
+    return foldSession(stored.header, stored.inheritedEventCount, stored.events, this.ctx.turnOutcome.fold(stored.inheritedEventCount, stored.events))
   }
 
   /**
@@ -196,7 +202,7 @@ export class SessionIndexService extends Service {
     if (cached?.revision === snapshot.revision) return cached.session
     const stored = await this.read(snapshot.header.id)
     if (stored === undefined) return undefined
-    const { summary, search } = foldSession(stored.header, stored.inheritedEventCount, stored.events)
+    const { summary, search } = this.fold(stored)
     const session = { summary, search }
     this.folds.set(snapshot.header.id, { revision: snapshot.revision, session })
     return session

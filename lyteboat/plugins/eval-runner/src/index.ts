@@ -107,7 +107,7 @@ function replaySourceOf(options: EvalRunOptions): string {
 
 /** Host service: run an agent's eval cases, compare two runs, and release an agent. */
 export class EvalRunnerService extends Service {
-  static inject = ['sessionController', 'agentCatalog', 'requestContext', 'a2ui', 'llm']
+  static inject = ['sessionController', 'agentCatalog', 'requestContext', 'a2ui', 'turnOutcome', 'llm']
   // The loader applies a class plugin's static Config, not the module's.
   static Config = Config
 
