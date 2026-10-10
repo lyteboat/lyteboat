@@ -7,7 +7,7 @@ import { ChatApiError, parseChatRequest } from '../src/chat-request.ts'
 import { isChatSessionOwner } from '../src/chat-session-owner.ts'
 import { ChatEnterpriseWriter, sseFrame, type ChatEnterpriseFrame, type ChatFrameDecorator } from '../src/enterprise-frames.ts'
 
-const context = { agentId: 'finance', sessionId: 'session-1', messageId: 'm-1', userId: 'u-1' }
+const context = { agentId: 'finance', sessionId: 'session-1', messageId: 'm-1', owner: { kind: 'user' as const, id: 'u-1' } }
 
 function writer(decorators: readonly ChatFrameDecorator[] = []): { frames: ChatEnterpriseFrame[]; write: ChatEnterpriseWriter } {
   const frames: ChatEnterpriseFrame[] = []
@@ -15,16 +15,21 @@ function writer(decorators: readonly ChatFrameDecorator[] = []): { frames: ChatE
 }
 
 describe('isChatSessionOwner', () => {
-  it('lets the end user who owns a session continue it', () => {
-    expect(isChatSessionOwner({ kind: 'user', id: 'u-1' }, 'u-1')).toBe(true)
+  const user = { kind: 'user', id: 'u-1' } as const
+  const operator = { kind: 'operator', id: 'carol' } as const
+
+  it('lets the owner who started a session continue it: an end user, or a Studio account', () => {
+    expect(isChatSessionOwner({ kind: 'user', id: 'u-1' }, user)).toBe(true)
+    expect(isChatSessionOwner({ kind: 'operator', id: 'carol' }, operator)).toBe(true)
   })
 
-  it('refuses another user, an operator or system owner of the same id, and a session without an owner', () => {
-    expect(isChatSessionOwner({ kind: 'user', id: 'u-2' }, 'u-1')).toBe(false)
-    expect(isChatSessionOwner({ kind: 'operator', id: 'u-1' }, 'u-1')).toBe(false)
-    expect(isChatSessionOwner({ kind: 'system', id: 'u-1' }, 'u-1')).toBe(false)
-    expect(isChatSessionOwner(null, 'u-1')).toBe(false)
-    expect(isChatSessionOwner(undefined, 'u-1')).toBe(false)
+  it('refuses another owner, the same id under another kind, and a session without an owner', () => {
+    expect(isChatSessionOwner({ kind: 'user', id: 'u-2' }, user)).toBe(false)
+    expect(isChatSessionOwner({ kind: 'operator', id: 'u-1' }, user)).toBe(false)
+    expect(isChatSessionOwner({ kind: 'user', id: 'carol' }, operator)).toBe(false)
+    expect(isChatSessionOwner({ kind: 'system', id: 'u-1' }, user)).toBe(false)
+    expect(isChatSessionOwner(null, user)).toBe(false)
+    expect(isChatSessionOwner(undefined, operator)).toBe(false)
   })
 })
 
@@ -32,7 +37,7 @@ describe('parseChatRequest', () => {
   it('reads the request fields, with stream off unless asked', () => {
     const request = parseChatRequest(JSON.stringify({ agent_id: 'finance', user_id: 'u-1', message: '看看我的资产', trace_id: 't-1', context: { customer: 'c-1' } }))
 
-    expect(request).toEqual({ agentId: 'finance', userId: 'u-1', message: '看看我的资产', sessionId: undefined, messageId: undefined, traceId: 't-1', stream: false, context: { customer: 'c-1' }, history: undefined })
+    expect(request).toEqual({ agentId: 'finance', owner: { kind: 'user', id: 'u-1' }, message: '看看我的资产', sessionId: undefined, messageId: undefined, traceId: 't-1', stream: false, context: { customer: 'c-1' }, history: undefined })
   })
 
   it('reads history as the caller sent it when the request has a trace id, and refuses it without one', () => {

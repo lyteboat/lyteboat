@@ -217,3 +217,22 @@ export function PlayIcon(props: StudioIconProps) {
     </StudioIconBase>
   )
 }
+
+export function SendIcon(props: StudioIconProps) {
+  return (
+    <StudioIconBase {...props}>
+      <path d="M12 19V5" />
+      <path d="m5 12 7-7 7 7" />
+    </StudioIconBase>
+  )
+}
+
+export function HistoryIcon(props: StudioIconProps) {
+  return (
+    <StudioIconBase {...props}>
+      <path d="M3 12a9 9 0 1 0 3-6.7L3 8" />
+      <path d="M3 3v5h5" />
+      <path d="M12 7v5l3 2" />
+    </StudioIconBase>
+  )
+}

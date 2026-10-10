@@ -9,6 +9,7 @@
     { "path": "../../core/contracts" },
     { "path": "../agent-catalog" },
     { "path": "../agent-inspector" },
+    { "path": "../chat-api" },
     { "path": "../eval-runner" },
     { "path": "../session-index" },
     { "path": "../studio-auth" },
