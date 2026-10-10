@@ -9,6 +9,7 @@
 import type {
   StudioAgentsAnswer,
   StudioAuthConfigAnswer,
+  StudioChatRequest,
   StudioDashboardHealth,
   StudioDashboardRunning,
   StudioDashboardSummary,
@@ -90,6 +91,30 @@ async function studioCall<T>(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: st
     throw await studioErrorOf(response)
   }
   return await response.json() as T
+}
+
+/** POST a request whose answer is an event stream; a refusal throws as a JSON call's does. */
+async function studioStream(path: string, body: unknown, signal: AbortSignal): Promise<ReadableStream<Uint8Array>> {
+  let response: Response
+  try {
+    response = await fetch(`/api/studio/${path}`, {
+      method: 'POST',
+      headers: {
+        ...studioApiSession.token === undefined ? {} : { authorization: `Bearer ${studioApiSession.token}` },
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify(body),
+      signal,
+    })
+  } catch (error: unknown) {
+    if (signal.aborted) throw error
+    throw new StudioApiCallError(0, 'unreachable', `the Studio did not answer: ${error instanceof Error ? error.message : String(error)}`)
+  }
+  if (!response.ok || response.body === null) {
+    if (response.status === 401) studioApiSession.unauthorized()
+    throw await studioErrorOf(response)
+  }
+  return response.body
 }
 
 /** One page of the Users table. */
@@ -190,6 +215,8 @@ export const studioApi = {
   dashboardHealth: (query: StudioDashboardHealthQuery) => studioCall<StudioDashboardHealth>('GET', `dashboard/health?${studioQueryString(query)}`),
   dashboardSummary: () => studioCall<StudioDashboardSummary>('GET', 'dashboard/summary'),
   dashboardRunning: () => studioCall<StudioDashboardRunning>('GET', 'dashboard/running'),
+  /** Editors and admins: one test-window message; the stream is the turn's enterprise frames. */
+  chat: (agentId: string, request: StudioChatRequest, signal: AbortSignal) => studioStream(`${studioAgentPath(agentId)}/chat`, request, signal),
   evalCases: (agentId: string) => studioCall<StudioEvalCasesAnswer>('GET', `${studioAgentPath(agentId)}/evals/cases`),
   /** Newest first. */
   evalRuns: (agentId: string) => studioCall<StudioEvalRunsAnswer>('GET', `evals/runs?${studioQueryString({ agent: agentId })}`),

@@ -592,7 +592,6 @@ export const lyteboatTurnOutcomesStateSchema: z.ZodType<LyteboatTurnOutcomesStat
   turns: z.array(lyteboatTurnOutcomeSchema),
 })
 
-
 /** The events of a `/chat` enterprise stream (AGUI envelopes); the Studio's test window reads the same stream. */
 export type ChatEnterpriseEvent =
   | 'run_started'

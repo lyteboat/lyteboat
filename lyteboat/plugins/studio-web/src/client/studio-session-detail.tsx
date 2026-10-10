@@ -105,7 +105,7 @@ function StudioSessionHeader({ summary, traceId, traceTemplate, rawOpen, onRaw, 
 }
 
 /** The detail of the session `sessionId`. */
-export function StudioSessionPane({ agentId, sessionId, traceTemplate }: { agentId: string; sessionId: string; traceTemplate: string | undefined }) {
+export function StudioSessionPane({ agentId, sessionId, traceTemplate, focusTurn }: { agentId: string; sessionId: string; traceTemplate: string | undefined; focusTurn?: number | undefined }) {
   const detail = useStudioCall(useCallback(() => studioApi.sessionDetail(agentId, sessionId), [agentId, sessionId]))
   const [rawOpen, setRawOpen] = useState(false)
   const [expanded, setExpanded] = useState<ReadonlySet<number>>(() => new Set())
@@ -129,7 +129,7 @@ export function StudioSessionPane({ agentId, sessionId, traceTemplate }: { agent
           ? <StudioSessionRawView agentId={agentId} sessionId={sessionId} />
           : (
             <div className="timeline-column">
-              <StudioSessionTimeline expanded={expanded} items={detail.answer.items} onToggle={toggle} traceTemplate={traceTemplate} />
+              <StudioSessionTimeline expanded={expanded} focusTurn={focusTurn} items={detail.answer.items} onToggle={toggle} traceTemplate={traceTemplate} />
             </div>
           )}
       </div>
