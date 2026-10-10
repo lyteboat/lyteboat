@@ -12,10 +12,12 @@
 # studio-auth signs people in (Studio's own accounts, or an authorizing
 # gateway), studio-api answers /api/studio on it, and studio-web serves the
 # pages at /studio. An eval run the Studio starts is a `lyteboat eval`
-# process of the launcher's bin. No session controller or client connection
-# is mounted, so dsh's /api/remote.mux is not served and Studio never creates
-# or continues a session. The last row reports the listener once the catalog
-# is ready.
+# process of the launcher's bin. The test window answers through dsh's
+# session controller (workspace, connection, and file upload are its host
+# services) and chat-api without its routes: studio-api's chat route runs each
+# turn under the editor's account as an operator, into the store serve writes.
+# Studio serves no /chat, no dsh /api (studio-api answers it 404), and no
+# /api/remote.mux. The last row reports the listener once the catalog is ready.
 
 - insert:
     - id: lyteboat-studio-startup
@@ -41,6 +43,18 @@
     - id: session-index
       name: '@lyteboat/session-index'
 
+    - id: workspace
+      name: '@deepseek-ai/dsh-workspace'
+
+    - id: connection
+      name: '@deepseek-ai/dsh-client-connection'
+
+    - id: file-upload
+      name: '@deepseek-ai/dsh-client-file-upload'
+
+    - id: session-controller
+      name: '@deepseek-ai/dsh-api-session-controller'
+
     - id: turn-metrics-reader
       name: '@lyteboat/turn-metrics/reader'
 
@@ -53,6 +67,12 @@
       config:
         host: !!js ctx.lyteboatStudioStartup.host
         port: !!js ctx.lyteboatStudioStartup.port
+
+    # The test window's turns; Studio serves none of chat-api's routes.
+    - id: chat-api
+      name: '@lyteboat/chat-api'
+      config:
+        routes: false
 
     - id: studio-auth
       name: '@lyteboat/studio-auth'
@@ -82,6 +102,11 @@
 # The projection cache writes a projection back into a session's storage on
 # a cold read; Studio reads the sessions serve writes and must never write them.
 - id: session-projection-cache
+  disabled: true
+
+# The typed-RPC gateway mounts /api/remote.mux for dsh's own web client once
+# a client connection is mounted; the Studio has no such client.
+- id: typert-gateway
   disabled: true
 
 # A service applies the user layers at startup only, as serve does.

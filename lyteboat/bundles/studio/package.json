@@ -2,7 +2,7 @@
   "name": "@lyteboat/studio",
   "version": "0.1.0",
   "license": "MIT",
-  "description": "lyteboat's Studio workshop bundle over dsh-base and @lyteboat/base: the agents of the --agents directories inspected without running a session, behind Studio's own sign-in and roles, on /api/studio; `lyteboat studio account` manages the accounts",
+  "description": "lyteboat's Studio workshop bundle over dsh-base and @lyteboat/base: the agents of the --agents directories inspected, and tried in a test window, behind Studio's own sign-in and roles, on /api/studio; `lyteboat studio account` manages the accounts",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lyteboat/lyteboat.git",
@@ -36,6 +36,7 @@
   "dependencies": {
     "@lyteboat/agent-catalog": "workspace:*",
     "@lyteboat/agent-inspector": "workspace:*",
+    "@lyteboat/chat-api": "workspace:*",
     "@lyteboat/contracts": "workspace:*",
     "@lyteboat/eval-runner": "workspace:*",
     "@lyteboat/session-index": "workspace:*",
@@ -44,10 +45,14 @@
     "@lyteboat/studio-web": "workspace:*",
     "@lyteboat/turn-metrics": "workspace:*",
     "@deepseek-ai/dsh-agent-preset-registry": "catalog:dsh",
+    "@deepseek-ai/dsh-api-session-controller": "workspace:*",
     "@deepseek-ai/dsh-app-boot": "catalog:dsh",
+    "@deepseek-ai/dsh-client-connection": "catalog:dsh",
+    "@deepseek-ai/dsh-client-file-upload": "catalog:dsh",
     "@deepseek-ai/dsh-cmdline": "catalog:dsh",
     "@deepseek-ai/dsh-home-paths": "catalog:dsh",
     "@deepseek-ai/dsh-host-webserver": "catalog:dsh",
+    "@deepseek-ai/dsh-workspace": "catalog:dsh",
     "commander": "catalog:"
   },
   "peerDependencies": {

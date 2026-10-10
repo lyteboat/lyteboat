@@ -232,10 +232,10 @@ export const lyteboatIntakeVerdictSchema: z.ZodType<LyteboatIntakeVerdict> = z.o
 
 /**
  * Who a request comes from: `user`, an end user the caller names (`/chat`'s
- * `user_id`); `operator`, a person at a lyteboat surface (an older
- * lyteboat's command line wrote it; no surface writes it now); `system`,
- * lyteboat itself (an eval run). Only a `user`
- * owner can continue a session over `/chat`. Not dsh's `source.kind: 'user'`,
+ * `user_id`); `operator`, a person at a lyteboat surface (a Studio account
+ * in the test window); `system`, lyteboat itself (an eval run). Only the
+ * owner who started a session can continue it: a `user` over `/chat`, an
+ * `operator` in the Studio. Not dsh's `source.kind: 'user'`,
  * which says a human message came from the conversation's human side, whoever
  * sent it.
  */
@@ -591,6 +591,44 @@ export const lyteboatTurnOutcomesStateSchema: z.ZodType<LyteboatTurnOutcomesStat
   }),
   turns: z.array(lyteboatTurnOutcomeSchema),
 })
+
+
+/** The events of a `/chat` enterprise stream (AGUI envelopes); the Studio's test window reads the same stream. */
+export type ChatEnterpriseEvent =
+  | 'run_started'
+  | 'reasoning_start'
+  | 'reasoning_message_content'
+  | 'reasoning_end'
+  | 'text_message_start'
+  | 'text_message_content'
+  | 'text_message_end'
+  | 'run_finished'
+  | 'run_error'
+
+/** How a frame's `ui_data` is to be read. */
+export type ChatUiProtocol = 'text' | 'json' | 'A2UI'
+
+/** A frame's `data`: the fields the protocol owns, and whatever a decorator adds. */
+export interface ChatEnterpriseFrameData {
+  code: string
+  conversation_id: string
+  message_id: string
+  timestamp: string
+  ui_protocol: ChatUiProtocol
+  ui_data: JsonValue
+  turn: number
+  agent_name: string
+  extra?: { [key: string]: JsonValue }
+  [key: string]: JsonValue | undefined
+}
+
+/** One enterprise frame. */
+export interface ChatEnterpriseFrame {
+  protocol: 'AGUI'
+  id: number
+  event: ChatEnterpriseEvent
+  data: ChatEnterpriseFrameData
+}
 
 /**
  * One turn a service ran, as its turn-metrics recorder appends it to

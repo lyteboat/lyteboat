@@ -10,21 +10,26 @@
  * included. Changes made through the API are appended to the Studio's audit
  * log. The API reads the agents from `agentCatalog` and `agentInspector`,
  * their sessions from `sessionIndex`, serve's run metrics from
- * `turnMetricsReader`, and the eval runs and case files from `evalRecords`,
- * and runs nothing of theirs: Studio never creates, continues, or changes a
- * session. The one write to an agent is an admin's hot-fix of an existing
- * skill's SKILL.md; an eval run the Studio starts is a `lyteboat eval`
- * process of the launcher's bin (`lyteboatBin`), which a Studio the launcher
- * did not start has none of.
+ * `turnMetricsReader`, and the eval runs and case files from `evalRecords`.
+ * The one session an editor makes is a test-window session: while `chatApi`
+ * is mounted, `POST agents/:id/chat` answers through it under the editor's
+ * account as an operator, and a Studio without it has no such route; dsh's
+ * own `/api` (the client connection) answers 404 here, since the Studio's
+ * pages never use it. The one write to an agent is an admin's hot-fix of an
+ * existing skill's SKILL.md; an eval run the Studio starts is a `lyteboat
+ * eval` process of the launcher's bin (`lyteboatBin`), which a Studio the
+ * launcher did not start has none of.
  * @module @lyteboat/studio-api
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@lyteboat/agent-catalog'
 import type {} from '@lyteboat/agent-inspector'
+import type {} from '@lyteboat/chat-api'
 import type {} from '@lyteboat/contracts'
 import type {} from '@lyteboat/eval-runner/records'
 import type {} from '@lyteboat/session-index'
@@ -34,6 +39,7 @@ import { studioAgentRoutes } from './studio-agent-routes.ts'
 import { StudioApiRouter } from './studio-api-router.ts'
 import { StudioAudit } from './studio-audit.ts'
 import { studioAuthRoutes } from './studio-auth-routes.ts'
+import { studioChatRoutes } from './studio-chat-routes.ts'
 import { studioDashboardRoutes } from './studio-dashboard-routes.ts'
 import { StudioEvalJobs } from './studio-eval-jobs.ts'
 import { studioEvalRoutes } from './studio-eval-routes.ts'
@@ -127,5 +133,18 @@ export default class StudioApiRoutes {
       ...studioEvalRoutes({ catalog: ctx.agentCatalog, records: ctx.evalRecords, jobs, audit }),
     ])
     ctx.effect(() => ctx.webServer.register({ kind: 'prefix', path: STUDIO_API_PREFIX, handler: (request, response) => router.handle(request, response) }), 'studio-api: /api/studio')
+    ctx.inject(['chatApi'], (chatCtx) => {
+      chatCtx.effect(() => router.mount(studioChatRoutes(chatCtx.chatApi, audit)), 'studio-api: agents/:id/chat')
+    })
+    // The session controller needs the client connection, which mounts dsh's
+    // `/api` for dsh's own web client; the Studio has no such client, so a
+    // request there, a signed-in dsh cookie included, is answered 404. The
+    // listener refuses, so it does not call `next()`.
+    ctx.inject(['connection'], (connectionCtx) => {
+      connectionCtx.on('connection/request', async (_request, response) => {
+        response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff' })
+        response.end('not found')
+      })
+    })
   }
 }
