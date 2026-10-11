@@ -7,11 +7,12 @@
  * answer, or a tool call opens to its detail. Skill activations, side model
  * calls, compaction markers, and the turn's end (its outcome) are rows that do
  * not open. What a model wrote (its answers, its side calls) is marked for the
- * AI zone's colours.
+ * AI zone's colours. A focused turn (the test window's 看过程) is scrolled to
+ * and marked.
  * @module @lyteboat/studio-web/client/studio-session-timeline
  */
 
-import { Fragment, useMemo } from 'react'
+import { Fragment, useEffect, useMemo, useRef } from 'react'
 import type { LyteboatTurnOutcomeKind } from '@lyteboat/contracts'
 import type { StudioTimelineItem } from '@lyteboat/contracts/studio'
 import { ChevronRightIcon } from './studio-icons.tsx'
@@ -177,13 +178,13 @@ function StudioTimelineMain({ item }: { item: StudioTimelineItem }) {
   }
 }
 
-function StudioTimelineEntry({ item, open, onToggle, trace }: { item: StudioTimelineItem; open: boolean; onToggle(seq: number): void; trace: StudioTraceLink }) {
+function StudioTimelineEntry({ item, open, onToggle, trace, focused }: { item: StudioTimelineItem; open: boolean; onToggle(seq: number): void; trace: StudioTraceLink; focused: boolean }) {
   const opens = studioTimelineItemOpens(item)
   const gutter = studioTimelineGutter(item)
   const time = formatStudioSessionTime(item.time)
   const toggle = (): void => onToggle(item.seq)
   return (
-    <li className={`tlm-item ${item.kind} ${open ? 'active' : ''} ${opens ? '' : 'tlm-static'} ${studioTimelineItemByModel(item) ? 'tlm-ai' : ''}`}>
+    <li className={`tlm-item ${item.kind} ${open ? 'active' : ''} ${opens ? '' : 'tlm-static'} ${studioTimelineItemByModel(item) ? 'tlm-ai' : ''} ${focused ? 'tlm-focus' : ''}`}>
       <div
         aria-expanded={opens ? open : undefined}
         className={`tlm-row ${opens ? '' : 'tlm-static'}`}
@@ -211,26 +212,30 @@ function StudioTimelineEntry({ item, open, onToggle, trace }: { item: StudioTime
 /**
  * The timeline; `expanded` holds the `seq` of each open entry.
  * @param traceTemplate - the configured trace link, if any.
+ * @param focusTurn - a turn to scroll to and mark.
  */
-export function StudioSessionTimeline({ items, traceTemplate, expanded, onToggle }: {
+export function StudioSessionTimeline({ items, traceTemplate, expanded, onToggle, focusTurn }: {
   items: StudioTimelineItem[]
   traceTemplate: string | undefined
   expanded: ReadonlySet<number>
   onToggle(seq: number): void
+  focusTurn?: number | undefined
 }) {
   const turns = useMemo(() => studioTimelineTurns(items), [items])
   const traceIds = useMemo(() => studioTurnTraceIds(items), [items])
+  const focused = useRef<HTMLLIElement | null>(null)
+  useEffect(() => { focused.current?.scrollIntoView({ block: 'start' }) }, [focusTurn, turns])
   if (items.length === 0) return <div className="empty-surface">这个会话还没有消息。</div>
   return (
     <ol aria-label="Session timeline" className="timeline-main">
       {turns.map(group => (
         <Fragment key={group.firstSeq}>
-          <li className="tlm-turn-head">
+          <li className={`tlm-turn-head ${group.turn === focusTurn ? 'tlm-turn-focus' : ''}`} ref={group.turn === focusTurn ? focused : undefined}>
             <span>Turn {formatStudioSessionTurn(group.turn)}</span>
             {group.imported && <span className="tlm-turn-head-note">imported history</span>}
           </li>
           {group.items.map(item => (
-            <StudioTimelineEntry item={item} key={item.seq} onToggle={onToggle} open={expanded.has(item.seq)} trace={studioTraceLink(traceTemplate, traceIds.get(item.turn))} />
+            <StudioTimelineEntry focused={group.turn === focusTurn} item={item} key={item.seq} onToggle={onToggle} open={expanded.has(item.seq)} trace={studioTraceLink(traceTemplate, traceIds.get(item.turn))} />
           ))}
         </Fragment>
       ))}

@@ -5,7 +5,9 @@
  * the window, the toggles (applied to the rows read so far), the search text
  * (debounced; a search reads the server's matches instead of the list), and
  * the pages read. The selection is the URL's `?session=<id>` (else the newest
- * listed session), so a link opens a session even outside the window. The
+ * listed session), so a link opens a session even outside the window; a
+ * `&turn=<n>` with it (the test window's 看过程) scrolls to that turn and
+ * marks it, until another session is picked. The
  * trace link template is read once, and a Studio without one shows no links.
  * @module @lyteboat/studio-web/client/studio-agent-sessions
  */
@@ -84,6 +86,7 @@ export function StudioAgentSessions({ agentId }: { agentId: string }) {
   const [searchParams, setSearchParams] = useSearchParams()
   const [collapsed, toggleCollapsed] = useStudioRailCollapse('agent-sessions')
   const requested = searchParams.get('session')
+  const focusTurn = Number(searchParams.get('turn') ?? Number.NaN)
   const selectedId = requested === null || requested === '' ? model.list.sessions[0]?.sessionId : requested
   const select = useCallback((sessionId: string): void => {
     setSearchParams({ session: sessionId }, { replace: true })
@@ -100,7 +103,7 @@ export function StudioAgentSessions({ agentId }: { agentId: string }) {
         </div>
         {selectedId === undefined
           ? <div className="empty-surface">Select a session to inspect evidence.</div>
-          : <StudioSessionPane agentId={agentId} key={selectedId} sessionId={selectedId} traceTemplate={traceLink.answer?.template} />}
+          : <StudioSessionPane agentId={agentId} focusTurn={Number.isInteger(focusTurn) ? focusTurn : undefined} key={selectedId} sessionId={selectedId} traceTemplate={traceLink.answer?.template} />}
       </div>
     </section>
   )

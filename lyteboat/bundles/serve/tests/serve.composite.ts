@@ -350,7 +350,7 @@ describe('lyteboat serve startup (in process)', () => {
     const result = await bootComposition({ bundles: LYTEBOAT_SERVE_BUNDLES, args: ['--agents', AGENTS, '--port', '0'], patches: [{ id: 'chat-api', config: { auth: 'none', workspace: run.workspace } }], ...target })
 
     expect(result.code).not.toBe(0)
-    expect(result.stderr).toContain('chat-api: unknown config key "workspace"; allowed: auth, credentialRef, maxBodyBytes, keepAliveMs')
+    expect(result.stderr).toContain('chat-api: unknown config key "workspace"; allowed: routes, auth, credentialRef, maxBodyBytes, keepAliveMs')
     expect(result.stderr).toContain('lyteboat: startup failed: lyteboat-serve did not activate (the entries above say why)')
   })
 })

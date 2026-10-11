@@ -2,8 +2,9 @@
  * The Studio API's request pipeline. A request under the prefix passes the
  * Host allowlist (421 otherwise), is matched to one route by its path and
  * method, has its caller resolved and checked against the route's role, and
- * is answered as JSON with the headers every Studio answer carries. A route
- * returns the answer's body or throws {@link StudioApiError}; anything else it
+ * is answered with the headers every Studio answer carries: as JSON, or as
+ * the stream a stream route writes. A route returns the answer's body (or
+ * writes its stream) or throws {@link StudioApiError}; anything else it
  * throws is answered as `internal` without its message, which goes to the log.
  * @module @lyteboat/studio-api/studio-api-router
  */
@@ -15,7 +16,7 @@ import type { StudioAuthResult } from '@lyteboat/studio-auth'
 import { studioHostAllowed } from './studio-host-allowlist.ts'
 
 /** Who may call a route: anyone, or a caller whose role is at least this one. */
-export type StudioApiAccess = 'public' | StudioRole
+type StudioApiAccess = 'public' | StudioRole
 
 /** One call as a route sees it. */
 export interface StudioApiCall {
@@ -31,13 +32,32 @@ export interface StudioApiCall {
   body(): Promise<unknown>
 }
 
-/** One endpoint: `path` is relative to the prefix, with `:name` segments. */
-export interface StudioApiRoute {
+/** What every endpoint declares: `path` is relative to the prefix, with `:name` segments. */
+interface StudioApiRouteBase {
   method: 'GET' | 'POST' | 'PUT' | 'DELETE'
   path: string
   access: StudioApiAccess
+}
+
+/** An endpoint that answers JSON, the default kind: it returns the body or throws {@link StudioApiError}. */
+interface StudioApiJsonRoute extends StudioApiRouteBase {
+  kind?: 'json'
   handle(call: StudioApiCall): unknown
 }
+
+/**
+ * An endpoint that writes its own answer (an event stream). The pipeline has
+ * checked the Host, the caller, and the role, and set the headers every Studio
+ * answer carries; a {@link StudioApiError} thrown before anything is written
+ * is answered as JSON.
+ */
+interface StudioApiStreamRoute extends StudioApiRouteBase {
+  kind: 'stream'
+  stream(call: StudioApiCall, response: ServerResponse): Promise<void>
+}
+
+/** One endpoint. */
+export type StudioApiRoute = StudioApiJsonRoute | StudioApiStreamRoute
 
 const STATUS_OF_CODE: Readonly<Record<StudioErrorCode, number>> = {
   invalid_request: 400,
@@ -95,14 +115,14 @@ export function studioValueOf<T>(result: StudioAuthResult<T>): T {
 const ROLE_RANK: Readonly<Record<StudioRole, number>> = { viewer: 0, editor: 1, admin: 2 }
 
 // Every answer is data for the Studio page's own script: never sniffed, framed, cached, or run.
-const STUDIO_API_HEADERS = {
-  'content-type': 'application/json; charset=utf-8',
+const STUDIO_API_SAFETY_HEADERS = {
   'cache-control': 'no-store',
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'referrer-policy': 'no-referrer',
   'content-security-policy': 'default-src \'none\'; frame-ancestors \'none\'',
 } as const
+const STUDIO_API_HEADERS = { 'content-type': 'application/json; charset=utf-8', ...STUDIO_API_SAFETY_HEADERS } as const
 
 /** What the pipeline needs besides its routes. */
 interface StudioApiRouterOptions {
@@ -163,18 +183,42 @@ function matchStudioPath(pattern: readonly string[], segments: readonly string[]
   return params
 }
 
+/** One route in the table, with its path split into segments. */
+interface StudioApiTableEntry {
+  route: StudioApiRoute
+  pattern: string[]
+}
+
 /** Answers every request under one prefix from a route table. */
 export class StudioApiRouter {
-  private readonly table: { route: StudioApiRoute; pattern: string[] }[]
+  private readonly table: StudioApiTableEntry[]
 
   constructor(private readonly options: StudioApiRouterOptions, routes: readonly StudioApiRoute[]) {
     this.table = routes.map(route => ({ route, pattern: route.path.split('/') }))
   }
 
+  /**
+   * Add routes that exist only while a service they answer from does.
+   * @returns the disposer that takes them out again.
+   */
+  mount(routes: readonly StudioApiRoute[]): () => void {
+    const entries = routes.map(route => ({ route, pattern: route.path.split('/') }))
+    this.table.push(...entries)
+    return () => {
+      for (const entry of entries) this.table.splice(this.table.indexOf(entry), 1)
+    }
+  }
+
   /** Answer one request; never throws. */
   async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
     try {
-      sendStudioJson(response, 200, await this.answer(request))
+      const { route, call } = await this.resolve(request)
+      if (route.kind === 'stream') {
+        for (const [name, value] of Object.entries(STUDIO_API_SAFETY_HEADERS)) response.setHeader(name, value)
+        await route.stream(call, response)
+        return
+      }
+      sendStudioJson(response, 200, await route.handle(call))
     } catch (error: unknown) {
       if (!(error instanceof StudioApiError)) this.options.internalError(error)
       const refusal = error instanceof StudioApiError ? error : new StudioApiError('internal', 'the Studio failed to answer; its log says why')
@@ -183,7 +227,8 @@ export class StudioApiRouter {
     }
   }
 
-  private async answer(request: IncomingMessage): Promise<unknown> {
+  /** The route a request matches and the call it makes, after the Host, the caller, and the role are checked. */
+  private async resolve(request: IncomingMessage): Promise<{ route: StudioApiRoute; call: StudioApiCall }> {
     if (!studioHostAllowed(request.headers.host, this.options.trustedHosts)) {
       throw new StudioApiError('misdirected', `this Studio does not answer for host ${JSON.stringify(request.headers.host ?? '')}; start it with --trusted-host for that name`)
     }
@@ -201,13 +246,16 @@ export class StudioApiRouter {
     if (principal !== undefined && route.access !== 'public' && ROLE_RANK[principal.role] < ROLE_RANK[route.access]) {
       throw new StudioApiError('forbidden', `this needs the ${route.access} role; ${principal.userId} is ${principal.role}`)
     }
-    return await route.handle({
-      params,
-      query: url.searchParams,
-      principal,
-      from: request.socket.remoteAddress ?? 'unknown',
-      headers: request.headers,
-      body: () => readStudioBody(request, this.options.maxBodyBytes),
-    })
+    return {
+      route,
+      call: {
+        params,
+        query: url.searchParams,
+        principal,
+        from: request.socket.remoteAddress ?? 'unknown',
+        headers: request.headers,
+        body: () => readStudioBody(request, this.options.maxBodyBytes),
+      },
+    }
   }
 }

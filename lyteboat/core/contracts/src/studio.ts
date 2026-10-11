@@ -9,7 +9,7 @@
 
 import { z } from 'zod'
 import type { LyteboatSkillFinding } from './cli.ts'
-import { LYTEBOAT_EVAL_CASE_ID_PATTERN } from './index.ts'
+import { LYTEBOAT_EVAL_CASE_ID_PATTERN, lyteboatJsonValueSchema } from './index.ts'
 import type { JsonValue, LyteboatAgentIdentity, LyteboatAgentModel, LyteboatRequest, LyteboatRequestOwner, LyteboatTurnOutcomeKind } from './index.ts'
 
 /** The Studio roles, from the most to the least capable. */
@@ -221,6 +221,29 @@ export type StudioSkillUpdateRequest = {
 /** The schema of {@link StudioSkillUpdateRequest}. */
 export const studioSkillUpdateRequestSchema: z.ZodType<StudioSkillUpdateRequest> = z.strictObject({
   file: z.string().min(1).max(512 * 1024),
+})
+
+/**
+ * `POST agents/:id/chat` (editors): one message from the test window. The
+ * answer is the turn as `/chat`'s enterprise event stream; the session is
+ * owned by the editor's account as an operator.
+ */
+export type StudioChatRequest = {
+  message: string
+  /** The session to continue; absent to open one. */
+  sessionId?: string
+  /** An id the client picked for the message, so a resend is refused as a duplicate. */
+  messageId?: string
+  /** Request context, as `/chat`'s `context`. */
+  context?: { [key: string]: JsonValue }
+}
+
+/** The schema of {@link StudioChatRequest}. */
+export const studioChatRequestSchema: z.ZodType<StudioChatRequest> = z.strictObject({
+  message: z.string().refine((text: string) => text.trim() !== '', 'message must not be blank'),
+  sessionId: z.string().min(1).exactOptional(),
+  messageId: z.string().min(1).exactOptional(),
+  context: z.record(z.string(), lyteboatJsonValueSchema).exactOptional(),
 })
 
 /** The answer to a hot-fix: the skill as stored now, and the agent (its digest, whether it deviates from its release). */

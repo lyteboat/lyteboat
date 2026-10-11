@@ -3,18 +3,25 @@
  * role and user, theme, sign-out), the resizable agent radar on the left (the
  * agents the catalog serves, searchable; one that deviates from its release
  * marked; the ones that failed listed with why), the page navigation under it
- * (Evals opens its own surface in a new tab, as the original Studio's did), and
- * the page in the workspace. Pages read the radar's state through
- * {@link useStudioShell}.
+ * (Evals opens its own surface in a new tab, as the original Studio's did), the
+ * page in the workspace, and, on an agent's pages, the test window on the
+ * right. The layout keeps the workspace widest: the radar is 232 px (dragged
+ * between 200 and 320), the test window 25% of the viewport between 320 and
+ * 440 px (or as dragged), and below a 1272 px viewport the test window covers
+ * the workspace's right side instead of narrowing it. Whether the test window
+ * is open and its dragged width are kept in this browser. Pages read the
+ * radar's state and open the test window through {@link useStudioShell}.
  * @module @lyteboat/studio-web/client/studio-shell
  */
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react'
 import { NavLink, Outlet, useHref, useNavigate, useOutletContext, useParams } from 'react-router-dom'
 import type { StudioAgent, StudioAgentFailure } from '@lyteboat/contracts/studio'
 import { studioApi } from './studio-api-client.ts'
-import { canManageStudioUsers, useStudioAuth } from './studio-auth-context.tsx'
+import { canManageStudioUsers, canTestStudioAgents, useStudioAuth } from './studio-auth-context.tsx'
 import { useStudioReading } from './studio-call-state.ts'
+import { studioChatPanelLayout } from './studio-chat-messages.ts'
+import { StudioChatPanel } from './studio-chat-panel.tsx'
 import { BeakerIcon, LogoutIcon, OverviewIcon, PlusIcon, RefreshIcon, SearchIcon, ServerIcon, SparkIcon, UsersIcon } from './studio-icons.tsx'
 import { studioTextMatches } from './studio-text-filter.ts'
 import { StudioThemeToggle } from './studio-theme-toggle.tsx'
@@ -29,6 +36,9 @@ interface StudioShellContext {
   refreshAgents(): Promise<void>
   selectedAgent: StudioAgent | null
   activeSection: string
+  /** Whether the test window is open, and opening or closing it. */
+  chatPanelOpen: boolean
+  setChatPanelOpen(open: boolean): void
 }
 
 /** The shell's state, for a page inside it. */
@@ -36,12 +46,16 @@ export function useStudioShell(): StudioShellContext {
   return useOutletContext<StudioShellContext>()
 }
 
-type StudioMainStyle = CSSProperties & { '--agent-radar-width': string }
+type StudioMainStyle = CSSProperties & { '--agent-radar-width': string; '--chat-panel-width': string }
 
 const DEFAULT_SECTION = 'overview'
 const RADAR_MIN_WIDTH = 200
-const RADAR_MAX_WIDTH = 420
-const RADAR_DEFAULT_WIDTH = 260
+const RADAR_MAX_WIDTH = 320
+const RADAR_DEFAULT_WIDTH = 232
+const CHAT_PANEL_MIN_WIDTH = 320
+const CHAT_PANEL_MAX_WIDTH = 440
+const CHAT_PANEL_OPEN_KEY = 'lyteboat-studio:chat:open'
+const CHAT_PANEL_WIDTH_KEY = 'lyteboat-studio:chat:width'
 const STUDIO_AGENTS_NONE: Pick<StudioShellContext, 'agents' | 'failures'> = { agents: [], failures: [] }
 
 /** The name the radar shows for an agent. */
@@ -70,21 +84,37 @@ export function useStudioAgents(): Pick<StudioShellContext, 'agents' | 'failures
   return { agents, failures, agentsLoading: reading.loading, agentsError: reading.loading ? null : reading.error, refreshAgents: reading.reload }
 }
 
-/** The radar's width and the drag that changes it. */
-function useStudioRadarResize(): { width: number; resizing: boolean; startResize(event: ReactPointerEvent<HTMLButtonElement>): void } {
-  const [width, setWidth] = useState(RADAR_DEFAULT_WIDTH)
+/**
+ * A side panel's width and the drag of its inner edge.
+ * @param initial - the width before any drag.
+ * @param edge - the side the handle sits on: `right` for the radar, `left` for the test window.
+ * @param onDragged - called with the width a drag ends at; a panel that passes it lays itself out, so between drags the width follows `initial`.
+ */
+function useStudioPanelResize(initial: number, bounds: { min: number; max: number }, edge: 'right' | 'left', onDragged?: (width: number) => void): { width: number; resizing: boolean; startResize(event: ReactPointerEvent<HTMLButtonElement>): void } {
+  const [width, setWidth] = useState(initial)
   const [resizing, setResizing] = useState(false)
   const start = useRef<{ width: number; x: number } | null>(null)
+  const latest = useRef(width)
+  latest.current = width
+  const dragged = useRef(onDragged)
+  dragged.current = onDragged
+
+  const follows = onDragged !== undefined
+  useEffect(() => {
+    if (follows && !resizing) setWidth(initial)
+  }, [follows, initial, resizing])
 
   useEffect(() => {
     if (!resizing) return undefined
     const move = (event: PointerEvent): void => {
       if (start.current === null) return
-      setWidth(Math.min(RADAR_MAX_WIDTH, Math.max(RADAR_MIN_WIDTH, start.current.width + event.clientX - start.current.x)))
+      const delta = (event.clientX - start.current.x) * (edge === 'right' ? 1 : -1)
+      setWidth(Math.min(bounds.max, Math.max(bounds.min, start.current.width + delta)))
     }
     const stop = (): void => {
       start.current = null
       setResizing(false)
+      dragged.current?.(latest.current)
     }
     document.body.style.cursor = 'col-resize'
     document.body.style.userSelect = 'none'
@@ -98,7 +128,7 @@ function useStudioRadarResize(): { width: number; resizing: boolean; startResize
       document.body.style.removeProperty('cursor')
       document.body.style.removeProperty('user-select')
     }
-  }, [resizing])
+  }, [resizing, edge, bounds.min, bounds.max])
 
   const startResize = (event: ReactPointerEvent<HTMLButtonElement>): void => {
     if (event.button !== 0) return
@@ -106,6 +136,51 @@ function useStudioRadarResize(): { width: number; resizing: boolean; startResize
     setResizing(true)
   }
   return { width, resizing, startResize }
+}
+
+function readStudioChatPanelSetting(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    // Storage is off: the panel opens closed, at its default width.
+    return null
+  }
+}
+
+function keepStudioChatPanelSetting(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value)
+  } catch {
+    // Storage is off or full: the setting lasts only as long as the page.
+  }
+}
+
+const RADAR_BOUNDS = { min: RADAR_MIN_WIDTH, max: RADAR_MAX_WIDTH }
+const CHAT_PANEL_BOUNDS = { min: CHAT_PANEL_MIN_WIDTH, max: CHAT_PANEL_MAX_WIDTH }
+
+/** The test window: open or closed, its width, and whether it covers the workspace. */
+function useStudioChatPanel() {
+  const [open, setOpenState] = useState(() => readStudioChatPanelSetting(CHAT_PANEL_OPEN_KEY) === '1')
+  const [viewport, setViewport] = useState(() => window.innerWidth)
+  const stored = Number(readStudioChatPanelSetting(CHAT_PANEL_WIDTH_KEY) ?? Number.NaN)
+  const [dragged, setDragged] = useState<number | undefined>(Number.isFinite(stored) ? stored : undefined)
+  const layout = studioChatPanelLayout(viewport, dragged)
+  const keepDragged = useCallback((width: number) => {
+    setDragged(width)
+    keepStudioChatPanelSetting(CHAT_PANEL_WIDTH_KEY, String(width))
+  }, [])
+  const resize = useStudioPanelResize(layout.width, CHAT_PANEL_BOUNDS, 'left', keepDragged)
+
+  useEffect(() => {
+    const changed = (): void => setViewport(window.innerWidth)
+    window.addEventListener('resize', changed)
+    return () => window.removeEventListener('resize', changed)
+  }, [])
+  const setOpen = useCallback((next: boolean) => {
+    setOpenState(next)
+    keepStudioChatPanelSetting(CHAT_PANEL_OPEN_KEY, next ? '1' : '0')
+  }, [])
+  return { open, setOpen, overlay: layout.overlay, width: resize.resizing ? resize.width : layout.width, startResize: resize.startResize }
 }
 
 function StudioTopBar() {
@@ -214,19 +289,26 @@ function StudioNavFooter() {
 export function StudioShell() {
   const { agentId, section } = useParams<{ agentId?: string; section?: string }>()
   const agents = useStudioAgents()
-  const radar = useStudioRadarResize()
+  const radar = useStudioPanelResize(RADAR_DEFAULT_WIDTH, RADAR_BOUNDS, 'right')
+  const chat = useStudioChatPanel()
   const [query, setQuery] = useState('')
+  const selectedAgent = agents.agents.find(agent => agent.id === agentId) ?? null
   const shell: StudioShellContext = {
     ...agents,
-    selectedAgent: agents.agents.find(agent => agent.id === agentId) ?? null,
+    selectedAgent,
     activeSection: section ?? DEFAULT_SECTION,
+    chatPanelOpen: chat.open,
+    setChatPanelOpen: chat.setOpen,
   }
-  const mainStyle: StudioMainStyle = { '--agent-radar-width': `${String(radar.width)}px` }
+  const mainStyle: StudioMainStyle = { '--agent-radar-width': `${String(radar.width)}px`, '--chat-panel-width': `${String(chat.width)}px` }
+  const { user } = useStudioAuth()
+  const chatShown = chat.open && selectedAgent !== null && canTestStudioAgents(user?.role)
+  const mainClass = `studio-main ${chatShown ? (chat.overlay ? 'chat-overlay' : 'chat-docked') : ''}`
 
   return (
     <div className="studio-shell">
       <StudioTopBar />
-      <div className="studio-main" style={mainStyle}>
+      <div className={mainClass} style={mainStyle}>
         <aside aria-label="Agent radar" className={`agent-radar ${radar.resizing ? 'agent-radar-resizing' : ''}`}>
           <button aria-label="Resize agent radar" className="agent-radar-resize-handle" onPointerDown={radar.startResize} type="button" />
           <div className="side-section">
@@ -248,6 +330,7 @@ export function StudioShell() {
         <div className="studio-workspace">
           <Outlet context={shell} />
         </div>
+        {chatShown && <StudioChatPanel agent={selectedAgent} key={selectedAgent.id} onClose={() => chat.setOpen(false)} onResizeStart={chat.startResize} />}
       </div>
     </div>
   )

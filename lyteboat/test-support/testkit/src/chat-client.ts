@@ -1,6 +1,7 @@
 /**
  * A test client for a lyteboat `/chat` endpoint: one JSON answer, or the
- * enterprise event stream read frame by frame. It knows the wire only (the
+ * enterprise event stream read frame by frame; and for the Studio's test
+ * window, which answers with the same stream. It knows the wire only (the
  * `event:` / `data:` lines and `: keep-alive` comments), not chat-api's types,
  * so this package never depends on a plugin.
  * @module @lyteboat/testkit/chat-client
@@ -57,8 +58,24 @@ export async function postChat(url: string, body: unknown, options: ChatCallOpti
  * @returns the status, the frames, and the keep-alive count.
  */
 export async function streamChat(url: string, body: { [key: string]: unknown }, options: ChatCallOptions = {}): Promise<ChatStreamResult> {
+  return postForStream(url, { ...body, stream: true }, options)
+}
+
+/**
+ * POST a message to the Studio's test window (`/api/studio/agents/:id/chat`)
+ * and read its frames until the stream ends or the caller leaves.
+ * @param url - the endpoint.
+ * @param body - the request, sent as it is.
+ * @param options - `token` is the Studio's bearer token.
+ * @returns the status, the frames, and the keep-alive count.
+ */
+export async function streamStudioChat(url: string, body: { [key: string]: unknown }, options: ChatCallOptions = {}): Promise<ChatStreamResult> {
+  return postForStream(url, body, options)
+}
+
+async function postForStream(url: string, body: { [key: string]: unknown }, options: ChatCallOptions): Promise<ChatStreamResult> {
   const leaving = new AbortController()
-  const response = await fetch(url, { method: 'POST', headers: headers(options), body: JSON.stringify({ ...body, stream: true }), signal: leaving.signal })
+  const response = await fetch(url, { method: 'POST', headers: headers(options), body: JSON.stringify(body), signal: leaving.signal })
   if (response.status !== 200 || response.body === null) return { status: response.status, frames: [], keepAlives: 0, refusal: await response.json() as unknown }
   options.onOpen?.()
   const frames: ChatWireFrame[] = []

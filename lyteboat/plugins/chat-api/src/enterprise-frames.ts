@@ -7,51 +7,17 @@
  * @module @lyteboat/chat-api/enterprise-frames
  */
 
-import type { JsonValue, LyteboatTurnOutcomeKind } from '@lyteboat/contracts'
+import type { ChatEnterpriseEvent, ChatEnterpriseFrame, ChatUiProtocol, JsonValue, LyteboatRequestOwner, LyteboatTurnOutcomeKind } from '@lyteboat/contracts'
 
-/** The events of an enterprise stream. */
-export type ChatEnterpriseEvent =
-  | 'run_started'
-  | 'reasoning_start'
-  | 'reasoning_message_content'
-  | 'reasoning_end'
-  | 'text_message_start'
-  | 'text_message_content'
-  | 'text_message_end'
-  | 'run_finished'
-  | 'run_error'
-
-/** How a frame's `ui_data` is to be read. */
-export type ChatUiProtocol = 'text' | 'json' | 'A2UI'
-
-/** A frame's `data`: the fields the protocol owns, and whatever a decorator adds. */
-export interface ChatEnterpriseFrameData {
-  code: string
-  conversation_id: string
-  message_id: string
-  timestamp: string
-  ui_protocol: ChatUiProtocol
-  ui_data: JsonValue
-  turn: number
-  agent_name: string
-  extra?: { [key: string]: JsonValue }
-  [key: string]: JsonValue | undefined
-}
-
-/** One enterprise frame. */
-export interface ChatEnterpriseFrame {
-  protocol: 'AGUI'
-  id: number
-  event: ChatEnterpriseEvent
-  data: ChatEnterpriseFrameData
-}
+export type { ChatEnterpriseEvent, ChatEnterpriseFrame, ChatEnterpriseFrameData, ChatUiProtocol } from '@lyteboat/contracts'
 
 /** What a frame decorator knows about the request its frame answers. */
 export interface ChatFrameContext {
   agentId: string
   sessionId: string
   messageId: string
-  userId: string
+  /** Who the request speaks for: an end user over `/chat`, a Studio account in the test window. */
+  owner: LyteboatRequestOwner
 }
 
 /** Adds fields to a frame's `data`; returns the frame to send. */

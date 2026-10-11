@@ -33,7 +33,7 @@ const agents: StudioSummaryAgent[] = [
       session('dddddddd-4', undefined, month(1), 0),
     ],
   },
-  { id: 'desk', label: 'Desk', toolCount: 2, skills: [{ name: 'desk-help', modelInvocable: true, requiredTools: [] }], sessions: [session('eeeeeeee-5', 'operator:cli', month(8, 24), 3)] },
+  { id: 'desk', label: 'Desk', toolCount: 2, skills: [{ name: 'desk-help', modelInvocable: true, requiredTools: [] }], sessions: [session('eeeeeeee-5', 'user:carol', month(8, 24), 3)] },
   { id: 'idle', label: 'Idle', toolCount: 0, skills: [], sessions: [] },
 ]
 
@@ -42,6 +42,11 @@ describe('studioDashboardSummary', () => {
 
   it('counts the agents, users by owner, skills, reachable tools, and sessions', () => {
     expect(summary).toMatchObject({ totalAgents: 3, totalUsers: 3, totalSkills: 4, totalTools: 6, totalSessions: 5, generatedAt: NOW })
+  })
+
+  it('leaves out test-window sessions, which an operator owns', () => {
+    const tried = studioDashboardSummary([{ ...agents[2]!, sessions: [session('ffffffff-6', 'operator:editor', month(8, 25), 4)] }], NOW)
+    expect(tried).toMatchObject({ totalUsers: 0, totalSessions: 0, activity: [] })
   })
 
   it('draws six cumulative months ending with the current one', () => {

@@ -121,3 +121,8 @@ export function canManageStudioUsers(role: StudioRole | undefined): boolean {
 export function canRunStudioEvals(role: StudioRole | undefined): boolean {
   return role === 'admin' || role === 'editor'
 }
+
+/** Whether a role may talk to an agent in the test window. */
+export function canTestStudioAgents(role: StudioRole | undefined): boolean {
+  return role === 'admin' || role === 'editor'
+}

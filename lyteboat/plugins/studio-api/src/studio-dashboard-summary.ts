@@ -7,7 +7,8 @@
  * and eval runs). lyteboat has no memory,
  * no skill groups or tags, and no tool file times: the memory figures are
  * gone, the skills section shows skills per agent and the tools skills
- * require, and tools have a total only.
+ * require, and tools have a total only. A test-window session (an operator
+ * owns it) is an editor trying the agent, not use, and counts nowhere.
  * @module @lyteboat/studio-api/studio-dashboard-summary
  */
 
@@ -133,10 +134,11 @@ function activity(agents: readonly StudioSummaryAgent[]): StudioActivityItem[] {
 
 /**
  * The static view.
- * @param agents - every agent the catalog serves, with its skills, tool count, and end users' sessions.
+ * @param allAgents - every agent the catalog serves, with its skills, tool count, and sessions.
  * @param now - the time the trends end at.
  */
-export function studioDashboardSummary(agents: readonly StudioSummaryAgent[], now: number): StudioDashboardSummary {
+export function studioDashboardSummary(allAgents: readonly StudioSummaryAgent[], now: number): StudioDashboardSummary {
+  const agents = allAgents.map(agent => ({ ...agent, sessions: agent.sessions.filter(session => session.owner?.kind !== 'operator') }))
   const sessions = agents.flatMap(agent => agent.sessions)
   const firstSeen = new Map<string, number>()
   for (const session of sessions) {

@@ -14,6 +14,9 @@
  *
  * `auth: none` serves only a loopback listener; any other listener needs
  * `shared-secret`, a bearer token resolved from `credentialRef` per request.
+ * `routes: false` registers none of the three endpoints: the service still
+ * answers through `answer()`, which the Studio's test window calls with its
+ * own sign-in and its account as the session's owner.
  * @module @lyteboat/chat-api
  */
 
@@ -42,7 +45,7 @@ import { watchChatTurn, type ChatToolCall, type ChatTurnResult } from './chat-tu
 import { ChatEnterpriseWriter, sseFrame, type ChatFrameContext, type ChatFrameDecorator } from './enterprise-frames.ts'
 
 export type { ChatEnterpriseEvent, ChatEnterpriseFrame, ChatEnterpriseFrameData, ChatFrameContext, ChatFrameDecorator, ChatUiProtocol } from './enterprise-frames.ts'
-export type { ChatApiErrorCode } from './chat-request.ts'
+export type { ChatApiErrorCode, ChatRequest } from './chat-request.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -51,8 +54,10 @@ declare module '@deepseek-ai/cordis' {
 }
 
 export interface Config {
-  /** `shared-secret`: `Authorization: Bearer <secret>`; `none`: only on a loopback listener. */
-  auth: 'shared-secret' | 'none'
+  /** Register `/chat`, `/agents`, and `/health` on the web server; false leaves the endpoints out and only `answer()` serves. */
+  routes?: boolean
+  /** `shared-secret`: `Authorization: Bearer <secret>`; `none`: only on a loopback listener. Required with the routes. */
+  auth?: 'shared-secret' | 'none'
   /** The environment variable (credential reference) that holds the shared secret. */
   credentialRef?: string
   /** The largest request body accepted. */
@@ -62,13 +67,14 @@ export interface Config {
 }
 
 const Config: z<Config> = z.object({
-  auth: z.union([z.const('shared-secret' as const), z.const('none' as const)]).required(),
+  routes: z.boolean().default(true),
+  auth: z.union([z.const('shared-secret' as const), z.const('none' as const)]),
   credentialRef: z.string(),
   maxBodyBytes: z.natural().default(1024 * 1024),
   keepAliveMs: z.natural().default(15_000),
 })
 
-const CHAT_API_CONFIG_KEYS = new Set(['auth', 'credentialRef', 'maxBodyBytes', 'keepAliveMs'])
+const CHAT_API_CONFIG_KEYS = new Set(['routes', 'auth', 'credentialRef', 'maxBodyBytes', 'keepAliveMs'])
 
 class FrameDecoratorLayer implements ScopeLayer {
   readonly entries = new AnonymousEntries<ChatFrameDecorator>()
@@ -99,7 +105,7 @@ function cardsOf(parts: readonly LyteboatTurnPart[]): ChatCard[] {
   return parts.flatMap(part => part.kind === 'card' ? [{ area: part.card.area, surface_id: part.card.surfaceId, a2ui: part.card.payload }] : [])
 }
 
-/** Host service: the `/chat` endpoint and the frame decorators agents register. */
+/** Host service: answers messages (over `/chat`, or for the Studio), and holds the frame decorators agents register. */
 export class ChatApiService extends Service {
   static inject = ['webServer', 'sessionController', 'agentCatalog', 'requestContext', 'historyImport', 'a2ui', 'turnOutcome', 'credentials']
   // The loader applies a class plugin's static Config, not the module's.
@@ -115,6 +121,10 @@ export class ChatApiService extends Service {
     const unknown = Object.keys(config).filter(key => !CHAT_API_CONFIG_KEYS.has(key))
     if (unknown.length > 0) {
       throw new Error(`chat-api: unknown config key${unknown.length > 1 ? 's' : ''} ${unknown.map(key => JSON.stringify(key)).join(', ')}; allowed: ${[...CHAT_API_CONFIG_KEYS].join(', ')}`)
+    }
+    if (config.routes === false) return
+    if (config.auth === undefined) {
+      throw new Error('chat-api: the routes need auth: shared-secret (with a credentialRef) or none (on a 127.0.0.1 listener); set routes: false to serve none')
     }
     if (config.auth === 'none' && ctx.webServer.host !== '127.0.0.1') {
       throw new Error('chat-api: auth none serves only a 127.0.0.1 listener; set auth: shared-secret and a credentialRef to listen on other interfaces')
@@ -197,7 +207,7 @@ export class ChatApiService extends Service {
     const projections = await this.ctx.sessionController.projections({ sessionId }, new AbortController().signal)
     const owner = (projections?.values['lyteboatRequest'] as Partial<LyteboatRequestState> | undefined)?.owner
     // A session the caller does not own answers as one that does not exist.
-    if (projections === null || !isChatSessionOwner(owner, request.userId)) {
+    if (projections === null || !isChatSessionOwner(owner, request.owner)) {
       throw new ChatApiError('session_not_found', `session ${JSON.stringify(sessionId)} does not exist`)
     }
     const agentPreset = projections.values['agentPreset']
@@ -215,10 +225,29 @@ export class ChatApiService extends Service {
       sendJson(response, 405, new ChatApiError('invalid_request', 'use POST').body())
       return
     }
-    let key: string | undefined
+    let chat: ChatRequest
     try {
       await this.authorize(request)
-      const chat = parseChatRequest(await readChatBody(request, this.config.maxBodyBytes ?? 1024 * 1024))
+      chat = parseChatRequest(await readChatBody(request, this.config.maxBodyBytes ?? 1024 * 1024))
+    } catch (error: unknown) {
+      this.refuse(response, error)
+      return
+    }
+    await this.answer(chat, response)
+  }
+
+  /**
+   * Answer one message on `response`: start or continue its session, queue
+   * the message with its request, and write the turn as one JSON body or as
+   * an enterprise event stream. The caller has already authorized the
+   * request; `chat.owner` decides which sessions it may continue. A refusal
+   * is written as a chat-api error; this never throws.
+   * @param chat - the message and who it speaks for.
+   * @param response - where the answer goes; headers the caller set stay.
+   */
+  async answer(chat: ChatRequest, response: ServerResponse): Promise<void> {
+    let key: string | undefined
+    try {
       await this.catalogSettled()
       const agent = this.ctx.agentCatalog.get(chat.agentId)
       if (agent === undefined) throw new ChatApiError('agent_not_found', `no agent ${JSON.stringify(chat.agentId)}`)
@@ -233,7 +262,7 @@ export class ChatApiService extends Service {
       const resolved = await this.ctx.sessionController.resolveAgent(sessionId)
       if ('error' in resolved) throw new ChatApiError('internal', resolved.error.message)
       if (chat.history !== undefined) this.ctx.historyImport.enqueue(resolved.agent, this.ctx.historyImport.parse(chat.history))
-      await this.answer(chat, sessionId, messageId, resolved.agent, agent.identity, response)
+      await this.answerTurn(chat, sessionId, messageId, resolved.agent, agent.identity, response)
     } catch (error: unknown) {
       if (!response.headersSent) this.refuse(response, error)
       else if (!response.writableEnded) response.end()
@@ -242,8 +271,8 @@ export class ChatApiService extends Service {
     }
   }
 
-  private async answer(chat: ChatRequest, sessionId: SessionId, messageId: string, agent: Agent, identity: LyteboatAgentIdentity, response: ServerResponse): Promise<void> {
-    const context: ChatFrameContext = { agentId: chat.agentId, sessionId, messageId, userId: chat.userId }
+  private async answerTurn(chat: ChatRequest, sessionId: SessionId, messageId: string, agent: Agent, identity: LyteboatAgentIdentity, response: ServerResponse): Promise<void> {
+    const context: ChatFrameContext = { agentId: chat.agentId, sessionId, messageId, owner: chat.owner }
     const stream = chat.stream ? this.frameStream(response, context, agent) : undefined
     const writer = stream?.writer
     const watch = watchChatTurn(this.ctx, agent, messageId, this.ctx.a2ui.liveTurn(), {
@@ -275,7 +304,7 @@ export class ChatApiService extends Service {
         sessionId,
         mode: 'queue',
         content: [{ type: 'text', text: chat.message }],
-        sourceFields: this.ctx.requestContext.sourceFields({ requestId: messageId, owner: { kind: 'user', id: chat.userId }, agent: identity, ...chat.traceId === undefined ? {} : { traceId: chat.traceId }, ...chat.context === undefined ? {} : { context: chat.context } }),
+        sourceFields: this.ctx.requestContext.sourceFields({ requestId: messageId, owner: chat.owner, agent: identity, ...chat.traceId === undefined ? {} : { traceId: chat.traceId }, ...chat.context === undefined ? {} : { context: chat.context } }),
       }, aborted.signal)
       if (stream !== undefined) {
         stream.open()

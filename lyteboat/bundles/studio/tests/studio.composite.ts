@@ -5,23 +5,27 @@
  * failed, roles gate the Users endpoints and a reload, the System page answers,
  * an agent's workspace shows its tools as the business base leaves them, its
  * skills and their diagnostics, the pages are served at /studio, and neither
- * /chat nor dsh's session channel is served. An admin's hot-fix of a released
+ * /chat nor dsh's own /api is served. An admin's hot-fix of a released
  * agent's skill (on a copy of it) is saved, audited, and shows the agent
  * deviating from its release; an agent directory that appears under that
  * root is served without a restart. The sessions serve records from /chat are
  * listed, searched, and shown by a Studio on the same home, which leaves them
- * as they were. An admin starts an agent's eval cases from the Studio as a
+ * as they were. An editor tries an agent in the test window: the turn
+ * streams as /chat's frames, its session is the editor's as an operator and
+ * is listed beside serve's, the Dashboard leaves it out, and a viewer is
+ * refused. An admin starts an agent's eval cases from the Studio as a
  * `lyteboat eval` process of the built launcher, replays that run, compares
  * the two, and stops a run. A Studio without accounts refuses to start and
  * names the command that makes one.
  */
 import { createHash } from 'node:crypto'
 import { cpSync, mkdirSync, readFileSync, rmSync, symlinkSync, writeFileSync } from 'node:fs'
+import { request as httpRequest } from 'node:http'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { setStudioAccount, setStudioGrant } from '@lyteboat/studio-auth/accounts'
-import { postChat } from '@lyteboat/testkit/chat-client'
+import { postChat, streamStudioChat } from '@lyteboat/testkit/chat-client'
 import { LYTEBOAT_SERVE_BUNDLES, LYTEBOAT_STUDIO_BUNDLES, bootComposition, startComposition, type RunningComposition } from '@lyteboat/testkit/composition'
 import { readJsonLines } from '@lyteboat/testkit/json-lines'
 import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
@@ -51,6 +55,17 @@ async function studioCall(origin: string, method: string, path: string, options:
     ...options.body === undefined ? {} : { body: JSON.stringify(options.body) },
   })
   return { status: response.status, body: await response.json() as Record<string, unknown> }
+}
+
+/** What a WebSocket upgrade request to `url` gets: `upgraded`, a status, or `closed` when the server drops it. */
+function upgradeAnswer(url: string): Promise<'upgraded' | 'closed' | number> {
+  return new Promise((resolve) => {
+    const request = httpRequest(url, { headers: { connection: 'Upgrade', upgrade: 'websocket', 'sec-websocket-version': '13', 'sec-websocket-key': 'dGhlIHNhbXBsZSBub25jZQ==' } })
+    request.on('upgrade', (_response, socket) => { socket.destroy(); resolve('upgraded') })
+    request.on('response', (response) => { response.resume(); resolve(response.statusCode ?? 0) })
+    request.on('error', () => { resolve('closed') })
+    request.end()
+  })
 }
 
 async function studioLogin(origin: string, username: string, password: string): Promise<string> {
@@ -179,9 +194,11 @@ describe('lyteboat studio (in process)', () => {
     expect(root.headers.get('location')).toBe('/studio/')
   })
 
-  it('serves neither /chat nor dsh\'s session channel: Studio never runs a session', async () => {
+  it('serves neither /chat nor dsh\'s own /api, which the test window does not use', async () => {
     expect((await fetch(`${origin}/chat`, { method: 'POST' })).status).toBe(404)
-    expect((await fetch(`${origin}/api/remote.mux`)).status).toBe(404)
+    // dsh's /api admits a signed-in dsh browser only, which the Studio's pages never are.
+    expect((await fetch(`${origin}/api/remote.mux`)).status).toBe(401)
+    expect(await upgradeAnswer(`${origin}/api/remote.mux`)).not.toBe('upgraded')
   })
 })
 
@@ -289,7 +306,7 @@ describe('sessions and run metrics serve records, read by lyteboat studio (in pr
     servedTo = Date.now()
     // The harness keeps one profile per home; Studio shares serve's home (its sessions), not serve's bundles.
     rmSync(join(home, 'profiles'), { recursive: true, force: true })
-    ;({ studio, origin } = await startStudio(agents, run))
+    ;({ studio, origin } = await startStudio(agents, run, { env: scriptedModelEnv(model) }))
   })
 
   afterAll(async () => {
@@ -335,6 +352,40 @@ describe('sessions and run metrics serve records, read by lyteboat studio (in pr
     expect(health).toMatchObject({ status: 200, body: { agentIds: ['desk'], current: { bucketMinutes: 30, summary: { requestCount: 2, completionRate: 1, technicalFailureCount: 0, activeUsers: 2 } } } })
     expect(summary.body).toMatchObject({ totalAgents: 1, totalUsers: 2, totalSessions: 2, sessions: { agents: [{ label: 'Desk', value: 2 }] } })
     expect(running.body).toEqual({ total: 0, agents: [] })
+  })
+  it('answers an editor in the test window as an operator, beside serve\'s sessions and outside the Dashboard, and refuses a viewer and a malformed message', async () => {
+    const admin = await studioLogin(origin, 'root', 'pw-root')
+    const viewer = await studioLogin(origin, 'vera', 'pw-vera')
+    const url = `${origin}/api/studio/agents/desk/chat`
+
+    const refused = await streamStudioChat(url, { message: '试一下' }, { token: viewer })
+    const blank = await streamStudioChat(url, { message: '  ', stream: true }, { token: admin })
+    const first = await streamStudioChat(url, { message: '试一下', messageId: 'm-try' }, { token: admin })
+    const sessionId = String(first.frames.at(-1)?.data['conversation_id'])
+    const second = await streamStudioChat(url, { message: '再试一下', sessionId }, { token: admin })
+    // The session index reuses an agent's listing for two seconds.
+    const listed = await vi.waitFor(async () => {
+      const answer = await studioCall(origin, 'GET', 'agents/desk/sessions', { token: viewer })
+      expect(answer.body['total']).toBe(3)
+      return answer
+    }, { timeout: 10_000, interval: 250 })
+    const summary = await studioCall(origin, 'GET', 'dashboard/summary', { token: viewer })
+    const health = await studioCall(origin, 'GET', `dashboard/health?from=${String(servedFrom)}&to=${String(Date.now())}`, { token: viewer })
+
+    expect(refused.status).toBe(403)
+    expect(blank).toMatchObject({ status: 400, refusal: { error: { code: 'invalid_request' } } })
+    expect(first.status).toBe(200)
+    expect(first.frames.at(-1)).toMatchObject({ event: 'run_finished', data: { turn: 1, message_id: 'm-try', ui_data: expect.stringMatching(/^OK:/u), extra: { run_outcome: 'completed' } } })
+    expect(second.frames.at(-1)?.data).toMatchObject({ turn: 2, conversation_id: sessionId, ui_data: expect.stringMatching(/^OK:/u) })
+    expect((listed.body['sessions'] as unknown[])[0]).toMatchObject({ sessionId, owner: { kind: 'operator', id: 'root' }, firstMessage: '试一下', turnCount: 2 })
+    expect(summary.body).toMatchObject({ totalUsers: 2, totalSessions: 2 })
+    // Studio mounts no turn-metrics recorder: the health view counts serve's two turns only.
+    expect(health.body).toMatchObject({ current: { summary: { requestCount: 2 } } })
+    const audit = readJsonLines<Record<string, unknown>>(join(home, 'studio', 'audit.jsonl'))
+    expect(audit.filter(line => line['action'] === 'chat.send')).toEqual([
+      { time: expect.any(Number), actor: 'root', action: 'chat.send', agent: 'desk', message: 'm-try' },
+      { time: expect.any(Number), actor: 'root', action: 'chat.send', agent: 'desk', message: expect.any(String), session: sessionId },
+    ])
   })
 })
 

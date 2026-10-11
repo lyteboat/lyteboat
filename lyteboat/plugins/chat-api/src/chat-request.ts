@@ -6,7 +6,7 @@
 
 import type { IncomingMessage } from 'node:http'
 import { z } from 'zod'
-import type { JsonValue } from '@lyteboat/contracts'
+import type { JsonValue, LyteboatRequestOwner } from '@lyteboat/contracts'
 
 /** Why a request was refused before its stream started. */
 export type ChatApiErrorCode =
@@ -46,10 +46,11 @@ export class ChatApiError extends Error {
   }
 }
 
-/** One `/chat` request, as the endpoint reads it. */
+/** One message to answer, as `/chat` reads it or the Studio's test window sends it. */
 export interface ChatRequest {
   agentId: string
-  userId: string
+  /** Who the request speaks for: `/chat` names an end user (`user_id`); the Studio names its signed-in account as an operator. */
+  owner: LyteboatRequestOwner
   message: string
   sessionId: string | undefined
   messageId: string | undefined
@@ -98,7 +99,7 @@ export function parseChatRequest(text: string): ChatRequest {
   const body = parsed.data
   return {
     agentId: body.agent_id,
-    userId: body.user_id,
+    owner: { kind: 'user', id: body.user_id },
     message: body.message,
     sessionId: body.session_id,
     messageId: body.message_id,

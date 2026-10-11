@@ -10,7 +10,7 @@ import { appendFile, mkdir } from 'node:fs/promises'
 import { join } from 'node:path'
 
 /** What a line records. */
-type StudioAuditAction = 'login.failed' | 'grant.set' | 'grant.remove' | 'agents.reload' | 'skill.update' | 'eval.start' | 'eval.stop' | 'eval.delete'
+type StudioAuditAction = 'login.failed' | 'grant.set' | 'grant.remove' | 'agents.reload' | 'skill.update' | 'eval.start' | 'eval.stop' | 'eval.delete' | 'chat.send'
 
 /** One line of the audit log, beside its time. */
 interface StudioAuditEntry {
