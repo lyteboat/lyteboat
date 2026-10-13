@@ -1,8 +1,25 @@
 # Changelog
 
-lyteboat has no releases. The tracked dsh release is in `dsh.upstream.json`.
+lyteboat's releases, newest first. Every package under `lyteboat/` carries the release's version. The tracked dsh release is in `dsh.upstream.json`.
 
-## Unreleased
+## 0.1.1
+
+The Studio's test window: an editor tries an agent in the Studio, and the agent's own card components draw there. Nothing a 0.1.0 agent, profile, or `cordis.yml` uses changes; the kernel and the tracked dsh release (0.2.0-rc.2) are the same.
+
+### Studio
+
+- `@lyteboat/studio-web`: the test window, a panel beside an agent's workspace ("Test agent", editors and admins). It streams the thinking and tool calls in a folding card, the answer text (the reference implementation's restricted markdown), and the A2UI cards, drawn by a renderer of the default catalog's sixteen components. Under each answer a line reads the turn from its session (skill, outcome, duration), and 看过程 opens the Sessions page at that turn. The panel offers the request contexts of the agent's eval cases or one typed as JSON, a welcome with one prompt per skill, the editor's earlier test sessions, and switches for streaming and thinking; it docks at `clamp(320px, 25vw, 440px)` and overlays the workspace below 1272 px. Every page's font sizes read a six-step scale.
+- An agent's own card components: an agent may keep a browser ES module at `web/card-components.js` whose default export maps a component type to a function `(props, card) => Element`; the test window draws those types with it (`card.text`, `card.value`, `card.applyCommonProps`, `card.act`). `GET /studio/agents/<id>/card-components.js` serves the file without sign-in and uncached, and answers 404 for an agent without one, an unknown agent, or a Studio without an agent catalog. A default type's name or an entry that is not a function is left out and named under the window's header; a component that throws or returns no element draws as a placeholder with why; a type no module draws is a grey placeholder. `docs/03-agent-development.md` §1.3 describes the file. `serve` does not read it.
+- `@lyteboat/studio-api`: `POST agents/:id/chat` (editors) sends one message to an agent and answers with the turn as `/chat`'s enterprise event stream. The session is owned by the editor's account as an operator (`operator:<user id>`), so only that account continues it; it is stored with the business sessions, listed on the Sessions page, and left out of the Dashboard. Each message is audited as `chat.send`, without its text. The route mounts only while `chatApi` is mounted, and dsh's own `/api` answers 404. The agent radar lists an agent's card components module with its content hash (`cardComponents.version`).
+- `@lyteboat/studio`: the bundle adds the workspace, the client connection, file upload, dsh's session controller, and `@lyteboat/chat-api` without its routes; the typed-RPC gateway stays off, so the Studio serves no `/chat` and no `/api/remote.mux`.
+
+### Plugins
+
+- `@lyteboat/chat-api`: a request names its owner (`user` or `operator`) instead of a user id, and `answer(request, response)` is public, so the Studio runs a turn through it. With `routes: false` it serves no `/chat`, `/agents`, or `/health` and needs no auth.
+- `@lyteboat/contracts`: the enterprise frame types (`ChatEnterpriseFrame` and its parts) move here so the browser can read them; `StudioChatRequest` and its schema; `StudioAgent.cardComponents` and `STUDIO_AGENT_CARD_COMPONENTS_FILE`.
+- `@lyteboat/testkit`: `streamStudioChat` reads the test window's stream in a test.
+
+## 0.1.0 (2026-10-09)
 
 lyteboat is an agent harness for business agents, built as Cordis plugins on DeepSeek Harness (dsh) 0.2.0-rc.2, and a distribution of dsh: it owns the source of dsh's kernel packages under their published names and promises plugins written against dsh the protocol, interfaces, and behavior of that release (`dsh-compat/COMPAT.md`).
 

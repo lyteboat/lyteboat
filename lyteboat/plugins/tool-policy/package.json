@@ -1,6 +1,6 @@
 {
   "name": "@lyteboat/tool-policy",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "lyteboat's tool policy over the dsh tool registry: visibility (always/auto + activation, and whether an agent's undeclared inherited tools stay visible) and tool-result state deltas folded into the lyteboatState projection",
   "repository": {

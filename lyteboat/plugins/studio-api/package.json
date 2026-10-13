@@ -1,6 +1,6 @@
 {
   "name": "@lyteboat/studio-api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "lyteboat Studio's HTTP API under /api/studio on the host web server: the Host allowlist and security headers, sign-in, role checks, users, the system page, and the agent radar, with an audit log of every change",
   "repository": {

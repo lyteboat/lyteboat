@@ -1,6 +1,6 @@
 {
   "name": "@lyteboat/agent-inspector",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "lyteboat's agent inspector: an agent's tools (what reaches the model and how), skills, and skill routing, read from its standing scope without creating an agent instance or writing to disk",
   "repository": {

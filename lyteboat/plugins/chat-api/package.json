@@ -1,6 +1,6 @@
 {
   "name": "@lyteboat/chat-api",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "lyteboat's /chat endpoint on the host web server: a caller's message reaches an agent through dsh's session controller with its request on the source, after the history it brings is queued as turns of their own, and the answer returns as JSON or an enterprise event stream with cards placed",
   "repository": {
