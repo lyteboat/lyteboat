@@ -3,8 +3,11 @@
  * implementation's renderer (`static/a2ui-renderer.js`) draws the default
  * catalog's sixteen components: Row, Column, Card, List, CollapseList,
  * Table, Popup, Text, RichText, Image, Icon, Tag, Circle, Divider, Line, and
- * Button. Any other type is an agent's own component, which the Studio does
- * not have: it draws as a grey box named for it. The card's sizes and colours
+ * Button. Any other type is an agent's own component: the agent's card
+ * components module draws it when the module has it (an element the
+ * function returns is mounted in place, and one that throws or returns no
+ * element draws as a grey box with why), and otherwise it draws as a grey
+ * box named for it. The card's sizes and colours
  * are the agent's and stay as written; the reference's defaults (a button's
  * orange, a tag's amber) are ported with it. Differences: RichText shows its
  * text without markup (the Studio does not insert a model's HTML); an image
@@ -15,7 +18,7 @@
  * @module @lyteboat/studio-web/client/studio-a2ui-card
  */
 
-import { createContext, useContext, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
+import { createContext, useContext, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from 'react'
 import type { JsonValue } from '@lyteboat/contracts'
 import {
   isStudioA2uiObject,
@@ -32,6 +35,7 @@ import {
   type StudioA2uiObject,
   type StudioA2uiSurface,
 } from './studio-a2ui-binding.ts'
+import { STUDIO_AGENT_NO_CARD_COMPONENTS, type StudioAgentCardApi, type StudioAgentCardComponents, type StudioAgentCardDraw } from './studio-agent-card-components.ts'
 
 /** What every component of one card reads. */
 interface StudioA2uiCardScope {
@@ -39,6 +43,7 @@ interface StudioA2uiCardScope {
   openPopups: ReadonlySet<string>
   setPopup(id: string, open: boolean): void
   onQuery(message: string): void
+  agentComponents: StudioAgentCardComponents
 }
 
 const StudioA2uiCardContext = createContext<StudioA2uiCardScope | null>(null)
@@ -510,6 +515,50 @@ function PopupBox({ id, props, scope }: { id: string; props: StudioA2uiObject; s
   )
 }
 
+const AGENT_COMPONENT_MISSING = '这是 agent 自带的组件，Studio 没有它的画法'
+
+/** An agent's component: its function draws an element, which is mounted in place of this one. */
+function AgentComponentLeaf({ type, draw, props, scope }: { type: string; draw: StudioAgentCardDraw; props: StudioA2uiObject; scope: StudioA2uiObject | null }) {
+  const card = useCardScope()
+  const host = useRef<HTMLDivElement>(null)
+  const [failure, setFailure] = useState<string | null>(null)
+  // The latest card for the element's actions; a redraw would drop the element's own state (an expanded row).
+  const latest = useRef(card)
+  latest.current = card
+  const data = card.surface.data
+  // A list row's scope is a new object on every render; its content decides a redraw.
+  const scopeKey = JSON.stringify(scope)
+  useLayoutEffect(() => {
+    const element = host.current
+    if (element === null) return undefined
+    const api: StudioAgentCardApi = {
+      data,
+      scope,
+      text: binding => studioA2uiText(binding, scope, data),
+      value: binding => studioA2uiValue(binding, scope, data),
+      applyCommonProps: (target, targetProps) => { Object.assign(target.style, commonStyle(targetProps, scope, data)) },
+      act: action => runActions(action, latest.current),
+    }
+    let drawn: unknown
+    try {
+      drawn = draw(props, api)
+    } catch (error: unknown) {
+      setFailure(error instanceof Error ? error.message : String(error))
+      return undefined
+    }
+    if (!(drawn instanceof Element)) {
+      setFailure('没有返回 DOM 元素')
+      return undefined
+    }
+    setFailure(null)
+    element.replaceChildren(drawn)
+    return () => { element.replaceChildren() }
+  }, [draw, props, scopeKey, data])
+  if (failure !== null) return <div className="chat-a2ui-placeholder" title={failure}>{type}：{failure}</div>
+  // The wrapper takes no box, so the drawn element sits in its parent's flex row or column itself.
+  return <div ref={host} style={{ display: 'contents' }} />
+}
+
 /** One component by id; an id the card does not have draws nothing. */
 function StudioA2uiNode({ id, scope }: { id: string; scope: StudioA2uiObject | null }): ReactNode {
   const { surface } = useCardScope()
@@ -534,8 +583,14 @@ function StudioA2uiNode({ id, scope }: { id: string; scope: StudioA2uiObject | n
     case 'Table': return <TableBox props={props} scope={scope} />
     case 'Popup': return <PopupBox id={id} props={props} scope={scope} />
     default:
-      return <div className="chat-a2ui-placeholder" title="这是 agent 自带的组件，Studio 没有它的画法">{type}</div>
+      return <StudioAgentNode props={props} scope={scope} type={type} />
   }
+}
+
+function StudioAgentNode({ type, props, scope }: { type: string; props: StudioA2uiObject; scope: StudioA2uiObject | null }) {
+  const draw = useCardScope().agentComponents.draws.get(type)
+  if (draw === undefined) return <div className="chat-a2ui-placeholder" title={AGENT_COMPONENT_MISSING}>{type}</div>
+  return <AgentComponentLeaf draw={draw} props={props} scope={scope} type={type} />
 }
 
 /** Scale the card down to the window's width when it is wider; returns the scale and the drawn height. */
@@ -564,9 +619,11 @@ function useStudioCardFit(): { outer: RefObject<HTMLDivElement>; inner: RefObjec
  * One card of an answer.
  * @param payload - the `ui_data` of its A2UI frame.
  * @param onQuery - sends a message, for a card's `query` action.
+ * @param agentComponents - the agent's own components; default none.
  */
-export function StudioA2uiCard({ payload, onQuery }: { payload: JsonValue; onQuery(message: string): void }) {
-  const surface = studioA2uiSurface(payload)
+export function StudioA2uiCard({ payload, onQuery, agentComponents = STUDIO_AGENT_NO_CARD_COMPONENTS }: { payload: JsonValue; onQuery(message: string): void; agentComponents?: StudioAgentCardComponents }) {
+  // The same props objects from render to render, so an agent's component is drawn once per payload.
+  const surface = useMemo(() => studioA2uiSurface(payload), [payload])
   const [openPopups, setOpenPopups] = useState<ReadonlySet<string>>(() => new Set())
   const fit = useStudioCardFit()
   if (surface === null) return <div className="chat-a2ui-placeholder">无法显示的卡片</div>
@@ -580,6 +637,7 @@ export function StudioA2uiCard({ payload, onQuery }: { payload: JsonValue; onQue
       return next
     }),
     onQuery,
+    agentComponents,
   }
   return (
     <StudioA2uiCardContext.Provider value={scope}>

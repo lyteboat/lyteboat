@@ -7,6 +7,12 @@
  * answer carries a CSP that lets the pages load only their own scripts and
  * styles and talk only to their own origin, and `/` redirects to the Studio.
  * The pages call `@lyteboat/studio-api`; this row serves files and nothing else.
+ * One kind of file is an agent's rather than the build's: while `agentCatalog`
+ * is mounted, `/studio/agents/<id>/card-components.js` answers that agent's
+ * card components module (`STUDIO_AGENT_CARD_COMPONENTS_FILE` in its
+ * directory) as a script, uncached and without sign-in like the pages' own
+ * scripts, and 404 for an agent without one, an unknown agent, or a Studio
+ * without a catalog. No other file of an agent is reachable.
  * @module @lyteboat/studio-web
  */
 
@@ -17,6 +23,8 @@ import { fileURLToPath } from 'node:url'
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import z from '@deepseek-ai/schemastery'
+import type { AgentCatalogService } from '@lyteboat/agent-catalog'
+import { STUDIO_AGENT_CARD_COMPONENTS_FILE } from '@lyteboat/contracts/studio'
 
 /** Where the pages sit on the web server. */
 export const STUDIO_WEB_PREFIX = '/studio'
@@ -79,6 +87,23 @@ function sendBuiltFile(request: IncomingMessage, response: ServerResponse, file:
   else createReadStream(file).pipe(response)
 }
 
+// The pages import it from here (studio-chat-panel); one fixed name, so no path of the agent's reaches the disk.
+const AGENT_CARD_COMPONENTS_PATH = /^\/agents\/([^/]+)\/card-components\.js$/u
+
+/** The card components module of the agent a path names, when the path names one and the agent has it. */
+function agentCardComponentsOf(catalog: AgentCatalogService | undefined, encodedId: string): string | undefined {
+  let id: string
+  try {
+    id = decodeURIComponent(encodedId)
+  } catch {
+    return undefined
+  }
+  const entry = catalog?.get(id)
+  if (entry === undefined) return undefined
+  const file = join(entry.dir, STUDIO_AGENT_CARD_COMPONENTS_FILE)
+  return existsSync(file) && statSync(file).isFile() ? file : undefined
+}
+
 export default class StudioWebPages {
   /** The web server the pages are served on. */
   static inject = ['webServer']
@@ -96,12 +121,24 @@ export default class StudioWebPages {
     const webDir = resolve(studioWebConfig.webDir ?? BUILT_WEB_DIR)
     if (!existsSync(join(webDir, 'index.html'))) throw new Error(`studio-web: the pages are not built (no ${join(webDir, 'index.html')}); run pnpm run build`)
     const index = readFileSync(join(webDir, 'index.html'))
+    let catalog: AgentCatalogService | undefined
+    ctx.inject(['agentCatalog'], (catalogCtx) => {
+      catalog = catalogCtx.agentCatalog
+      catalogCtx.effect(() => () => { catalog = undefined }, 'studio-web: agent card components')
+    })
     const handler = (request: IncomingMessage, response: ServerResponse): void => {
       if (request.method !== 'GET' && request.method !== 'HEAD') {
         sendStudioText(response, 405, 'use GET', { allow: 'GET, HEAD' })
         return
       }
       const path = new URL(request.url ?? '/', 'http://studio.invalid').pathname.slice(STUDIO_WEB_PREFIX.length)
+      const agentModule = AGENT_CARD_COMPONENTS_PATH.exec(path)
+      if (agentModule !== null) {
+        const file = agentCardComponentsOf(catalog, agentModule[1] ?? '')
+        if (file === undefined) sendStudioText(response, 404, 'not found')
+        else sendBuiltFile(request, response, file, 'no-cache')
+        return
+      }
       const file = path === '' || path === '/' ? undefined : builtFileOf(webDir, path)
       if (file !== undefined) {
         sendBuiltFile(request, response, file, path.startsWith('/assets/') ? 'public, max-age=31536000, immutable' : 'no-cache')

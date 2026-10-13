@@ -3,7 +3,9 @@
  * its digest, and the release lock beside it when there is one; an agent
  * whose directory no longer has the digest its lock names deviates from its
  * release (a hot-fix, an edit), and a `lyteboat serve --release` of that lock
- * would refuse it. The agents the catalog could not serve are listed with why.
+ * would refuse it. An agent with a card components module is listed with the
+ * module's content hash, so the pages fetch it again once it changes. The
+ * agents the catalog could not serve are listed with why.
  * @module @lyteboat/studio-api/studio-agents
  */
 
@@ -11,7 +13,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { AgentCatalogEntry, AgentCatalogFailure } from '@lyteboat/agent-catalog'
 import { LYTEBOAT_AGENT_RELEASE_FILE, lyteboatAgentReleaseSchema } from '@lyteboat/contracts'
-import type { StudioAgent, StudioAgentsAnswer } from '@lyteboat/contracts/studio'
+import { STUDIO_AGENT_CARD_COMPONENTS_FILE, type StudioAgent, type StudioAgentsAnswer } from '@lyteboat/contracts/studio'
 import { studioSchemaProblems } from './studio-api-router.ts'
 
 // The file `lyteboat release` writes beside the agent.
@@ -37,6 +39,8 @@ function releaseLockOf(entry: AgentCatalogEntry): StudioReleaseLock {
 
 function studioAgentOf(entry: AgentCatalogEntry): StudioAgent {
   const lock = releaseLockOf(entry)
+  // The digest hashes every file of the agent, so the module's hash is already there.
+  const cardComponents = entry.files[STUDIO_AGENT_CARD_COMPONENTS_FILE]
   return {
     id: entry.id,
     ...entry.name === undefined ? {} : { name: entry.name },
@@ -47,6 +51,7 @@ function studioAgentOf(entry: AgentCatalogEntry): StudioAgent {
     ...lock.kind === 'locked' ? { release: { version: lock.version, digest: lock.digest } } : {},
     ...lock.kind === 'unreadable' ? { releaseProblem: lock.problem } : {},
     deviates: lock.kind === 'locked' && lock.digest !== entry.identity.digest,
+    ...cardComponents === undefined ? {} : { cardComponents: { version: cardComponents } },
   }
 }
 

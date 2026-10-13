@@ -248,6 +248,8 @@ flowchart LR
 
 **`assets/a2ui/<card>/`。** `template.json` 必需，`manifest.yaml`、`business_hierarchy.yaml`、`compute.js` 可选（`lyteboat/plugins/a2ui/src/loader.ts` `FILES`、`loadBundle`）。manifest 的出卡模式和三种取值见 §2.9。
 
+**`web/card-components.js`（可选）。** 卡片里有默认 16 种以外的组件（饼图、进度条这类业务组件）时，Studio 测试窗靠这个文件画它们，没有它就画成灰色占位框。它是普通的浏览器 ES 模块，不经过 tsc，默认导出「组件名 → 函数」：函数收到组件的 props 和 `card`，返回一个新的 DOM 元素。`card.text(binding)`、`card.value(binding)` 解析绑定（先看列表行，再看卡片的 data），`card.applyCommonProps(el, props)` 套上每个组件都有的宽高、间距、背景、圆角、边框、`hide`，`card.act(action)` 执行动作。样式只能写在 `el.style` 上，Studio 的 CSP 不允许 `<style>` 和带内联样式的 HTML。和默认组件重名的、不是函数的项会被跳过，测试窗顶部报一行原因。Studio 在 `/studio/agents/<id>/card-components.js` 免登录提供它，agent 雷达给出它的内容哈希，文件一改测试窗就重新加载（`lyteboat/plugins/studio-web/src/client/studio-agent-card-components.ts`）。它算进目录摘要；serve 不读它。
+
 **`assets/sample-data/`。** agent 运行时读的业务数据和示例输入。
 
 **为什么这三样放在 `assets/`。** `assets/` 与 `src/`、`lib/` 同级（`.claude/rules/agent-design.md`）。tsc 只把 `.ts` 编译进 `lib/`，不拷贝其他文件；声明里的路径（`skillDirs`、`a2uiRenderTool.templatesDir`）和钩子里的 `host.agentPath(...)` 都相对 agent 目录解析，所以单元测试（跑 `src/agent.ts`）和 CLI、组合测试（跑 `lib/agent.js`）找到的是同一个 `assets/`，不需要拷贝文件的构建步骤（§2.4、§2.14）。`package.json` 的 `files` 写 `assets` 一项即可。

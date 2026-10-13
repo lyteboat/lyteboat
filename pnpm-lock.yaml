@@ -2384,6 +2384,12 @@ importers:
       '@deepseek-ai/schemastery':
         specifier: 'catalog:'
         version: 3.18.4
+      '@lyteboat/agent-catalog':
+        specifier: workspace:*
+        version: link:../agent-catalog
+      '@lyteboat/contracts':
+        specifier: workspace:*
+        version: link:../../core/contracts
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: catalog:cordis
@@ -2391,9 +2397,6 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: catalog:dsh
         version: 0.2.0-rc.2(@deepseek-ai/cordis@4.0.4)
-      '@lyteboat/contracts':
-        specifier: workspace:*
-        version: link:../../core/contracts
       '@lyteboat/testkit':
         specifier: workspace:*
         version: link:../../test-support/testkit
