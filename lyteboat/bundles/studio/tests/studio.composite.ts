@@ -4,7 +4,8 @@
  * accounts sign in, the radar lists the agents that mounted and the one that
  * failed, roles gate the Users endpoints and a reload, the System page answers,
  * an agent's workspace shows its tools as the business base leaves them, its
- * skills and their diagnostics, the pages are served at /studio, and neither
+ * skills and their diagnostics, the pages are served at /studio with an
+ * agent's card components module beside them, and neither
  * /chat nor dsh's own /api is served. An admin's hot-fix of a released
  * agent's skill (on a copy of it) is saved, audited, and shows the agent
  * deviating from its release; an agent directory that appears under that
@@ -192,6 +193,23 @@ describe('lyteboat studio (in process)', () => {
     expect(page.headers.get('content-security-policy')).toContain('script-src \'self\'')
     expect(await page.text()).toContain('<title>轻舟 Studio</title>')
     expect(root.headers.get('location')).toBe('/studio/')
+  })
+
+  it('lists the version of an agent\'s card components module and serves the module to the pages without sign-in', async () => {
+    const viewer = await login('vera', 'pw-vera')
+    const file = readFileSync(join(AGENTS, 'helper', 'web', 'card-components.js'))
+
+    const agents = (await call('GET', 'agents', viewer)).body['agents'] as { id: string; cardComponents?: { version: string } }[]
+    const module = await fetch(`${origin}/studio/agents/helper/card-components.js`)
+    const none = await fetch(`${origin}/studio/agents/desk/card-components.js`)
+    const unknown = await fetch(`${origin}/studio/agents/nobody/card-components.js`)
+
+    expect(agents.map(agent => [agent.id, agent.cardComponents])).toEqual([['desk', undefined], ['helper', { version: createHash('sha256').update(file).digest('hex') }]])
+    expect(module.status).toBe(200)
+    expect(module.headers.get('content-type')).toBe('text/javascript; charset=utf-8')
+    expect(module.headers.get('cache-control')).toBe('no-cache')
+    expect(await module.text()).toBe(file.toString('utf8'))
+    expect([none.status, unknown.status]).toEqual([404, 404])
   })
 
   it('serves neither /chat nor dsh\'s own /api, which the test window does not use', async () => {

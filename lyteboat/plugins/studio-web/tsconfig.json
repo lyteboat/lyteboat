@@ -5,6 +5,10 @@
     "outDir": "lib"
   },
   "include": ["src"],
+  "references": [
+    { "path": "../../core/contracts" },
+    { "path": "../agent-catalog" }
+  ],
   // The pages type-check on their own (tsconfig.client.json: DOM and React JSX, no Node);
   // scripts/dist/build-studio-web.ts bundles them into lib/web.
   "exclude": ["src/client"]

@@ -2,8 +2,8 @@
  * The test window's model without a browser: the enterprise stream cut into
  * frames and folded into one answer, the answer text cut into blocks, a turn's
  * facts read from its timeline, the welcome and the request contexts built from
- * the agent's skills and cases, the panel's width, and the A2UI bindings a card
- * resolves.
+ * the agent's skills and cases, the panel's width, the A2UI bindings a card
+ * resolves, and the components an agent's card components module provides.
  */
 import { describe, expect, it } from 'vitest'
 import type { ChatEnterpriseEvent, ChatEnterpriseFrame, ChatEnterpriseFrameData } from '@lyteboat/contracts'
@@ -28,6 +28,7 @@ import {
   studioA2uiText,
   studioA2uiTextSize,
 } from '../src/client/studio-a2ui-binding.ts'
+import { studioAgentCardComponentsOf } from '../src/client/studio-agent-card-components.ts'
 
 function frame(id: number, event: ChatEnterpriseEvent, data: Partial<ChatEnterpriseFrameData> = {}): ChatEnterpriseFrame {
   return {
@@ -210,5 +211,26 @@ describe('A2UI bindings', () => {
     expect(studioA2uiLength('auto')).toBe('auto')
     expect(studioA2uiTextSize('xlarge')).toBe('16px')
     expect(studioA2uiTextSize('huge')).toBeUndefined()
+  })
+})
+
+describe('agent card components', () => {
+  it('studioAgentCardComponentsOf keeps the functions of the default export', () => {
+    const pie = (): null => null
+    const components = studioAgentCardComponentsOf({ default: { Pie: pie } })
+    expect([...components.draws]).toEqual([['Pie', pie]])
+    expect(components.problems).toEqual([])
+  })
+
+  it('studioAgentCardComponentsOf leaves out a default type and a value that is not a function, naming each', () => {
+    const components = studioAgentCardComponentsOf({ default: { Row: () => null, Gauge: 'svg', Pie: () => null } })
+    expect([...components.draws.keys()]).toEqual(['Pie'])
+    expect(components.problems).toEqual(['card-components.js：Row 和默认组件重名，仍按默认画法', 'card-components.js：Gauge 不是函数'])
+  })
+
+  it('studioAgentCardComponentsOf provides nothing when the default export is not an object', () => {
+    for (const namespace of [{}, { default: [() => null] }, { default: () => null }, null]) {
+      expect(studioAgentCardComponentsOf(namespace)).toEqual({ draws: new Map(), problems: ['card-components.js 的默认导出不是「组件名 → 函数」的对象'] })
+    }
   })
 })

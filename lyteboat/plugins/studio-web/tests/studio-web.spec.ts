@@ -3,7 +3,8 @@
  * build: a page path answers the app's index, a built asset is served and
  * cached for good, a missing asset or a path out of the build is 404 (never the
  * page), other methods are refused, `/` redirects to the Studio, every answer
- * carries the CSP, and a Studio without a build refuses to start.
+ * carries the CSP, a Studio without a build refuses to start, and one without
+ * an agent catalog has no agent's card components to serve.
  */
 import { request as httpRequest } from 'node:http'
 import { fileURLToPath } from 'node:url'
@@ -68,6 +69,14 @@ describe('the Studio pages', () => {
 
     expect(posted).toMatchObject({ status: 405, headers: { allow: 'GET, HEAD' } })
     expect(root).toMatchObject({ status: 302, headers: { location: '/studio/' } })
+  })
+
+  it('answer 404 for an agent\'s card components when no agent catalog is mounted, never the page', async () => {
+    const get = await pagesHost()
+
+    const module = await get('GET', '/studio/agents/finance/card-components.js')
+
+    expect(module).toMatchObject({ status: 404, body: 'not found' })
   })
 
   it('refuse to start without a build', async () => {

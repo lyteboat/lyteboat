@@ -10,7 +10,9 @@
  * the turn ends the panel reads the session once for the line under the
  * answer (skill, outcome, duration) and its 看过程 link, which opens the
  * session at that turn. The contexts are the agent's eval cases', or one
- * typed as a JSON object; the switches act in this browser only.
+ * typed as a JSON object; the switches act in this browser only. An agent
+ * with a card components module has it imported once per version, and what
+ * is wrong with the module shows in one line under the header.
  * @module @lyteboat/studio-web/client/studio-chat-panel
  */
 
@@ -19,6 +21,7 @@ import { useNavigate } from 'react-router-dom'
 import type { JsonValue } from '@lyteboat/contracts'
 import type { StudioAgent, StudioSessionSummary } from '@lyteboat/contracts/studio'
 import { StudioA2uiCard } from './studio-a2ui-card.tsx'
+import { STUDIO_AGENT_NO_CARD_COMPONENTS, loadStudioAgentCardComponents, type StudioAgentCardComponents } from './studio-agent-card-components.ts'
 import { studioApi, studioErrorMessage } from './studio-api-client.ts'
 import { useStudioAuth } from './studio-auth-context.tsx'
 import {
@@ -70,6 +73,21 @@ function useStudioChatOffers(agentId: string): { welcome: StudioChatWelcome; pro
     return () => { current = false }
   }, [agentId])
   return offers
+}
+
+/** The agent's card components, imported again when the module's version changes. */
+function useStudioAgentCardComponents(agentId: string, version: string | undefined): StudioAgentCardComponents {
+  const [components, setComponents] = useState(STUDIO_AGENT_NO_CARD_COMPONENTS)
+  useEffect(() => {
+    if (version === undefined) {
+      setComponents(STUDIO_AGENT_NO_CARD_COMPONENTS)
+      return undefined
+    }
+    let current = true
+    void loadStudioAgentCardComponents(agentId, version).then((loaded) => { if (current) setComponents(loaded) })
+    return () => { current = false }
+  }, [agentId, version])
+  return components
 }
 
 /** The conversation: its exchanges, its session, and sending. */
@@ -242,7 +260,13 @@ function StudioChatFacts({ agentId, answer, facts }: { agentId: string; answer: 
   )
 }
 
-function StudioChatExchangeView({ agentId, exchange, showThinking, onQuery }: { agentId: string; exchange: StudioChatExchange; showThinking: boolean; onQuery(message: string): void }) {
+function StudioChatExchangeView({ agentId, agentComponents, exchange, showThinking, onQuery }: {
+  agentId: string
+  agentComponents: StudioAgentCardComponents
+  exchange: StudioChatExchange
+  showThinking: boolean
+  onQuery(message: string): void
+}) {
   const { answer } = exchange
   const running = answer.state === 'running'
   return (
@@ -253,7 +277,7 @@ function StudioChatExchangeView({ agentId, exchange, showThinking, onQuery }: { 
         <div className="chat-answer-flow">
           {answer.parts.map((part, index) => part.kind === 'text'
             ? <StudioChatText key={index} text={part.text} />
-            : <div className="chat-a2ui-part" key={index}><StudioA2uiCard onQuery={onQuery} payload={part.payload} /></div>)}
+            : <div className="chat-a2ui-part" key={index}><StudioA2uiCard agentComponents={agentComponents} onQuery={onQuery} payload={part.payload} /></div>)}
           {running && answer.parts.length === 0 && <div className="chat-bubble chat-answer-bubble chat-typing">…</div>}
         </div>
         {answer.state === 'failed' && <div className="chat-error">{answer.error ?? '这一轮没有完成'}</div>}
@@ -386,6 +410,7 @@ export function StudioChatPanel({ agent, onClose, onResizeStart }: { agent: Stud
   const [historyOpen, setHistoryOpen] = useState(false)
   const [notice, setNotice] = useState<string | null>(null)
   const conversation = useStudioChatConversation(agent.id, streaming)
+  const agentComponents = useStudioAgentCardComponents(agent.id, agent.cardComponents?.version)
   const scroller = useRef<HTMLDivElement | null>(null)
 
   // The eval cases' first context is the default, once they are read.
@@ -428,13 +453,14 @@ export function StudioChatPanel({ agent, onClose, onResizeStart }: { agent: Stud
         </div>
         {historyOpen && <StudioChatHistory agentId={agent.id} current={conversation.sessionId} onClose={() => setHistoryOpen(false)} onPick={pick} />}
       </header>
+      {agentComponents.problems.length > 0 && <div className="chat-notice">{agentComponents.problems.join('；')}</div>}
       {choice === 'typed' && (
         <textarea aria-label="手填 context（JSON 对象）" className="chat-context-typed mono" onChange={event => setTyped(event.target.value)} placeholder='{"customer": "..."}' rows={2} value={typed} />
       )}
       <div className="chat-scroll" ref={scroller}>
         {conversation.exchanges.length === 0
           ? <StudioChatWelcomeView description={agent.description} onSend={message => { send(message) }} welcome={welcome} />
-          : conversation.exchanges.map(exchange => <StudioChatExchangeView agentId={agent.id} exchange={exchange} key={exchange.id} onQuery={message => { send(message) }} showThinking={thinking} />)}
+          : conversation.exchanges.map(exchange => <StudioChatExchangeView agentComponents={agentComponents} agentId={agent.id} exchange={exchange} key={exchange.id} onQuery={message => { send(message) }} showThinking={thinking} />)}
       </div>
       {notice !== null && <div className="chat-notice">{notice}</div>}
       <StudioChatComposer

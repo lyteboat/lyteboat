@@ -131,7 +131,20 @@ export type StudioAgent = {
   deviates: boolean
   /** Why the release lock beside the agent could not be read; the agent is listed without one. */
   releaseProblem?: string
+  /**
+   * The agent's card components module ({@link STUDIO_AGENT_CARD_COMPONENTS_FILE}),
+   * when it has one: `version` is the sha256 of its content, which changes
+   * whenever the file does.
+   */
+  cardComponents?: { version: string }
 }
+
+/**
+ * Where an agent keeps the card components the Studio's test window draws
+ * beside the default catalog, relative to its directory: a browser ES module
+ * whose default export maps a component type to a function that draws it.
+ */
+export const STUDIO_AGENT_CARD_COMPONENTS_FILE = 'web/card-components.js'
 
 /** One agent the catalog could not serve. */
 export type StudioAgentFailure = {
