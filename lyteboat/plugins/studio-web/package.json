@@ -1,6 +1,6 @@
 {
   "name": "@lyteboat/studio-web",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "lyteboat Studio's pages: a React single-page app (src/client) built into lib/web and served at /studio on the host web server under a strict CSP",
   "repository": {

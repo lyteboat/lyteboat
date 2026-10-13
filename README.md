@@ -194,11 +194,11 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 
 ### 在独立仓库里用 npm 包
 
-业务 agent 也可以放在自己的仓库里，只依赖 npm 上的 `@lyteboat/*`。这样的仓库用 pnpm，在 `pnpm-workspace.yaml` 里写一项 config dependency，完整性校验值用 `npm view @lyteboat/pnpm-plugin-kernel@0.1.0 dist.integrity` 查：
+业务 agent 也可以放在自己的仓库里，只依赖 npm 上的 `@lyteboat/*`。这样的仓库用 pnpm，在 `pnpm-workspace.yaml` 里写一项 config dependency，完整性校验值用 `npm view @lyteboat/pnpm-plugin-kernel@0.1.1 dist.integrity` 查：
 
 ```yaml
 configDependencies:
-  "@lyteboat/pnpm-plugin-kernel": "0.1.0+sha512-…"
+  "@lyteboat/pnpm-plugin-kernel": "0.1.1+sha512-…"
 ```
 
 轻舟改过的内核包不换名字另发。有了这一项，pnpm 照常装官方的 `@deepseek-ai/dsh-*`，再打上轻舟的补丁；它还把 dsh 和 cordis 钉在所跟踪的版本，并把 `@deepseek-ai/*`、`@lyteboat/*` 提升到根 `node_modules`。依赖里写 `@lyteboat/cli`（提供 `lyteboat` 命令）和 agent 代码 import 的包，通常是 `@lyteboat/agent-definition`、`@lyteboat/a2ui`、`@lyteboat/contracts`、`@lyteboat/request-admission` 和 `@deepseek-ai/dsh-tools`，单测再加 `@lyteboat/testkit`。所有 `@lyteboat/*` 用同一个版本。agent 目录的写法同上一节，`lyteboat serve --agents ./agents` 照常运行。

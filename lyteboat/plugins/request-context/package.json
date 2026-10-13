@@ -1,6 +1,6 @@
 {
   "name": "@lyteboat/request-context",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "lyteboat's request context: the request a human message answers to (request id, context, admission verdict) rides the message's own source, and the lyteboatRequest projection keeps the session's context",
   "repository": {

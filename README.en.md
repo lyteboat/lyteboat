@@ -194,11 +194,11 @@ The [agent development guide](docs/03-agent-development.md) walks through every 
 
 ### Using the npm packages from another repository
 
-A business agent can live in a repository of its own that depends only on the `@lyteboat/*` packages on npm. Such a repository uses pnpm and lists one config dependency in `pnpm-workspace.yaml`; its integrity is `npm view @lyteboat/pnpm-plugin-kernel@0.1.0 dist.integrity`:
+A business agent can live in a repository of its own that depends only on the `@lyteboat/*` packages on npm. Such a repository uses pnpm and lists one config dependency in `pnpm-workspace.yaml`; its integrity is `npm view @lyteboat/pnpm-plugin-kernel@0.1.1 dist.integrity`:
 
 ```yaml
 configDependencies:
-  "@lyteboat/pnpm-plugin-kernel": "0.1.0+sha512-…"
+  "@lyteboat/pnpm-plugin-kernel": "0.1.1+sha512-…"
 ```
 
 lyteboat does not republish the kernel packages it changes under names of its own. With this entry, pnpm installs the official `@deepseek-ai/dsh-*` packages and applies lyteboat's patches; the plugin also pins dsh and cordis to the tracked versions and hoists `@deepseek-ai/*` and `@lyteboat/*` to the root `node_modules`. List `@lyteboat/cli` (the `lyteboat` command) and the packages the agent's code imports, usually `@lyteboat/agent-definition`, `@lyteboat/a2ui`, `@lyteboat/contracts`, `@lyteboat/request-admission`, and `@deepseek-ai/dsh-tools`, plus `@lyteboat/testkit` for unit tests, all `@lyteboat/*` at one version. The agent directory is written as in the previous section, and `lyteboat serve --agents ./agents` runs it.

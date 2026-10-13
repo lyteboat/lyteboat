@@ -1,6 +1,6 @@
 {
   "name": "@lyteboat/turn-outcome",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "lyteboat's turn outcome: the lyteboatTurnOutcomes projection folds each turn's request, counts, tool calls, and outcome from the session log once, and the turnOutcome service reads it, waits for the turn that answers a request, and folds a stored log the same way",
   "repository": {

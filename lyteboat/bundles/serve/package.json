@@ -1,6 +1,6 @@
 {
   "name": "@lyteboat/serve",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "lyteboat's service bundle over dsh-base: serve every agent of the --agents directories over HTTP (POST /chat, GET /agents, GET /health) through dsh's session controller",
   "repository": {

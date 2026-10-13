@@ -1,6 +1,6 @@
 {
   "name": "@lyteboat/request-admission",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "lyteboat's admission at the first step of each turn: an agent registers an admission function, which the service runs on the turn's human message on the lyteboat/intake waterfall; a reply verdict answers the turn without a model request and logs the message with the verdict on its request",
   "repository": {

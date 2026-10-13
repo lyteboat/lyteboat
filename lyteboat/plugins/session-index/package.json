@@ -1,6 +1,6 @@
 {
   "name": "@lyteboat/session-index",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "description": "lyteboat's session index: an agent's stored sessions listed, searched, folded into a timeline, and read as stored, through read handles that never take a session's write ownership",
   "repository": {
