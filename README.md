@@ -101,7 +101,7 @@ lyteboat studio --agents ./examples/agents                     # Studio 工作�
 |---|---|
 | `lyteboat web [选项]` | 原生底座：dsh 自己的 web 应用，dsh 的编码 agent 和个人助理，和官方 dsh 一样（profile `web`，就是 dsh 的 web 模板）；`--no-open`、`--port` 等是 dsh web 自己的参数，`lyteboat web --help` |
 | `lyteboat headless [选项] "任务"` | 原生底座：用 dsh 自己的 agent 回答一个任务后退出（profile `headless`，就是 dsh 的 headless 模板）；`--json`、`--session-id`、从标准输入读任务都是 dsh 一次性 runner 的，`lyteboat headless -h`。它不跑业务 agent：带 `--agents` 或 `--agent` 时退出 1，提示改用 `lyteboat serve` 或 `lyteboat eval` |
-| `lyteboat serve [选项]` | 把 `--agents` 目录里的全部 agent 以 HTTP 服务出去（profile `serve`）：`POST /chat`、`GET /agents`、`GET /health` |
+| `lyteboat serve [选项]` | 把 `--agents` 目录里的全部 agent 以 HTTP 服务出去（profile `serve`）：`POST /chat`、`GET /chat/history`、`GET /agents`、`GET /health` |
 | `lyteboat eval [选项]` | 跑一个 agent 的评测用例并逐轮检查（profile `eval`）；`lyteboat eval compare <前> <后>` 比较两次运行 |
 | `lyteboat release [选项]` | 让一个 agent 过发布闸门，通过就写下它的发布锁 `<agent>/agent.release.json`（profile `eval`，同 `lyteboat eval release`）；`--agents`、`--agent` 必填；通过退出 0，被拒退出 1 并在 stderr 说明是哪一步 |
 | `lyteboat inspect [选项]` | 按业务模式的样子挂上一个 agent，打印它由什么组成：工具（怎样到达模型）、技能及每个技能的检查、评测用例文件（profile `inspect`）；不建 agent 实例，不调模型；挂上退出 0，挂不上退出 1 并说明原因 |

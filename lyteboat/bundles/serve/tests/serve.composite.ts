@@ -4,7 +4,8 @@
  * body or as the enterprise stream through dsh's session controller, records
  * the request on the human message, continues and queues within a session,
  * imports the history a request brings as turns of their own once each,
- * cancels the turn of a caller that left, refuses what it cannot answer
+ * cancels the turn of a caller that left, replays a session's conversation
+ * to its owner only, refuses what it cannot answer
  * with the status the protocol names, and records each turn's run metric.
  */
 import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -252,6 +253,25 @@ describe('lyteboat serve (in process, scripted model)', () => {
     expect(await refusal({ agent_id: 'beta', user_id: 'owner', message: 'hi', session_id: sessionId })).toEqual([409, 'agent_mismatch'])
     const get = await fetch(chat)
     expect(get.status).toBe(405)
+  })
+
+  it('replays a session\'s conversation to its owner, and to nobody else', async () => {
+    const opened = await postChat(chat, { agent_id: 'alpha', user_id: 'reader', message: 'first' })
+    const sessionId = (opened.body as { session_id: string }).session_id
+    await postChat(chat, { agent_id: 'alpha', user_id: 'reader', message: 'second', session_id: sessionId })
+    const history = async (query: string): Promise<{ status: number; body: unknown }> => {
+      const reply = await fetch(new URL(`/chat/history?${query}`, chat))
+      return { status: reply.status, body: await reply.json() as unknown }
+    }
+
+    const mine = await history(`agent_id=alpha&user_id=reader&session_id=${sessionId}`)
+    expect(mine.status).toBe(200)
+    expect((mine.body as { entries: { role: string; text: string }[] }).entries.map(({ role, text }) => `${role}:${text}`))
+      .toEqual(['user:first', 'assistant:OK:first', 'user:second', 'assistant:OK:second'])
+    expect((await history(`agent_id=alpha&user_id=reader&session_id=${sessionId}&limit=1`)).body).toMatchObject({ entries: [{ role: 'assistant', text: 'OK:second' }] })
+    expect((await history(`agent_id=alpha&user_id=intruder&session_id=${sessionId}`)).status).toBe(404)
+    expect((await history(`agent_id=beta&user_id=reader&session_id=${sessionId}`)).status).toBe(404)
+    expect((await history(`agent_id=alpha&user_id=reader`)).body).toMatchObject({ error: { code: 'invalid_request', message: 'session_id: required' } })
   })
 
   it('lists the agents it serves, and reports healthy', async () => {
