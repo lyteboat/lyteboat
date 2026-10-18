@@ -1,5 +1,5 @@
 /**
- * The unit host: the invariants and the agent loop mounted, the adapter serving
+ * The unit host: the dsh services and the agent loop mounted, the adapter serving
  * the `mock` provider, and the host gone once the test that built it finishes.
  */
 import { describe, expect, it } from 'vitest'
@@ -17,7 +17,6 @@ describe('createLyteboatUnitHost', () => {
 
     await followUpAndWait(agent, 'hello')
 
-    expect(ctx.get('invariants')).toBeDefined()
     expect(adapter.requests).toHaveLength(1)
     expect(agent.session.snapshotEvents().filter((event): event is SessionEvent<'user/message'> => event.type === 'user/message').map(event => event.data.source)).toEqual([{ kind: 'user' }])
     expect(disposed).toBe(false)

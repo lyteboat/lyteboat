@@ -2,7 +2,8 @@
 import type {
   RemoteResult,
   RemoteStreamHandle,
-  TypertRemoteContribution,
+  TypertRemoteInfo,
+  TypertRemoteMethod,
 } from '@deepseek-ai/dsh-typert-protocol'
 import type { ModelCatalog, SessionAttachmentRequest, SessionAttachmentValue, SessionCancelRequest, SessionCancelValue, SessionControlFrame, SessionCreateRequest, SessionCreateValue, SessionFollowFrame, SessionFollowRequest, SessionForkRequest, SessionForkValue, SessionListRequest, SessionListValue, SessionOpenWorkspacePathRequest, SessionOpenWorkspacePathValue, SessionPage, SessionPageRequest, SessionProjectionsRequest, SessionProjectionsValue, SessionPromptRequest, SessionPromptValue, SessionRenameRequest, SessionRenameValue, SessionSearchRequest, SessionSearchValue, SessionSelectModelRequest, SessionSelectModelValue, SessionUpdateQueueRequest, SessionUpdateQueueValue, SessionWorkspacePathApplication, SkillListRequest, SkillListValue } from '@deepseek-ai/dsh-api-session-controller/types'
 import type { FileReferenceCandidate } from '@deepseek-ai/dsh-file-reference/types'
@@ -69,6 +70,28 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
 }
 
-export declare const TYPERT_REMOTE: TypertRemoteContribution
+export declare const TYPERT_REMOTE: TypertRemoteInfo<{
+  readonly 'fileReferences/list': TypertRemoteMethod<{ readonly 'agentId': SessionId; readonly 'query': string }, FileReferenceCandidate[]>
+  readonly 'session/attachment': TypertRemoteMethod<{ readonly 'request': SessionAttachmentRequest }, SessionAttachmentValue>
+  readonly 'session/cancel': TypertRemoteMethod<{ readonly 'request': SessionCancelRequest }, SessionCancelValue>
+  readonly 'session/canOpenWorkspacePath': TypertRemoteMethod<{  }, boolean>
+  readonly 'session/control': TypertRemoteMethod<{  }, SessionControlFrame, 'stream'>
+  readonly 'session/create': TypertRemoteMethod<{ readonly 'request': SessionCreateRequest }, SessionCreateValue>
+  readonly 'session/follow': TypertRemoteMethod<{ readonly 'request': SessionFollowRequest }, SessionFollowFrame, 'stream'>
+  readonly 'session/fork': TypertRemoteMethod<{ readonly 'request': SessionForkRequest }, SessionForkValue>
+  readonly 'session/initializeDefaultModel': TypertRemoteMethod<{  }, void>
+  readonly 'session/list': TypertRemoteMethod<{ readonly '_request': SessionListRequest }, SessionListValue>
+  readonly 'session/modelCatalog': TypertRemoteMethod<{  }, ModelCatalog>
+  readonly 'session/openWorkspacePath': TypertRemoteMethod<{ readonly 'request': SessionOpenWorkspacePathRequest }, SessionOpenWorkspacePathValue>
+  readonly 'session/page': TypertRemoteMethod<{ readonly 'request': SessionPageRequest }, SessionPage>
+  readonly 'session/projections': TypertRemoteMethod<{ readonly 'request': SessionProjectionsRequest }, SessionProjectionsValue>
+  readonly 'session/prompt': TypertRemoteMethod<{ readonly 'request': SessionPromptRequest }, SessionPromptValue>
+  readonly 'session/rename': TypertRemoteMethod<{ readonly 'request': SessionRenameRequest }, SessionRenameValue>
+  readonly 'session/search': TypertRemoteMethod<{ readonly 'request': SessionSearchRequest }, SessionSearchValue>
+  readonly 'session/selectModel': TypertRemoteMethod<{ readonly 'request': SessionSelectModelRequest }, SessionSelectModelValue>
+  readonly 'session/updateQueue': TypertRemoteMethod<{ readonly 'request': SessionUpdateQueueRequest }, SessionUpdateQueueValue>
+  readonly 'session/workspacePathApplications': TypertRemoteMethod<{ readonly 'request': { readonly path: string; } }, readonly SessionWorkspacePathApplication[]>
+  readonly 'skills/list': TypertRemoteMethod<{ readonly 'request': SkillListRequest }, SkillListValue>
+}>
 export default TYPERT_REMOTE
 //# sourceMappingURL=typert.remote-client.d.ts.map
