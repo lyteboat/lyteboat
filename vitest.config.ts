@@ -34,7 +34,7 @@ export default defineConfig({
           name: 'dsh',
           include: ['dsh/*/*/tests/**/*.spec.ts'],
           exclude: UPSTREAM_TEST_EXCLUDES.map(entry => entry.file),
-          setupFiles: ['dsh-compat/tests/upstream-harness/setup.ts', 'dsh-compat/tests/upstream-harness/test-invariants.ts'],
+          setupFiles: ['dsh-compat/tests/upstream-harness/setup.ts'],
           server: { deps: { inline: [/@deepseek-ai\//u] } },
         },
       },

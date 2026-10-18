@@ -205,11 +205,6 @@
         "foldConsumedWork": "function foldConsumedWork(events: readonly SessionEvent[]): ConsumedWork;",
         "installModelSelection": "function installModelSelection(agentCtx: Context, selection: ModelSelectionRef): () => void;"
       },
-      "./invariant": {
-        "apply": "const apply: (ctx: Context) => Promise<() => void>;",
-        "inject": "const inject: string[];",
-        "name": "const name = \"agent-invariant\";"
-      },
       "./types": {
         "Agent": {
           "$declaration": "interface Agent { }\ninterface Agent { }",
@@ -288,11 +283,6 @@
           "resume": "resume(ownerCtx: Context, options: ResumeAgentOptions): Promise<AgentHandle>;"
         },
         "turnBoundaryProjectionDefinition": "const turnBoundaryProjectionDefinition: { key: \"turnBoundary\"; stateVersion: number; stateSchema: zod.ZodType<TurnBoundaryProjection, unknown, zod.core.$ZodTypeInternals<TurnBoundaryProjection, unknown>>; init: () => { openTurnStartSeq: null; lastStepStartSeq: null; lastStepBoundary: null; lastTurn: number; }; apply: (state: NoInfer<TurnBoundaryProjection>, event: import(\"@deepseek-ai/dsh-session\").SessionEvent) => TurnBoundaryProjection; };"
-      },
-      "./invariant": {
-        "apply": "const apply: (ctx: Context) => Promise<() => void>;",
-        "inject": "const inject: string[];",
-        "name": "const name = \"agent-loop-invariant\";"
       }
     }
   },
@@ -303,7 +293,8 @@
         "AgentLoopTestDependenciesOptions": {
           "$declaration": "interface AgentLoopTestDependenciesOptions { }",
           "systemPrompt": "readonly systemPrompt?: SystemPromptConfig;",
-          "tools": "readonly tools?: ToolRuntimeConfig;"
+          "tools": "readonly tools?: ToolRuntimeConfig;",
+          "workingDirectory": "readonly workingDirectory?: boolean;"
         },
         "AgentLoopTestHarness": {
           "$declaration": "interface AgentLoopTestHarness { }",
@@ -313,6 +304,7 @@
         "createInboxStub": "function createInboxStub(): Inbox;",
         "mountAgentLoopTestDependencies": "function mountAgentLoopTestDependencies(ctx: Context, options?: AgentLoopTestDependenciesOptions): Promise<void>;",
         "mountAgentLoopTestHarness": "function mountAgentLoopTestHarness(ctx: Context): Promise<AgentLoopTestHarness>;",
+        "provideWorkingDirectoryFixture": "function provideWorkingDirectoryFixture(ctx: Context, defaultDirectory?: string): void;",
         "unsupportedInbox": "function unsupportedInbox(): Inbox;"
       }
     }
@@ -320,7 +312,7 @@
   "@deepseek-ai/dsh-api-session-controller": {
     "augmentations": {
       "@deepseek-ai/dsh-llm#MessageSourceMap": {
-        "user-rpc": "'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; };"
+        "user-rpc": "'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; principal?: Principal; };"
       },
       "@deepseek-ai/dsh-session-projection/types#SessionProjectionMap": {
         "imageLimits": "imageLimits: ImageAttachmentLimits;",
@@ -336,12 +328,13 @@
         "model/selection": "'model/selection': ModelSelection;"
       },
       "@deepseek-ai/dsh-typert-protocol#RemoteErrorDetailsMap": {
-        "agent-preset/conflict": "'agent-preset/conflict': { readonly sessionId: SessionId; readonly requestedPreset: string; readonly existingPreset?: string; };",
+        "agent-preset/conflict": "'agent-preset/conflict': { readonly sessionId: SessionId; readonly requestedPreset: string; };",
         "session/agent-busy": "'session/agent-busy': { readonly reason: string; };",
         "session/attachment-invalid": "'session/attachment-invalid': { readonly reason: string; };",
         "session/conflict": "'session/conflict': { readonly sessionId: SessionId; readonly requestedCwd: string; readonly existingCwd?: string; };",
         "session/fork-unavailable": "'session/fork-unavailable': { readonly sessionId: SessionId; };",
         "session/invalid-time-zone": "'session/invalid-time-zone': { readonly value: string; };",
+        "session/migration-required": "'session/migration-required': { readonly sessionId: SessionId; };",
         "session/model-unavailable": "'session/model-unavailable': { readonly provider: string; readonly model: string; };",
         "session/projections-unavailable": "'session/projections-unavailable': Record<string, never>;",
         "session/provider-credentials-unavailable": "'session/provider-credentials-unavailable': Record<string, never>;",
@@ -420,6 +413,7 @@
         },
         "Config": {
           "$declaration": "interface Config { }",
+          "listWorkSliceMs": "readonly listWorkSliceMs?: number;",
           "nativeOpen": "readonly nativeOpen?: boolean;"
         },
         "ModelCatalog": {
@@ -520,7 +514,7 @@
         "SessionControlFrame": "type SessionControlFrame = { readonly type: 'baseline'; readonly value: SessionControlBaseline; } | ({ readonly type: 'projection'; } & SessionProjectionUpdate);",
         "SessionController": {
           "$declaration": "class SessionController extends TypertRemoteService { }",
-          "Config": "static Config: z<Config>;",
+          "Config": "static Config: z<Config, ResolvedConfig>;",
           "attachment": "attachment(request: SessionAttachmentRequest): Promise<SessionAttachmentValue>;",
           "canOpenWorkspacePath": "canOpenWorkspacePath(): boolean;",
           "cancel": "cancel(request: SessionCancelRequest): SessionCancelValue;",
@@ -585,6 +579,7 @@
         },
         "SessionForkRequest": {
           "$declaration": "interface SessionForkRequest { }",
+          "allowMigration": "readonly allowMigration?: boolean;",
           "atSeq": "readonly atSeq?: number;",
           "sessionId": "readonly sessionId: SessionId;"
         },
@@ -653,7 +648,7 @@
           "$declaration": "interface SessionProjectionsRequest { }",
           "sessionId": "readonly sessionId: SessionId;"
         },
-        "SessionProjectionsValue": "type SessionProjectionsValue = SessionProjectionBaseline | null;",
+        "SessionProjectionsValue": "type SessionProjectionsValue = (SessionProjectionBaseline & { readonly kind: 'sequenced'; }) | { readonly kind: 'migration-required'; readonly values: SessionProjectionValues; } | null;",
         "SessionPromptRequest": {
           "$declaration": "interface SessionPromptRequest { }",
           "clientTimeZone": "readonly clientTimeZone?: string;",
@@ -710,6 +705,7 @@
           "agentAvailable": "readonly agentAvailable: boolean;",
           "blank": "readonly blank: boolean;",
           "cwd": "readonly cwd?: string;",
+          "formatStatus": "readonly formatStatus?: 'current' | 'migration-required';",
           "origin": "readonly origin?: 'subagent';",
           "parentSessionId": "readonly parentSessionId?: SessionId;",
           "projections": "readonly projections?: SessionProjectionHints;",
@@ -770,7 +766,7 @@
         "buildModelCatalog": "function buildModelCatalog(ctx: Context, defaultSelection?: ModelSelection): Promise<ModelCatalog>;",
         "default": {
           "$declaration": "class SessionController extends TypertRemoteService { }",
-          "Config": "static Config: z<Config>;",
+          "Config": "static Config: z<Config, ResolvedConfig>;",
           "attachment": "attachment(request: SessionAttachmentRequest): Promise<SessionAttachmentValue>;",
           "canOpenWorkspacePath": "canOpenWorkspacePath(): boolean;",
           "cancel": "cancel(request: SessionCancelRequest): SessionCancelValue;",
@@ -836,8 +832,8 @@
         "ISessions": {
           "$declaration": "interface ISessions { }",
           "binding": "binding(id: SessionId): SessionBinding | undefined;",
-          "create": "create(opts?: { workspaceId?: WorkspaceId; cwd?: string; sessionId?: SessionId; }): Promise<SessionId>;",
-          "fork": "fork(opts: { sessionId: SessionId; atSeq?: number; increaseTitle?: boolean; onCreated?: (childId: SessionId) => void; }): Promise<SessionId>;",
+          "create": "create(opts?: { workspaceId?: WorkspaceId; cwd?: string; sessionId?: SessionId; agentPreset?: string; }): Promise<SessionId>;",
+          "fork": "fork(opts: { sessionId: SessionId; atSeq?: number; increaseTitle?: boolean; onCreated?: (childId: SessionId) => void; allowMigration?: boolean; }): Promise<SessionId>;",
           "list": "readonly list: ObservableSnapshot<SessionListState>;",
           "refresh": "refresh(): Promise<void>;",
           "refreshProjections": "refreshProjections(sessionId: SessionId): Promise<void>;",
@@ -1036,7 +1032,7 @@
         "SessionProjectionSnapshot": {
           "$declaration": "interface SessionProjectionSnapshot { }",
           "error": "readonly error: RemoteFailure | null;",
-          "state": "readonly state: 'idle' | 'loading' | 'ready' | 'error';",
+          "state": "readonly state: 'idle' | 'loading' | 'ready' | 'migration-required' | 'error';",
           "values": "readonly values: Readonly<Partial<SessionProjectionMap>>;"
         },
         "SessionReference": {
@@ -1090,6 +1086,7 @@
           "blank": "blank: boolean;",
           "cwd": "cwd?: string;",
           "displayTitle": "displayTitle: string;",
+          "formatStatus": "formatStatus?: SessionListEntry['formatStatus'];",
           "id": "id: SessionId;",
           "origin": "origin?: 'subagent';",
           "parentId": "parentId?: SessionId;",
@@ -1114,8 +1111,8 @@
         "scopeOf": "function scopeOf(ctx: Context): SessionId | undefined;"
       },
       "./remote": {
-        "TYPERT_REMOTE": "const TYPERT_REMOTE: TypertRemoteContribution;",
-        "default": "const TYPERT_REMOTE: TypertRemoteContribution;"
+        "TYPERT_REMOTE": "const TYPERT_REMOTE: TypertRemoteInfo<{ readonly 'fileReferences/list': TypertRemoteMethod<{ readonly 'agentId': SessionId; readonly 'query': string; }, FileReferenceCandidate[]>; readonly 'session/attachment': TypertRemoteMethod<{ readonly 'request': SessionAttachmentRequest; }, SessionAttachmentValue>; readonly 'session/cancel': TypertRemoteMethod<{ readonly 'request': SessionCancelRequest; }, SessionCancelValue>; readonly 'session/canOpenWorkspacePath': TypertRemoteMethod<{}, boolean>; readonly 'session/control': TypertRemoteMethod<{}, SessionControlFrame, 'stream'>; readonly 'session/create': TypertRemoteMethod<{ readonly 'request': SessionCreateRequest; }, SessionCreateValue>; readonly 'session/follow': TypertRemoteMethod<{ readonly 'request': SessionFollowRequest; }, SessionFollowFrame, 'stream'>; readonly 'session/fork': TypertRemoteMethod<{ readonly 'request': SessionForkRequest; }, SessionForkValue>; readonly 'session/initializeDefaultModel': TypertRemoteMethod<{}, void>; readonly 'session/list': TypertRemoteMethod<{ readonly '_request': SessionListRequest; }, SessionListValue>; readonly 'session/modelCatalog': TypertRemoteMethod<{}, ModelCatalog>; readonly 'session/openWorkspacePath': TypertRemoteMethod<{ readonly 'request': SessionOpenWorkspacePathRequest; }, SessionOpenWorkspacePathValue>; readonly 'session/page': TypertRemoteMethod<{ readonly 'request': SessionPageRequest; }, SessionPage>; readonly 'session/projections': TypertRemoteMethod<{ readonly 'request': SessionProjectionsRequest; }, SessionProjectionsValue>; readonly 'session/prompt': TypertRemoteMethod<{ readonly 'request': SessionPromptRequest; }, SessionPromptValue>; readonly 'session/rename': TypertRemoteMethod<{ readonly 'request': SessionRenameRequest; }, SessionRenameValue>; readonly 'session/search': TypertRemoteMethod<{ readonly 'request': SessionSearchRequest; }, SessionSearchValue>; readonly 'session/selectModel': TypertRemoteMethod<{ readonly 'request': SessionSelectModelRequest; }, SessionSelectModelValue>; readonly 'session/updateQueue': TypertRemoteMethod<{ readonly 'request': SessionUpdateQueueRequest; }, SessionUpdateQueueValue>; readonly 'session/workspacePathApplications': TypertRemoteMethod<{ readonly 'request': { readonly path: string; }; }, readonly SessionWorkspacePathApplication[]>; readonly 'skills/list': TypertRemoteMethod<{ readonly 'request': SkillListRequest; }, SkillListValue>; }>;",
+        "default": "const TYPERT_REMOTE: TypertRemoteInfo<{ readonly 'fileReferences/list': TypertRemoteMethod<{ readonly 'agentId': SessionId; readonly 'query': string; }, FileReferenceCandidate[]>; readonly 'session/attachment': TypertRemoteMethod<{ readonly 'request': SessionAttachmentRequest; }, SessionAttachmentValue>; readonly 'session/cancel': TypertRemoteMethod<{ readonly 'request': SessionCancelRequest; }, SessionCancelValue>; readonly 'session/canOpenWorkspacePath': TypertRemoteMethod<{}, boolean>; readonly 'session/control': TypertRemoteMethod<{}, SessionControlFrame, 'stream'>; readonly 'session/create': TypertRemoteMethod<{ readonly 'request': SessionCreateRequest; }, SessionCreateValue>; readonly 'session/follow': TypertRemoteMethod<{ readonly 'request': SessionFollowRequest; }, SessionFollowFrame, 'stream'>; readonly 'session/fork': TypertRemoteMethod<{ readonly 'request': SessionForkRequest; }, SessionForkValue>; readonly 'session/initializeDefaultModel': TypertRemoteMethod<{}, void>; readonly 'session/list': TypertRemoteMethod<{ readonly '_request': SessionListRequest; }, SessionListValue>; readonly 'session/modelCatalog': TypertRemoteMethod<{}, ModelCatalog>; readonly 'session/openWorkspacePath': TypertRemoteMethod<{ readonly 'request': SessionOpenWorkspacePathRequest; }, SessionOpenWorkspacePathValue>; readonly 'session/page': TypertRemoteMethod<{ readonly 'request': SessionPageRequest; }, SessionPage>; readonly 'session/projections': TypertRemoteMethod<{ readonly 'request': SessionProjectionsRequest; }, SessionProjectionsValue>; readonly 'session/prompt': TypertRemoteMethod<{ readonly 'request': SessionPromptRequest; }, SessionPromptValue>; readonly 'session/rename': TypertRemoteMethod<{ readonly 'request': SessionRenameRequest; }, SessionRenameValue>; readonly 'session/search': TypertRemoteMethod<{ readonly 'request': SessionSearchRequest; }, SessionSearchValue>; readonly 'session/selectModel': TypertRemoteMethod<{ readonly 'request': SessionSelectModelRequest; }, SessionSelectModelValue>; readonly 'session/updateQueue': TypertRemoteMethod<{ readonly 'request': SessionUpdateQueueRequest; }, SessionUpdateQueueValue>; readonly 'session/workspacePathApplications': TypertRemoteMethod<{ readonly 'request': { readonly path: string; }; }, readonly SessionWorkspacePathApplication[]>; readonly 'skills/list': TypertRemoteMethod<{ readonly 'request': SkillListRequest; }, SkillListValue>; }>;"
       },
       "./remote-events": {},
       "./typert": {
@@ -1243,6 +1240,7 @@
         },
         "SessionForkRequest": {
           "$declaration": "interface SessionForkRequest { }",
+          "allowMigration": "readonly allowMigration?: boolean;",
           "atSeq": "readonly atSeq?: number;",
           "sessionId": "readonly sessionId: SessionId;"
         },
@@ -1311,7 +1309,7 @@
           "$declaration": "interface SessionProjectionsRequest { }",
           "sessionId": "readonly sessionId: SessionId;"
         },
-        "SessionProjectionsValue": "type SessionProjectionsValue = SessionProjectionBaseline | null;",
+        "SessionProjectionsValue": "type SessionProjectionsValue = (SessionProjectionBaseline & { readonly kind: 'sequenced'; }) | { readonly kind: 'migration-required'; readonly values: SessionProjectionValues; } | null;",
         "SessionPromptRequest": {
           "$declaration": "interface SessionPromptRequest { }",
           "clientTimeZone": "readonly clientTimeZone?: string;",
@@ -1362,6 +1360,7 @@
           "agentAvailable": "readonly agentAvailable: boolean;",
           "blank": "readonly blank: boolean;",
           "cwd": "readonly cwd?: string;",
+          "formatStatus": "readonly formatStatus?: 'current' | 'migration-required';",
           "origin": "readonly origin?: 'subagent';",
           "parentSessionId": "readonly parentSessionId?: SessionId;",
           "projections": "readonly projections?: SessionProjectionHints;",
@@ -1496,11 +1495,6 @@
         "CompactionCheckpointSource": "type CompactionCheckpointSource = typeof COMPACT_CHECKPOINT_MARKER & { readonly compactionId: CompactionId; readonly sourceCommandId?: CommandId; };",
         "compactCheckpointSource": "function compactCheckpointSource(compactionId: CompactionId, sourceCommandId?: CommandId): CompactionCheckpointSource;",
         "isCompactCheckpointSource": "function isCompactCheckpointSource(source: MessageSource): source is CompactionCheckpointSource;"
-      },
-      "./invariant": {
-        "apply": "const apply: (ctx: Context) => Promise<() => void>;",
-        "inject": "const inject: string[];",
-        "name": "const name = \"compaction-invariant\";"
       },
       "./types": {
         "CompactionId": "function CompactionId(id: string): CompactionId;\ntype CompactionId = Branded<'CompactionId'>;",
@@ -1674,6 +1668,7 @@
         },
         "CONTEXT_SUMMARY_MAX_CHARS": "const CONTEXT_SUMMARY_MAX_CHARS = 120;",
         "CONTEXT_WINDOW_EXCEEDED_CODE": "const CONTEXT_WINDOW_EXCEEDED_CODE = \"CONTEXT_WINDOW_EXCEEDED\";",
+        "ConfigureCall": "type ConfigureCall = (controls: Readonly<LlmCallControls>, model: Readonly<LlmResolvedModelInfo>) => LlmCallControls;",
         "ContentBlock": "type ContentBlock = ContentBlockMap[ContentBlockType];",
         "ContentBlockMap": {
           "$declaration": "interface ContentBlockMap { }",
@@ -1754,6 +1749,7 @@
         "LlmAdapter": {
           "$declaration": "abstract class LlmAdapter { }",
           "imageRequestPricing": "imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined;",
+          "imageRequestTarget": "imageRequestTarget(_provider: string, _model: string, image: ImageAttachmentRef): ImageRequestTarget;",
           "listModels": "listModels(_provider: string): Promise<readonly LlmModelInfo[]>;",
           "prepareCall": "prepareCall(provider: string, model: string, signal?: AbortSignal): Promise<PreparedAdapterCall>;",
           "providerInfo": "providerInfo(provider: string): LlmProviderInfo;",
@@ -1763,24 +1759,30 @@
         },
         "LlmAttemptId": "function LlmAttemptId(id: string): LlmAttemptId;\ntype LlmAttemptId = Branded<'LlmAttemptId'>;",
         "LlmCallConfig": {
-          "$declaration": "interface LlmCallConfig { }",
-          "maxTokens": "maxTokens?: number;",
+          "$declaration": "interface LlmCallConfig extends LlmCallControls { }",
           "model": "model: string;",
-          "provider": "provider: string;",
-          "reasoningEffort": "reasoningEffort?: ReasoningEffortId;",
-          "stop": "stop?: string[];",
-          "temperature": "temperature?: number;"
+          "provider": "provider: string;"
         },
         "LlmCallConfigAdapterDefaults": {
           "$declaration": "interface LlmCallConfigAdapterDefaults { }",
           "maxTokens": "maxTokens?: true;",
           "reasoningEffort": "reasoningEffort?: true;"
         },
+        "LlmCallControls": {
+          "$declaration": "interface LlmCallControls { }",
+          "maxTokens": "maxTokens?: number;",
+          "reasoningEffort": "reasoningEffort?: ReasoningEffortId;",
+          "stop": "stop?: string[];",
+          "temperature": "temperature?: number;"
+        },
         "LlmConfigurableProvider": {
           "$declaration": "interface LlmConfigurableProvider { }",
+          "baseURLEnv": "baseURLEnv?: readonly string[];",
           "declared": "declared?: boolean;",
+          "defaultBaseURL": "defaultBaseURL?: string;",
           "displayName": "displayName: string;",
           "error": "error?: string;",
+          "nativeAuth": "nativeAuth?: LlmNativeAuth;",
           "provider": "provider: string;",
           "settingsNs": "settingsNs: string;",
           "settingsPath": "settingsPath: readonly string[];"
@@ -1859,6 +1861,11 @@
           "defaultEffort": "defaultEffort?: ReasoningEffortId;",
           "efforts": "efforts: readonly LlmReasoningEffortInfo[];"
         },
+        "LlmNativeAuth": {
+          "$declaration": "interface LlmNativeAuth { }",
+          "env": "env: readonly string[];",
+          "oauth": "oauth: boolean;"
+        },
         "LlmProviderInfo": {
           "$declaration": "interface LlmProviderInfo { }",
           "id": "id: string;",
@@ -1884,10 +1891,11 @@
           "discoverModels": "discoverModels(settingsNs: string, request: LlmModelDiscoveryRequest, signal?: AbortSignal): Promise<LlmDiscoveredModel[]>;",
           "fileRequestText": "fileRequestText(ref: FileAttachmentRef): string;",
           "imageRequestPricing": "imageRequestPricing(provider: string, model: string): LlmImageRequestPricing | undefined;",
+          "imageRequestTarget": "imageRequestTarget(provider: string, model: string, image: ImageAttachmentRef): ImageRequestTarget;",
           "listConfigurableProviders": "listConfigurableProviders(): LlmConfigurableProvider[];",
           "listModels": "listModels(provider: string): Promise<LlmModelInfo[]>;",
           "listProviders": "listProviders(): LlmProviderInfo[];",
-          "prepareCall": "prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall>;",
+          "prepareCall": "prepareCall(config: LlmCallConfig, signal?: AbortSignal, configure?: ConfigureCall): Promise<PreparedLlmCall>;",
           "providerRetryPolicy": "providerRetryPolicy(provider: string): ResolvedRetryPolicy;",
           "registerAdapter": "registerAdapter(providers: string[], adapter: LlmAdapter): AdapterRegistrationHandle;",
           "registerConfigurableProviders": "registerConfigurableProviders(entries: readonly LlmConfigurableProvider[]): DirectoryRegistrationHandle;",
@@ -1920,7 +1928,7 @@
           "tool-registry": "'tool-registry': { kind: 'tool-registry'; };",
           "user": "user: { kind: 'user'; };",
           "user-approval": "'user-approval': { kind: 'user-approval'; } & ContextFormed;",
-          "user-rpc": "'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; };"
+          "user-rpc": "'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; principal?: Principal; };"
         },
         "ModelMessageSource": {
           "$declaration": "interface ModelMessageSource extends AssistantProviderMetadata { }",
@@ -2109,10 +2117,11 @@
           "discoverModels": "discoverModels(settingsNs: string, request: LlmModelDiscoveryRequest, signal?: AbortSignal): Promise<LlmDiscoveredModel[]>;",
           "fileRequestText": "fileRequestText(ref: FileAttachmentRef): string;",
           "imageRequestPricing": "imageRequestPricing(provider: string, model: string): LlmImageRequestPricing | undefined;",
+          "imageRequestTarget": "imageRequestTarget(provider: string, model: string, image: ImageAttachmentRef): ImageRequestTarget;",
           "listConfigurableProviders": "listConfigurableProviders(): LlmConfigurableProvider[];",
           "listModels": "listModels(provider: string): Promise<LlmModelInfo[]>;",
           "listProviders": "listProviders(): LlmProviderInfo[];",
-          "prepareCall": "prepareCall(config: LlmCallConfig, signal?: AbortSignal): Promise<PreparedLlmCall>;",
+          "prepareCall": "prepareCall(config: LlmCallConfig, signal?: AbortSignal, configure?: ConfigureCall): Promise<PreparedLlmCall>;",
           "providerRetryPolicy": "providerRetryPolicy(provider: string): ResolvedRetryPolicy;",
           "registerAdapter": "registerAdapter(providers: string[], adapter: LlmAdapter): AdapterRegistrationHandle;",
           "registerConfigurableProviders": "registerConfigurableProviders(entries: readonly LlmConfigurableProvider[]): DirectoryRegistrationHandle;",
@@ -2184,11 +2193,6 @@
         "ProviderRequestId": "function ProviderRequestId(id: string): ProviderRequestId;\ntype ProviderRequestId = Branded<'ProviderRequestId'>;",
         "ReasoningEffortId": "function ReasoningEffortId(id: string): ReasoningEffortId;\ntype ReasoningEffortId = Branded<'ReasoningEffortId'>;",
         "ToolCallId": "function ToolCallId(id: string): ToolCallId;\ntype ToolCallId = Branded<'ToolCallId'>;"
-      },
-      "./invariant": {
-        "apply": "const apply: (ctx: Context) => Promise<() => void>;",
-        "inject": "const inject: string[];",
-        "name": "const name = \"llm-invariant\";"
       },
       "./message": {
         "AssistantMessage": {
@@ -2276,8 +2280,8 @@
         "freezeMessage": "function freezeMessage<T extends Message>(message: T): T;"
       },
       "./remote": {
-        "TYPERT_REMOTE": "const TYPERT_REMOTE: TypertRemoteContribution;",
-        "default": "const TYPERT_REMOTE: TypertRemoteContribution;"
+        "TYPERT_REMOTE": "const TYPERT_REMOTE: TypertRemoteInfo<{ readonly 'llm/discoverModels': TypertRemoteMethod<{ readonly 'settingsNs': string; readonly 'request': LlmModelDiscoveryRequest; }, LlmDiscoveredModel[]>; readonly 'llm/listConfigurableProviders': TypertRemoteMethod<{}, LlmConfigurableProvider[]>; readonly 'llm/listProviders': TypertRemoteMethod<{}, LlmProviderInfo[]>; }>;",
+        "default": "const TYPERT_REMOTE: TypertRemoteInfo<{ readonly 'llm/discoverModels': TypertRemoteMethod<{ readonly 'settingsNs': string; readonly 'request': LlmModelDiscoveryRequest; }, LlmDiscoveredModel[]>; readonly 'llm/listConfigurableProviders': TypertRemoteMethod<{}, LlmConfigurableProvider[]>; readonly 'llm/listProviders': TypertRemoteMethod<{}, LlmProviderInfo[]>; }>;"
       },
       "./typert": {
         "TYPERT": "const TYPERT: unknown;"
@@ -2348,9 +2352,12 @@
         },
         "LlmConfigurableProvider": {
           "$declaration": "interface LlmConfigurableProvider { }",
+          "baseURLEnv": "baseURLEnv?: readonly string[];",
           "declared": "declared?: boolean;",
+          "defaultBaseURL": "defaultBaseURL?: string;",
           "displayName": "displayName: string;",
           "error": "error?: string;",
+          "nativeAuth": "nativeAuth?: LlmNativeAuth;",
           "provider": "provider: string;",
           "settingsNs": "settingsNs: string;",
           "settingsPath": "settingsPath: readonly string[];"
@@ -2416,6 +2423,11 @@
           "$declaration": "interface LlmModelReasoningInfo { }",
           "defaultEffort": "defaultEffort?: ReasoningEffortId;",
           "efforts": "efforts: readonly LlmReasoningEffortInfo[];"
+        },
+        "LlmNativeAuth": {
+          "$declaration": "interface LlmNativeAuth { }",
+          "env": "env: readonly string[];",
+          "oauth": "oauth: boolean;"
         },
         "LlmProviderInfo": {
           "$declaration": "interface LlmProviderInfo { }",
@@ -2546,6 +2558,9 @@
       },
       "@deepseek-ai/dsh-typert-protocol#TypertLookupMap": {
         "session": "session: TypertLookup<Session, SessionId>;"
+      },
+      "@deepseek-ai/dsh-typert-protocol#TypertResourceMap": {
+        "session": "session: TypertResource<SessionId>;"
       }
     },
     "exports": {
@@ -2575,6 +2590,17 @@
         },
         "KNOWN_SESSION_EVENT_TYPES": "const KNOWN_SESSION_EVENT_TYPES: ReadonlySet<string>;",
         "OptionalSessionSeq": "type OptionalSessionSeq = SessionSeq | null;",
+        "PluginRecord": {
+          "$declaration": "interface PluginRecord { }",
+          "data": "readonly data: unknown;",
+          "seq": "readonly seq: SessionSeq;",
+          "time": "readonly time: number;",
+          "type": "readonly type: PluginRecordType;"
+        },
+        "PluginRecordMap": {
+          "$declaration": "interface PluginRecordMap { }"
+        },
+        "PluginRecordType": "type PluginRecordType = `plugin:${string}`;",
         "PrepareSessionOptions": "type PrepareSessionOptions = (CreateSessionOptions & { readonly eventState?: undefined; }) | RestoredSessionOptions;",
         "RequestContext": {
           "$declaration": "interface RequestContext { }",
@@ -2767,6 +2793,7 @@
           "role": "readonly role: 'user';"
         },
         "adoptSessionEvent": "function adoptSessionEvent<T extends SessionEvent>(event: T): T;",
+        "appendPluginRecord": "function appendPluginRecord<K extends Extract<keyof PluginRecordMap, PluginRecordType>>(session: Session, type: K, data: NoInfer<PluginRecordMap[K]>): SessionSeq;",
         "buildForkSeed": "function buildForkSeed(events: readonly SessionEvent[], boundary: SessionSeqType): SessionEvent[];",
         "canonicalHeader": "function canonicalHeader(header: EpochHeader): EpochHeader;",
         "decodeSeqRanges": "function decodeSeqRanges(value: unknown, maxEntries?: number): SessionSeqType[];",
@@ -2794,15 +2821,11 @@
         "isReplacementSurfaceEvent": "function isReplacementSurfaceEvent(event: SessionEvent): event is SurfaceEvent & { surfaceOp: Extract<SurfaceOp, { op: 'replace'; }>; };",
         "isSurfaceEligibleType": "function isSurfaceEligibleType(type: string): boolean;",
         "isSurfaceEvent": "function isSurfaceEvent(event: SessionEvent): event is SurfaceEvent;",
+        "pluginRecordOf": "function pluginRecordOf(event: SessionEvent): PluginRecord | undefined;",
         "snapshotSessionEvent": "function snapshotSessionEvent<T extends SessionEvent>(event: T): T;"
       },
       "./fork": {
         "buildForkSeed": "function buildForkSeed(events: readonly SessionEvent[], boundary: SessionSeqType): SessionEvent[];"
-      },
-      "./invariant": {
-        "apply": "const apply: (ctx: Context) => Promise<() => void>;",
-        "inject": "const inject: string[];",
-        "name": "const name = \"session-invariant\";"
       },
       "./surface": {
         "SessionMessageProjection": {
@@ -2870,6 +2893,17 @@
           "tools": "tools?: ToolSchema[];"
         },
         "OptionalSessionSeq": "type OptionalSessionSeq = SessionSeq | null;",
+        "PluginRecord": {
+          "$declaration": "interface PluginRecord { }",
+          "data": "readonly data: unknown;",
+          "seq": "readonly seq: SessionSeq;",
+          "time": "readonly time: number;",
+          "type": "readonly type: PluginRecordType;"
+        },
+        "PluginRecordMap": {
+          "$declaration": "interface PluginRecordMap { }"
+        },
+        "PluginRecordType": "type PluginRecordType = `plugin:${string}`;",
         "PrepareSessionOptions": "type PrepareSessionOptions = (CreateSessionOptions & { readonly eventState?: undefined; }) | RestoredSessionOptions;",
         "RequestContext": {
           "$declaration": "interface RequestContext { }",
@@ -3071,6 +3105,7 @@
         "SessionPersistenceSnapshot": {
           "$declaration": "interface SessionPersistenceSnapshot { }",
           "eventCount": "readonly eventCount?: number;",
+          "formatStatus": "readonly formatStatus?: 'current' | 'migration-required';",
           "header": "readonly header: SessionHeader;",
           "revision": "readonly revision: SessionPersistenceRevision;",
           "sizeBytes": "readonly sizeBytes?: number;"
@@ -3113,33 +3148,11 @@
     "augmentations": {},
     "exports": {
       ".": {
-        "Config": {
-          "$declaration": "interface Config { }",
-          "compression": "compression?: JsonlCompression;",
-          "root": "root: string;"
-        },
+        "Config": "const Config: z<Config>;\ninterface Config { root: string; compression?: JsonlCompression; listConcurrency?: number; }",
         "JsonlCompression": "type JsonlCompression = 'zstd' | 'none';",
         "JsonlCompressionSchema": "const JsonlCompressionSchema: z<JsonlCompression>;",
-        "default": {
-          "$declaration": "class JsonlSessionPersistence extends SessionPersistence { }",
-          "Config": "static Config: z<Config>;",
-          "acquireWriteLease": "acquireWriteLease(header: SessionHeader): Promise<SessionWriteLease>;",
-          "config": "config: Config;",
-          "constructor": "constructor(ctx: Context, config: Config);",
-          "create": "create(header: SessionHeader, options?: SessionPersistenceCreateOptions): Promise<SessionHandle>;",
-          "flush": "flush(): Promise<void>;",
-          "hasPendingSession": "hasPendingSession(id: SessionId): boolean;",
-          "list": "list(options?: SessionPersistenceListOptions): Promise<readonly SessionPersistenceSnapshot[]>;",
-          "name": "readonly name = \"session-persistence-jsonl\";",
-          "open": "open(id: SessionId, access: SessionAccess, options?: SessionPersistenceOpenOptions): Promise<SessionHandle>;",
-          "persistBatch": "persistBatch(header: SessionHeader, events: readonly SessionEvent[], isMaterialized: boolean, inheritedEventCount: SessionLogOffsetType): Promise<void>;",
-          "persistHeader": "persistHeader(header: SessionHeader, inheritedEventCount: SessionLogOffsetType): Promise<void>;",
-          "readStoredLog": "readStoredLog(path: string, expectedId: SessionId, signal?: AbortSignal): Promise<CurrentStoredLog>;",
-          "releaseHandle": "releaseHandle(handle: JsonlSessionHandle, materialized: boolean): void;",
-          "resolveCurrentLog": "resolveCurrentLog(id: SessionId, signal?: AbortSignal): Promise<string | undefined>;",
-          "stat": "stat(id: SessionId, options?: SessionPersistenceStatOptions): Promise<SessionPersistenceSnapshot | undefined>;",
-          "truncateTornTail": "truncateTornTail(header: SessionHeader, truncateTo: number): Promise<void>;"
-        }
+        "apply": "function apply(ctx: Context, config: Config): Promise<void>;",
+        "name": "const name = \"session-persistence-jsonl\";"
       }
     }
   },
@@ -3363,6 +3376,7 @@
         },
         "AssembledContext": {
           "$declaration": "interface AssembledContext { }",
+          "interpolate": "interpolate?: boolean;",
           "name": "name: string;",
           "text": "text: string;"
         },
@@ -3391,8 +3405,10 @@
         },
         "PromptContext": {
           "$declaration": "interface PromptContext { }",
+          "interpolate": "readonly interpolate?: boolean;",
           "name": "readonly name: string;",
           "order": "readonly order: number;",
+          "required": "readonly required?: boolean;",
           "text": "readonly text: string | ((context: AssembleContext) => string);"
         },
         "PromptContextOrderName": "type PromptContextOrderName = keyof typeof CONTEXT_ORDERS;",
@@ -3413,6 +3429,7 @@
           "context": "context(context: PromptContext): () => void;",
           "getContextOrder": "getContextOrder(name: PromptContextOrderName): number;",
           "getSectionOrder": "getSectionOrder(name: PromptSectionOrderName): number;",
+          "refreshContext": "refreshContext(assembly: PromptAssembly, context?: AssembleContext): PromptAssembly;",
           "section": "section(section: PromptSection): () => void;",
           "suppressRuntimeContext": "suppressRuntimeContext(): () => void;",
           "tools": "tools(provider: (context: AssembleContext) => ToolProviderResult): () => void;",
@@ -3432,6 +3449,7 @@
           "context": "context(context: PromptContext): () => void;",
           "getContextOrder": "getContextOrder(name: PromptContextOrderName): number;",
           "getSectionOrder": "getSectionOrder(name: PromptSectionOrderName): number;",
+          "refreshContext": "refreshContext(assembly: PromptAssembly, context?: AssembleContext): PromptAssembly;",
           "section": "section(section: PromptSection): () => void;",
           "suppressRuntimeContext": "suppressRuntimeContext(): () => void;",
           "tools": "tools(provider: (context: AssembleContext) => ToolProviderResult): () => void;",
@@ -3441,11 +3459,6 @@
         "renderContextSections": "function renderContextSections(assembly: PromptAssembly): ContextSnapshotSection[];",
         "renderContextSnapshot": "function renderContextSnapshot(assembly: PromptAssembly): string;",
         "renderPrompt": "function renderPrompt(assembly: PromptAssembly): string;"
-      },
-      "./invariant": {
-        "apply": "const apply: (ctx: Context) => Promise<() => void>;",
-        "inject": "const inject: string[];",
-        "name": "const name = \"system-prompt-invariant\";"
       }
     }
   },
@@ -3606,7 +3619,8 @@
           "$declaration": "interface PtcDispatchEventData extends PtcDispatchStartEventData { }",
           "content": "content: ContentBlock[];",
           "error": "error?: { name: string; code: string; reason?: string; };",
-          "isError": "isError: boolean;"
+          "isError": "isError: boolean;",
+          "meta": "meta?: JsonValue;"
         },
         "PtcDispatchLog": {
           "$declaration": "interface PtcDispatchLog { }",
@@ -3785,7 +3799,7 @@
           "constructor": "constructor(toolName: string, violations: string[]);",
           "violations": "readonly violations: string[];"
         },
-        "ToolPresentationMode": "type ToolPresentationMode = 'native' | 'ptc' | 'both';",
+        "ToolPresentationMode": "type ToolPresentationMode = 'native' | 'ptc';",
         "ToolRestriction": {
           "$declaration": "interface ToolRestriction { }",
           "allow": "readonly allow?: readonly string[];",
@@ -3881,16 +3895,11 @@
         "jsonSchemaToPy": "function jsonSchemaToPy(schema: unknown): string;",
         "jsonSchemaToTs": "function jsonSchemaToTs(schema: unknown, indent?: number): string;",
         "parameterSchemaSpecToJsonSchema": "function parameterSchemaSpecToJsonSchema(spec: ParameterSchemaSpec): ParameterJsonSchema;",
-        "renderToolsSdk": "function renderToolsSdk(schemas: ToolSdkSchema[]): string;",
+        "renderToolsSdk": "function renderToolsSdk(schemas: ToolSdkSchema[], programFormat?: 'function-body' | 'repl'): string;",
         "renderToolsSdkPy": "function renderToolsSdkPy(schemas: ToolSdkSchema[]): string;",
         "validateArgs": "function validateArgs(spec: ParameterSchemaSpec, args: unknown): string[];",
         "validateJsonSchemaValue": "function validateJsonSchemaValue(schema: JsonSchemaNode, value: unknown, path?: string): string[];",
         "valueSchemaSpecToJsonSchema": "function valueSchemaSpecToJsonSchema(spec: ValueSchemaSpec): JsonSchemaNode;"
-      },
-      "./invariant": {
-        "apply": "const apply: (ctx: Context) => Promise<() => void>;",
-        "inject": "const inject: string[];",
-        "name": "const name = \"tools-invariant\";"
       },
       "./presentation": {
         "DiffCallView": {
@@ -4027,7 +4036,8 @@
           "$declaration": "interface PtcDispatchEventData extends PtcDispatchStartEventData { }",
           "content": "content: ContentBlock[];",
           "error": "error?: { name: string; code: string; reason?: string; };",
-          "isError": "isError: boolean;"
+          "isError": "isError: boolean;",
+          "meta": "meta?: JsonValue;"
         },
         "PtcDispatchStartEventData": {
           "$declaration": "interface PtcDispatchStartEventData { }",

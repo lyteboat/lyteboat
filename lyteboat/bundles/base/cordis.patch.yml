@@ -92,6 +92,8 @@
   disabled: true
 - id: tool-web
   disabled: true
+- id: tool-working-directory
+  disabled: true
 - id: mcp-resources
   disabled: true
 

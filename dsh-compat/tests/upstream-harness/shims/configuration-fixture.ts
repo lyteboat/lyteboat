@@ -3,7 +3,7 @@
  * `configurationFixture` from another package's tests
  * (`packages/settings/settings/tests/configuration-fixture.ts`), which no
  * published package ships. This is that helper.
- * Adapted from deepseek-ai/deepseek-harness @ dsh-v0.2.0-rc.2 (639ed015), MIT, with one
+ * Adapted from deepseek-ai/deepseek-harness @ dsh-v0.2.1-rc.2 (687f282e), MIT, with one
  * change: the settings plugin comes from the published `@deepseek-ai/dsh-settings`
  * instead of that package's `../src/index.ts`.
  */

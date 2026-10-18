@@ -9,7 +9,7 @@ import { createInboxStub } from '@deepseek-ai/dsh-agent-loop-testkit'
 import AttachmentStore from '@deepseek-ai/dsh-attachment'
 import FileUploads from '@deepseek-ai/dsh-client-file-upload'
 import CommandRuntime from '@deepseek-ai/dsh-commands'
-import type { UserMessage } from '@deepseek-ai/dsh-llm'
+import type { MessageSource, UserMessage } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import { createScope } from '@deepseek-ai/dsh-scope'
 import { describe, expect, it, vi } from 'vitest'
@@ -18,6 +18,8 @@ import { SessionCommandController } from '../../src/commands.ts'
 import type { SessionPromptRequest, SessionRequestId } from '../../src/types.ts'
 
 const SESSION = SessionId('prompt-source-session')
+// The source the Remote method builds before it hands the prompt to the command controller.
+const CONTROLLER_SOURCE = { kind: 'user', rpcId: 'req-1' as SessionRequestId } satisfies MessageSource
 
 async function promptHarness(): Promise<{ controller: SessionCommandController; followup: ReturnType<typeof vi.fn> }> {
   const ctx = new Context()
@@ -65,7 +67,7 @@ describe('SessionCommandController.prompt with sourceFields', () => {
     const { controller, followup } = await promptHarness()
     const request = { requestId: 'r-9', context: { region: 'north' } }
 
-    await controller.prompt(promptRequest({ lyteboatRequest: request }))
+    await controller.prompt(promptRequest({ lyteboatRequest: request }), CONTROLLER_SOURCE)
 
     const message = followup.mock.calls[0]?.[0] as UserMessage
     expect(message.source).toEqual({ kind: 'user', rpcId: 'req-1', lyteboatRequest: request })
@@ -74,8 +76,16 @@ describe('SessionCommandController.prompt with sourceFields', () => {
   it('refuses a field the controller writes, before the message reaches the agent', async () => {
     const { controller, followup } = await promptHarness()
 
-    await expect(controller.prompt(promptRequest({ rpcId: 'forged' })))
+    await expect(controller.prompt(promptRequest({ rpcId: 'forged' }), CONTROLLER_SOURCE))
       .rejects.toMatchObject({ code: 'gateway/bad-request', message: 'sourceFields cannot set rpcId: the controller writes them' })
+    expect(followup).not.toHaveBeenCalled()
+  })
+
+  it('refuses principal, which the controller writes for a caller other than the owner', async () => {
+    const { controller, followup } = await promptHarness()
+
+    await expect(controller.prompt(promptRequest({ principal: 'forged' }), CONTROLLER_SOURCE))
+      .rejects.toMatchObject({ code: 'gateway/bad-request', message: 'sourceFields cannot set principal: the controller writes them' })
     expect(followup).not.toHaveBeenCalled()
   })
 })

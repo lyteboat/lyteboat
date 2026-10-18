@@ -2,6 +2,15 @@
 
 lyteboat's releases, newest first. Every package under `lyteboat/` carries the release's version. The tracked dsh release is in `dsh.upstream.json`.
 
+## Unreleased
+
+lyteboat tracks dsh 0.2.1-rc.2 (tag `dsh-v0.2.1-rc.2`, upstream commit `687f282e`) and cordis 4.0.5.
+
+- `{{cwd}}` is no longer a prompt variable: a persona that keeps it fails before the request with `unknown prompt variable {{cwd}}`.
+- A business mode's model requests carry one more host trace: every loop request holds dsh's working-directory runtime context, `Current working directory: "<path>".`, the absolute path of the agent's working directory on the server (`$LYTEBOAT_HOME/agent-workdirs/<agent>`). dsh-tool-skill needs the `workingDirectory` service, so `@lyteboat/base` keeps that row and turns off only `tool-working-directory` (the `working_directory` tool).
+- `@lyteboat/testkit` no longer mounts dsh's invariant registry: upstream removed `@deepseek-ai/dsh-invariants` and the kernel packages' `./invariant` subpaths. That a request is reconstructable from the log is held by G2's `dsh/core/agent-loop/tests/request-reconstruction.spec.ts`.
+- The default catalog's `zod` is 4.4.3, the version the kernel publishes with, so the install holds one copy.
+
 ## 0.1.1
 
 The Studio's test window: an editor tries an agent in the Studio, and the agent's own card components draw there. Nothing a 0.1.0 agent, profile, or `cordis.yml` uses changes; the kernel and the tracked dsh release (0.2.0-rc.2) are the same.

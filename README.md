@@ -271,7 +271,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | `lyteboat/plugins/studio-api` | `@lyteboat/studio-api` | Studio 的 HTTP API，挂在宿主 web server 的 `/api/studio`：Host 允许名单、按角色检查、请求体按 contracts 的 schema 严格校验；供登录、用户与角色、系统信息、agent 雷达（带卡片组件模块的内容哈希）与工作台、会话、看板和评测（运行是 `lyteboat eval` 子进程）使用，admin 能热修已有技能的 SKILL.md；editor 经 `POST agents/:id/chat` 在测试窗里发消息，回答是 `/chat` 的 enterprise 事件流；每次改动和每条测试消息写进审计日志 |
 | `lyteboat/core/contracts` | `@lyteboat/contracts` | 轻舟在 dsh 接缝上的声明：工具与技能元数据、内核的 `lyteboat/*` 事件（再导出）、日志节点、投影键、提示词顺序、`LyteboatDistro`，以及所声明 JSON 类型的 zod schema；`./studio` 是 Studio API 的请求与回答类型，`./cli` 是 `lyteboat inspect --result json` 输出的类型与 schema，以及模式 runner 的 id 表 |
 | `examples/agents/finance` | `@lyteboat/agent-finance` | 金融智能体：刻意做到最小的示例业务 agent，只用公开理财常识。资产总览、按「100 减年龄」的配置诊断（两张卡）、三个概念的投资者教育，三个路由技能；每轮第一步先准入（未授权出门槛卡、范围外拒识、投教与寒暄放行），客户由请求上下文指明 |
-| `lyteboat/test-support/testkit` | `@lyteboat/testkit` | 测试支撑：单元宿主（dsh 不变量、dsh 服务、内核的 agent loop）与 `MockAdapter`、进程内组合启动（评测、inspect 这类跑到退出，serve、Studio 这类边跑边测）、每个测试文件的临时 home 与工作区、会话日志读取与重开检查、JSON Lines 文件读取、脚本化模型、`/chat` 与 Studio 测试窗的测试客户端、启动器进程 |
+| `lyteboat/test-support/testkit` | `@lyteboat/testkit` | 测试支撑：单元宿主（dsh 服务、内核的 agent loop）与 `MockAdapter`、进程内组合启动（评测、inspect 这类跑到退出，serve、Studio 这类边跑边测）、每个测试文件的临时 home 与工作区、会话日志读取与重开检查、JSON Lines 文件读取、脚本化模型、`/chat` 与 Studio 测试窗的测试客户端、启动器进程 |
 
 ## 开发
 
@@ -302,10 +302,10 @@ dsh.upstream.json     所跟踪的 dsh 版本
 
 ## 状态与路线图
 
-- 跟踪 dsh **0.2.0-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的五个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`、`headless-hooks`）和 dsh-base 的一项发行版策略（关掉三项上传，COMPAT §8），上面所有闸门都对它通过。
+- 跟踪 dsh **0.2.1-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的五个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`、`headless-hooks`）和 dsh-base 的一项发行版策略（关掉三项上传，COMPAT §8），上面所有闸门都对它通过。
 - 提供八个命令：原生底座的 `lyteboat web`（dsh 的 web 应用）和 `headless`（一次性任务，dsh 自己的 agent 作答）；业务底座的 `serve`（`/chat` 服务）、`eval`（评测用例）、`release`（发布闸门与发布锁）、`inspect`（agent 由什么组成）、`studio`（Studio 工作台）；以及看任一 profile 组合后插件树的 `config dump`，以及它们背后的能力插件、金融智能体、发行版工具与 16 包内核、兼容性闸门 G1–G6。完整清单见 [CHANGELOG](CHANGELOG.md)。
 - 已知限制：
-  - 业务模式的模型请求里还有几处宿主的痕迹：dsh 的技能调用消息带着技能目录的绝对路径；上下文压缩的摘要指令是按编码助手写的；persona 里的 `{{cwd}}` 渲染成服务器上的路径，业务 persona 不要用它。另外，启动器仍会读它启动目录里的 `.env`（留给运维放部署配置）。
+  - 业务模式的模型请求里还有几处宿主的痕迹：dsh 的技能调用消息带着技能目录的绝对路径；上下文压缩的摘要指令是按编码助手写的；每个循环请求带一条 working-directory 运行时上下文，内容是服务器上 agent 工作目录的绝对路径。persona 里不能再写 `{{cwd}}`：dsh 不再提供这个变量，留着它请求前就报错。另外，启动器仍会读它启动目录里的 `.env`（留给运维放部署配置）。
   - 没有记忆和推荐问。旁路调用默认用 agent 自己的模型；技能路由可以在 `lyteboatAgentDef` 的 `skillRouting` 里另指 provider 和 model，准入分类还不能单独指定。
 - 后续计划见[参考实现对齐分析](docs/04-reference-alignment.md)。
 

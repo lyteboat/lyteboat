@@ -3,4 +3,3 @@
   config:
     prefix: >-
       You are STUDIO-HELPER, a test agent powered by the {{model}} model.
-    suffix: Your working directory is {{cwd}}.

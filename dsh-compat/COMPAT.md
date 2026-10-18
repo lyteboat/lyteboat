@@ -4,7 +4,7 @@ lyteboat is a distribution of [DeepSeek Harness](https://github.com/deepseek-ai/
 
 ## 1. Scope
 
-For the dsh release pinned in `dsh.upstream.json` (`0.2.0-rc.2`), lyteboat promises that a plugin written against that release observes the same **protocol, interface, and behavior** from lyteboat's kernel as from the official packages, except where §4 lists an addition or §8 a distribution policy. Packages outside the kernel are installed from npm at the pinned version, unchanged; lyteboat's promise about them is only that it does not patch them.
+For the dsh release pinned in `dsh.upstream.json` (`0.2.1-rc.2`), lyteboat promises that a plugin written against that release observes the same **protocol, interface, and behavior** from lyteboat's kernel as from the official packages, except where §4 lists an addition or §8 a distribution policy. Packages outside the kernel are installed from npm at the pinned version, unchanged; lyteboat's promise about them is only that it does not patch them.
 
 ## 2. Stable surface
 
@@ -28,9 +28,9 @@ Every invariant is held by a test that runs against lyteboat's kernel. Upstream'
 
 | Invariant | Held by |
 |---|---|
-| Anything that reaches a model request is reconstructable from the session log | G2 `dsh/core/agent-loop/tests/request-reconstruction.spec.ts`; the `agent-loop-invariant` companion |
+| Anything that reaches a model request is reconstructable from the session log | G2 `dsh/core/agent-loop/tests/request-reconstruction.spec.ts` |
 | A step's requests append-extend the previous request; a new request series starts only when the admitted step asks for one | G2 `request-reconstruction.spec.ts` |
-| `tool/call` is appended before `tools/pre-execute` runs; pipeline stages run once and in order | G2 `dsh/core/tools/tests/invariant.spec.ts`, `dsh/core/agent-loop/tests/tool-calls.spec.ts` |
+| `tool/call` is appended before `tools/pre-execute` runs; pipeline stages run once and in order | G2 `dsh/core/tools/tests/tools.spec.ts`, `dsh/core/agent-loop/tests/tool-calls.spec.ts` |
 | Waterfall events (`agent/pre-step`, `agent/request`, `tools/pre-execute`, …) short-circuit when a listener does not call `next()`, and see rewritten payloads in listener order | G2 `dsh/core/agent-loop/tests/interception.spec.ts` |
 | A projection that ignores an event returns the same state reference | G2 `dsh/session/session-projection/tests/registry.spec.ts` |
 | Persistence refuses a stored log with an event type outside the compiled catalog unless the event is `ignorable` | G2 `dsh/session/session-persistence-jsonl/tests`, overlay `persistence` |

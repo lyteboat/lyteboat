@@ -10,7 +10,7 @@
  * serve profile with `--port 0`, and `lyteboat headless -h` prints dsh's one-shot help.
  *
  * Adapted from deepseek-ai/deepseek-harness apps/cli/src/args.ts
- * @ dsh-v0.2.0-rc.2 (639ed015), MIT — see THIRD_PARTY_NOTICES.md.
+ * @ dsh-v0.2.1-rc.2 (687f282e), MIT — see THIRD_PARTY_NOTICES.md.
  * @module @lyteboat/cli/args
  */
 

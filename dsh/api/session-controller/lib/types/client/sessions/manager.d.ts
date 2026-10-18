@@ -35,7 +35,7 @@ export interface SessionListSnapshot {
 /** Shared projection values and the lifecycle of their explicit baseline read. */
 export interface SessionProjectionSnapshot {
     readonly values: Readonly<Partial<SessionProjectionMap>>;
-    readonly state: 'idle' | 'loading' | 'ready' | 'error';
+    readonly state: 'idle' | 'loading' | 'ready' | 'migration-required' | 'error';
     readonly error: RemoteFailure | null;
 }
 /** Instance cluster + frame entry + the session list. */
@@ -86,8 +86,9 @@ export declare class SessionManager {
     resolveTarget(target: SessionTarget): SessionId;
     /**
      * Resolve an address for breadcrumb navigation without retaining transport authority.
-     * @param sessionId - possible child id in an already-loaded catalog.
-     * @returns A retained or catalog-derived direct-parent address.
+     * @param sessionId - possible child id in received Session metadata.
+     * @returns A retained address, then a catalog address, then an unknown-mode address
+     *   from a listed subagent header; undefined without that evidence.
      */
     subagentAddress(sessionId: SessionId): SubagentAddress | undefined;
     /**
@@ -130,7 +131,7 @@ export declare class SessionManager {
     /** Resident per-session projection store (create-on-demand; outlives instantiation). */
     private projectionStore;
     /**
-     * Load a complete projection baseline once per connection; retry unsuccessful reads.
+     * Read projections without starting migration; retry failed or migration-deferred reads.
      * @param sessionId - Session to inspect without opening its conversation.
      * @returns completion of the current or newly started read.
      */
@@ -154,13 +155,14 @@ export declare class SessionManager {
      * Contract session.create; on success merge into summaries immediately (no
      * wait for the next refresh). A created session is blank by definition
      * (entity birth precedes the first message).
-     * @param opts - target workspace or working directory, plus an optional caller-owned id.
-     * @returns the create result.
+     * @param opts - target workspace or working directory, an optional blank Session to reuse, and an optional Agent preset.
+     * @returns the create result, naming the Session the Host created or reused.
     */
     create(opts?: {
         workspaceId?: WorkspaceId;
         cwd?: string;
         sessionId?: SessionId;
+        agentPreset?: string;
     }): Promise<RemoteResult<{
         sessionId: SessionId;
     }>>;
@@ -171,12 +173,13 @@ export declare class SessionManager {
      * preserve it or lower it after an exact cut before the first `turn/start`;
      * lineage rides parentSessionId. A child published before Workspace
      * attachment fails is also reconciled into the list.
-     * @param opts - source session and the optional exact inclusive boundary seq.
+     * @param opts - source session, optional exact inclusive boundary seq, and permission to start migration.
      * @returns the fork result (the child session id).
      */
     fork(opts: {
         sessionId: SessionId;
         atSeq?: SessionSeq;
+        allowMigration?: boolean;
     }): Promise<RemoteResult<{
         sessionId: SessionId;
     }>>;

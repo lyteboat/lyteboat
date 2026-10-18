@@ -27,7 +27,6 @@
     "@lyteboat/testkit": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/cordis-plugin-loader": "catalog:cordis",
-    "@deepseek-ai/dsh-invariants": "catalog:dsh",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-llm-mock-server": "catalog:dsh",
     "@deepseek-ai/dsh-typert-generator": "catalog:dsh",
