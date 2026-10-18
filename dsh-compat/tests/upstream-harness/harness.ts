@@ -62,6 +62,7 @@ const SHIMS: Readonly<Record<string, string>> = {
   '@deepseek-ai/dsh-llm-pi-ai/src/context.ts': 'shims/pi-context.ts',
   '../../../settings/settings/tests/configuration-fixture.ts': 'shims/configuration-fixture.ts',
   '@deepseek-ai/dsh-subagent/src/projection.ts': 'shims/subagent-projection.ts',
+  '@deepseek-ai/dsh-subagent/src/catalog.ts': 'shims/subagent-catalog.ts',
 }
 
 const CORDIS_SHIM = '\0lyteboat-upstream-tests:cordis'
