@@ -129,6 +129,9 @@
       "path": "./examples/agents/finance"
     },
     {
+      "path": "./examples/agents/doctor"
+    },
+    {
       "path": "./lyteboat/test-support/testkit"
     }
   ]

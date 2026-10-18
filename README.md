@@ -271,6 +271,7 @@ dsh.upstream.json     所跟踪的 dsh 版本
 | `lyteboat/plugins/studio-api` | `@lyteboat/studio-api` | Studio 的 HTTP API，挂在宿主 web server 的 `/api/studio`：Host 允许名单、按角色检查、请求体按 contracts 的 schema 严格校验；供登录、用户与角色、系统信息、agent 雷达（带卡片组件模块的内容哈希）与工作台、会话、看板和评测（运行是 `lyteboat eval` 子进程）使用，admin 能热修已有技能的 SKILL.md；editor 经 `POST agents/:id/chat` 在测试窗里发消息，回答是 `/chat` 的 enterprise 事件流；每次改动和每条测试消息写进审计日志 |
 | `lyteboat/core/contracts` | `@lyteboat/contracts` | 轻舟在 dsh 接缝上的声明：工具与技能元数据、内核的 `lyteboat/*` 事件（再导出）、日志节点、投影键、提示词顺序、`LyteboatDistro`，以及所声明 JSON 类型的 zod schema；`./studio` 是 Studio API 的请求与回答类型，`./cli` 是 `lyteboat inspect --result json` 输出的类型与 schema，以及模式 runner 的 id 表 |
 | `examples/agents/finance` | `@lyteboat/agent-finance` | 金融智能体：刻意做到最小的示例业务 agent，只用公开理财常识。资产总览、按「100 减年龄」的配置诊断（两张卡）、三个概念的投资者教育，三个路由技能；每轮第一步先准入（未授权出门槛卡、范围外拒识、投教与寒暄放行），客户由请求上下文指明 |
+| `examples/agents/doctor` | `@lyteboat/agent-doctor` | 临床研究入组筛查助手：doctor 工作台的对话智能体，人设和 14 个工具。工具的说明和参数来自 doctor 服务导出的清单，执行和给模型的摘要都在 doctor 服务里，agent 只经内网接口代医生发起调用（请求上下文的 `actor`、`page`），把界面意图和跳转卡渲染成即时卡片；患者在会话里只以「患者#编号」出现 |
 | `lyteboat/test-support/testkit` | `@lyteboat/testkit` | 测试支撑：单元宿主（dsh 服务、内核的 agent loop）与 `MockAdapter`、进程内组合启动（评测、inspect 这类跑到退出，serve、Studio 这类边跑边测）、每个测试文件的临时 home 与工作区、会话日志读取与重开检查、JSON Lines 文件读取、脚本化模型、`/chat` 与 Studio 测试窗的测试客户端、启动器进程 |
 
 ## 开发

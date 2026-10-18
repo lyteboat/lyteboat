@@ -1,0 +1,22 @@
+{
+  "event": "beginRendering",
+  "version": "1.0.0",
+  "surfaceId": "doctor-ui-intent",
+  "rootComponentId": "intent",
+  "showType": "card",
+  "components": [
+    {
+      "id": "intent",
+      "component": {
+        "DoctorUiIntent": {
+          "kind": {
+            "path": "kind"
+          },
+          "payload": {
+            "path": "payload"
+          }
+        }
+      }
+    }
+  ]
+}

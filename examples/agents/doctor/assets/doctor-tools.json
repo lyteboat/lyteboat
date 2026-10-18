@@ -1,0 +1,492 @@
+[
+  {
+    "name": "search_patients",
+    "description": "按条件在患者库里找人：诊断 / 分期 / 年龄 / ECOG / 标志物等任意目录字段的判定式，或缺某字段的人，或按姓名片段。用户问「有哪些肺腺癌患者」「ECOG 0–1 的有谁」「缺 ECOG 的都是谁」时调用。判定式里的数字必须是用户原话里出现的数字，不要自行补常识阈值；结果分三桶：符合 / 缺数据 / 不符合，缺数据不是不符合。默认只找在用的患者，用户问到已归档的人时 archived 传 true，要连归档的一起找时传 null。",
+    "thinking_hint": "正在筛患者…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "q": {
+          "type": "string",
+          "description": "姓名或患者编号的片段；诊断、分期、标志物等走 rule",
+          "default": ""
+        },
+        "scope": {
+          "type": "string",
+          "description": "all 全部 / follow 我关注的 / enrolled 在组（已入组且没结束参与）/ eligible 有候选项目的",
+          "enum": [
+            "all",
+            "follow",
+            "enrolled",
+            "eligible"
+          ],
+          "default": "all"
+        },
+        "rule": {
+          "type": "object",
+          "description": "判定式筛选，字段与算子见字段目录；不筛留空",
+          "properties": {
+            "combinator": {
+              "default": "all",
+              "description": "all 全部满足 / any 满足任一",
+              "enum": [
+                "all",
+                "any"
+              ],
+              "title": "Combinator",
+              "type": "string"
+            },
+            "predicates": {
+              "items": {
+                "description": "一个原子条件，与方案判定式的谓词同构。",
+                "properties": {
+                  "field_key": {
+                    "description": "字段目录里的键，如 ecog / age / diagnosis / stage",
+                    "title": "Field Key",
+                    "type": "string"
+                  },
+                  "op": {
+                    "description": "算子。数值：>= > <= < == between；枚举：== != in not_in；二值：== !=；瘤种：in not_in；集合：contains_any not_contains_any；日期：days_since_gte days_since_lte",
+                    "title": "Op",
+                    "type": "string"
+                  },
+                  "value": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "单值阈值或取值",
+                    "title": "Value"
+                  },
+                  "values": {
+                    "description": "in / not_in / contains_any 的取值集合",
+                    "items": {
+                      "type": "string"
+                    },
+                    "title": "Values",
+                    "type": "array"
+                  },
+                  "min": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "between 的下限",
+                    "title": "Min"
+                  },
+                  "max": {
+                    "anyOf": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "default": null,
+                    "description": "between 的上限",
+                    "title": "Max"
+                  },
+                  "unit": {
+                    "default": "",
+                    "description": "阈值单位，照原话写，如 岁 / 分 / 周；留空按目录单位",
+                    "title": "Unit",
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "field_key",
+                  "op"
+                ],
+                "title": "FilterPredicate",
+                "type": "object"
+              },
+              "minItems": 1,
+              "title": "Predicates",
+              "type": "array"
+            }
+          }
+        },
+        "outcome": {
+          "type": "string",
+          "description": "有 rule 时列哪一桶：pass 符合 / missing 缺数据 / fail 不符合；没有 rule 时忽略",
+          "enum": [
+            "pass",
+            "missing",
+            "fail"
+          ],
+          "default": "pass"
+        },
+        "missing_fields": {
+          "type": "array",
+          "description": "只看缺其中任一字段的患者，如 [\"ecog\"]",
+          "items": {
+            "type": "string"
+          }
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "False 只看在用（默认）；True 只看已归档；留空 null 看全部",
+          "default": false
+        },
+        "page": {
+          "type": "integer",
+          "description": "页码，通常留默认",
+          "default": 1
+        },
+        "page_size": {
+          "type": "integer",
+          "description": "每页条数，通常留默认",
+          "default": 30
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "search_trials",
+    "description": "按条件在项目库里找研究项目：状态（入组中、已暂停、已结束、已终止）、期别、瘤种、主要研究者（PI）、负责人、优先级、是否 30 天内关闭入组，或简称、编号、方案名、研究药物片段。用户问「有哪些入组中的肺癌项目」「快关组的项目」「III 期的有哪些」「周彩存的项目」「第一优先的项目」时调用。",
+    "thinking_hint": "正在筛项目…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "q": {
+          "type": "string",
+          "description": "项目编号、方案编号、简称、方案名、主要研究者、负责人、研究药物或适应症的片段",
+          "default": ""
+        },
+        "status": {
+          "type": "string",
+          "description": "按状态筛：入组中、已暂停、已结束、已终止；空串不筛",
+          "enum": [
+            "",
+            "入组中",
+            "已暂停",
+            "已结束",
+            "已终止"
+          ],
+          "default": ""
+        },
+        "phase": {
+          "type": "string",
+          "description": "期别，如 II / III，按整词比：II 不含 III 期，含 I/II 期；空串不筛",
+          "default": ""
+        },
+        "tumor": {
+          "type": "string",
+          "description": "瘤种，按词表判 is-a：查「肺癌」带出肺腺癌项目，查「肺腺癌」也带出非小细胞肺癌项目",
+          "default": ""
+        },
+        "pi": {
+          "type": "string",
+          "description": "主要研究者（PI）姓名，整名比；「未填」只看没填 PI 的项目；空串不筛",
+          "default": ""
+        },
+        "lead": {
+          "type": "string",
+          "description": "负责人（科室里跟进项目的医生）姓名，整名比；「未填」只看没填负责人的项目；空串不筛",
+          "default": ""
+        },
+        "lead_scope": {
+          "type": "string",
+          "description": "项目范围：这位负责人的项目，加上还没填负责人的项目；空串不筛",
+          "default": ""
+        },
+        "priority": {
+          "type": "integer",
+          "description": "优先级 1、2、3；0 只看没设优先级的；留空 null 不筛"
+        },
+        "closing_soon": {
+          "type": "boolean",
+          "description": "True 只看 30 天内关闭入组的"
+        },
+        "archived": {
+          "type": "boolean",
+          "description": "False 只看在用（默认）；True 只看已归档；留空 null 看全部",
+          "default": false
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "open_trial",
+    "description": "打开研究项目的详情页，报它各段的人数：待评估、待入组、筛选中、已入组、未入组、暂不符合。用户说「打开 / 看看某个项目」，或问「这个项目有多少暂不符合 / 待入组 / 在筛选」时调用。要在评估台看某一段的名单时调 list_candidates。",
+    "thinking_hint": "正在打开项目…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "trial_id": {
+          "type": "string",
+          "description": "项目编号，如 NCT05881278；医生说「这个项目」时留空，取当前页面的项目"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "open_patient",
+    "description": "打开某位患者的档案页，报 AI 摘要、待评估的项目和预筛结果、暂不符合的项目数和主因、已在哪个项目里、还缺哪些资料。用户说「看看张三」「这位患者能进哪些项目」「他还缺什么资料」时调用。",
+    "thinking_hint": "正在打开档案…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "patient_name": {
+          "type": "string",
+          "description": "患者标记，对话里的写法是「患者#编号」，原样传入；医生说「这位患者」「那对」时留空，取当前页面的患者"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_candidates",
+    "description": "列出某项目在入组漏斗某一段的患者：待评估（默认）、待入组、筛选中、已入组、未入组、暂不符合；暂不符合附按原因的分组，可按原因组只列一组。待评估还可按缺失字段筛选（如只看缺 ECOG 的）。未入组是医生判过不匹配、患者拒绝或筛选失败的；暂不符合是预筛被方案或科室经验排除、医生还没看过的。用户问「还有谁能进」「暂不符合的是谁、卡在哪」「谁没进成」「待入组的有谁」「把缺 X 的挑出来」时调用。",
+    "thinking_hint": "正在筛选候选…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "trial_id": {
+          "type": "string",
+          "description": "项目编号，如 NCT05881278；医生说「这个项目」时留空，取当前页面的项目"
+        },
+        "stage": {
+          "type": "string",
+          "description": "pending=待评估（默认）/ awaiting=待入组 / screening=筛选中 / enrolled=已入组 / not_enrolled=未入组 / excluded=暂不符合",
+          "enum": [
+            "pending",
+            "awaiting",
+            "screening",
+            "enrolled",
+            "not_enrolled",
+            "excluded"
+          ]
+        },
+        "reason_group": {
+          "type": "string",
+          "description": "只在 stage=excluded 时生效，只列这一组：目标人群不符 / 分期或线数不符 / 靶点不符 / 既往用药不符 / 年龄或性别不符 / 命中排除标准 / 多项指标不符 / 科室经验 / 其他原因"
+        },
+        "missing_field": {
+          "type": "string",
+          "description": "只看缺这个字段的待评估患者，如 ecog / met_gcn；不填则列全部"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "explain_pair",
+    "description": "解释某位患者对某个项目的预筛评估：结果和理由，逐条列出缺失与不符合，并打开这一对的逐条明细页。用户问「差在哪」「为什么是这个结果」时调用。",
+    "thinking_hint": "正在核对逐条比对结果…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "patient_name": {
+          "type": "string",
+          "description": "患者标记，对话里的写法是「患者#编号」，原样传入；医生说「这位患者」「那对」时留空，取当前页面的患者"
+        },
+        "trial_id": {
+          "type": "string",
+          "description": "项目编号，如 NCT05881278；医生说「这个项目」时留空，取当前页面的项目"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "save_patient_field",
+    "description": "为某位患者补录一个结构化字段，例如 ECOG 评分。用户说「张三的 ECOG 是 1」这类话时调用。补录只写数据，不重新评估；聊天区会出提示卡，由医生点「重新评估」。医生说了检查日期就带上；没说就不带，日期选填，不要自己填今天。",
+    "thinking_hint": "正在补录…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "patient_name": {
+          "type": "string",
+          "description": "患者标记，对话里的写法是「患者#编号」，原样传入；医生说「这位患者」「那对」时留空，取当前页面的患者"
+        },
+        "field_key": {
+          "type": "string",
+          "description": "字段名，如 ecog / met_gcn / anc"
+        },
+        "value": {
+          "type": "string",
+          "description": "字段值"
+        },
+        "measured_on": {
+          "type": "string",
+          "description": "检查日期，医生说的那天：2026-09-03；只知道月份写 2026-09"
+        }
+      },
+      "required": [
+        "field_key",
+        "value"
+      ]
+    }
+  },
+  {
+    "name": "prepare_verdict",
+    "description": "为某个「患者 × 项目」准备一份结论草稿，打开确认弹窗并预填原因。注意：这不会真的下结论，最终必须由研究者在弹窗里确认。",
+    "thinking_hint": "正在准备结论草稿…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "patient_name": {
+          "type": "string",
+          "description": "患者标记，对话里的写法是「患者#编号」，原样传入；医生说「这位患者」「那对」时留空，取当前页面的患者"
+        },
+        "trial_id": {
+          "type": "string",
+          "description": "项目编号，如 NCT05881278；医生说「这个项目」时留空，取当前页面的项目"
+        },
+        "kind": {
+          "type": "string",
+          "description": "match=匹配 / nomatch=不匹配",
+          "enum": [
+            "match",
+            "nomatch"
+          ]
+        },
+        "reason": {
+          "type": "string",
+          "description": "建议填写的原因"
+        }
+      },
+      "required": [
+        "kind"
+      ]
+    }
+  },
+  {
+    "name": "list_experiences",
+    "description": "列出经验库里对某项目生效的科室口径（通用 + 本项目 + 本期别），带判定式、命中次数与结论一致率。用户问「有哪些经验 / 口径 / 规则在起作用」时调用。",
+    "thinking_hint": "正在翻经验库…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "trial_id": {
+          "type": "string",
+          "description": "项目编号；医生说「这个项目」时留空，取当前页面的项目；不填也没有当前项目时列通用层"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "propose_experience",
+    "description": "把医生说的一条判断口径整理成待确认的经验（如「以后 70 岁以上都要附心功能评估」）。注意：不会写入，只把确认卡片打开并预填；医生点「写入记忆」后才进经验库并生效。用户说「记住」「以后一律」「本项目都…」时调用。",
+    "thinking_hint": "正在整理这条经验…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "口径原句，尽量保留医生的措辞与数字，不要改写阈值"
+        },
+        "trial_id": {
+          "type": "string",
+          "description": "项目编号；医生说「这个项目」时留空，取当前页面的项目；不填也没有当前项目时列通用层"
+        }
+      },
+      "required": [
+        "text"
+      ]
+    }
+  },
+  {
+    "name": "list_trial_criteria",
+    "description": "列出项目生效的入选和排除标准，每条标明系统判定、入组前核实还是人工判定，并给出三类各几条。用户问「这个项目的入排标准有哪些」「哪些条件系统判不了」时调用。",
+    "thinking_hint": "正在读方案标准…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "trial_id": {
+          "type": "string",
+          "description": "项目编号；医生说「这个项目」时留空，取当前页面的项目"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_match_runs",
+    "description": "查重算记录：给了患者和项目就列这一对在历次重算里预筛结果怎么变的；只给项目或只给患者就列涉及它的最近几次重算，带起因、进度和变化摘要。用户问「上次重算变了什么」「这对为什么从初步符合变成暂不符合」「重算跑完了没有」时调用。",
+    "thinking_hint": "正在翻匹配记录…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "trial_id": {
+          "type": "string",
+          "description": "项目编号；医生说「这个项目」时留空，取当前页面的项目"
+        },
+        "patient_name": {
+          "type": "string",
+          "description": "患者标记，对话里的写法是「患者#编号」，原样传入；医生说「这位患者」时留空，取当前页面的患者"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "list_documents",
+    "description": "查文档解析进度：某项目的方案、某患者的病历，或我上传的全部文档，各自处在识别中、抽取中、待确认、已写入还是解析失败。用户问「病历解析完了没」「方案还有几条待确认」「我传的文档怎么样了」时调用。",
+    "thinking_hint": "正在查文档进度…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "trial_id": {
+          "type": "string",
+          "description": "项目编号；医生说「这个项目」时留空，取当前页面的项目"
+        },
+        "patient_name": {
+          "type": "string",
+          "description": "患者标记，对话里的写法是「患者#编号」，原样传入；医生说「这位患者」时留空，取当前页面的患者"
+        },
+        "mine": {
+          "type": "boolean",
+          "description": "true=只看我上传的全部文档；医生说「我传的」时用"
+        }
+      },
+      "required": []
+    }
+  },
+  {
+    "name": "draft_feedback",
+    "description": "医生要给开发团队提反馈时调用：说「提反馈」、报告系统出错、说某条判得不对、想要一个新功能。把原话整理成草稿卡，患者信息先隐去，再改写成标题和现象、实际、期望。注意：不会提交，医生在卡片上点「提交」后才送出。",
+    "thinking_hint": "正在起草反馈…",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "description": "反馈类型：系统报错或卡住选「出错了」，预筛判定有误选「判得不对」，要新功能选「想要的功能」",
+          "enum": [
+            "出错了",
+            "判得不对",
+            "想要的功能"
+          ]
+        },
+        "text": {
+          "type": "string",
+          "description": "医生的原话，去掉「提反馈：」前缀后照原样传，不要改写；患者写成「患者#编号」的原样保留"
+        }
+      },
+      "required": [
+        "kind",
+        "text"
+      ]
+    }
+  }
+]
