@@ -1085,61 +1085,6 @@ importers:
         specifier: 0.2.1-rc.2
         version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-agent@dsh+core+agent)(@deepseek-ai/dsh-fs@0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-brand@0.2.1-rc.2(@deepseek-ai/cordis@4.0.5))(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-sandbox@0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-session@dsh+core+session)))(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-session-projection@dsh+session+session-projection)(@deepseek-ai/dsh-session@dsh+core+session)(@deepseek-ai/dsh-system-prompt@dsh+core+system-prompt)
 
-  examples/agents/doctor:
-    dependencies:
-      '@deepseek-ai/dsh-tools':
-        specifier: workspace:*
-        version: link:../../../dsh/core/tools
-      '@lyteboat/agent-definition':
-        specifier: workspace:*
-        version: link:../../../lyteboat/plugins/agent-definition
-      '@lyteboat/contracts':
-        specifier: workspace:*
-        version: link:../../../lyteboat/core/contracts
-      zod:
-        specifier: 'catalog:'
-        version: 4.4.3
-    devDependencies:
-      '@deepseek-ai/cordis':
-        specifier: catalog:cordis
-        version: 4.0.5(@deepseek-ai/cordis-plugin-include@1.0.10)(@deepseek-ai/cordis-plugin-loader@1.0.6)
-      '@deepseek-ai/dsh-agent':
-        specifier: workspace:*
-        version: link:../../../dsh/core/agent
-      '@deepseek-ai/dsh-llm':
-        specifier: workspace:*
-        version: link:../../../dsh/llm/llm
-      '@deepseek-ai/dsh-session':
-        specifier: workspace:*
-        version: link:../../../dsh/core/session
-      '@deepseek-ai/dsh-session-projection':
-        specifier: workspace:*
-        version: link:../../../dsh/session/session-projection
-      '@lyteboat/a2ui':
-        specifier: workspace:*
-        version: link:../../../lyteboat/plugins/a2ui
-      '@lyteboat/base':
-        specifier: workspace:*
-        version: link:../../../lyteboat/bundles/base
-      '@lyteboat/distro':
-        specifier: workspace:*
-        version: link:../../../lyteboat/plugins/distro
-      '@lyteboat/model-side-call':
-        specifier: workspace:*
-        version: link:../../../lyteboat/plugins/model-side-call
-      '@lyteboat/request-context':
-        specifier: workspace:*
-        version: link:../../../lyteboat/plugins/request-context
-      '@lyteboat/serve':
-        specifier: workspace:*
-        version: link:../../../lyteboat/bundles/serve
-      '@lyteboat/testkit':
-        specifier: workspace:*
-        version: link:../../../lyteboat/test-support/testkit
-      '@lyteboat/tool-policy':
-        specifier: workspace:*
-        version: link:../../../lyteboat/plugins/tool-policy
-
   examples/agents/finance:
     dependencies:
       '@deepseek-ai/dsh-tools':
