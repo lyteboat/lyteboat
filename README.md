@@ -302,10 +302,10 @@ dsh.upstream.json     所跟踪的 dsh 版本
 
 ## 状态与路线图
 
-- 跟踪 dsh **0.2.0-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的五个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`、`headless-hooks`）和 dsh-base 的一项发行版策略（关掉三项上传，COMPAT §8），上面所有闸门都对它通过。
+- 跟踪 dsh **0.2.1-rc.2**（`dsh.upstream.json`）。内核是它的导入，加上轻舟登记的五个扩展（`agent-loop-intake`、`agent-loop-pre-assemble`、`session-append-ignorable`、`session-controller-prompt-source`、`headless-hooks`）和 dsh-base 的一项发行版策略（关掉三项上传，COMPAT §8），上面所有闸门都对它通过。
 - 提供八个命令：原生底座的 `lyteboat web`（dsh 的 web 应用）和 `headless`（一次性任务，dsh 自己的 agent 作答）；业务底座的 `serve`（`/chat` 服务）、`eval`（评测用例）、`release`（发布闸门与发布锁）、`inspect`（agent 由什么组成）、`studio`（Studio 工作台）；以及看任一 profile 组合后插件树的 `config dump`，以及它们背后的能力插件、金融智能体、发行版工具与 16 包内核、兼容性闸门 G1–G6。完整清单见 [CHANGELOG](CHANGELOG.md)。
 - 已知限制：
-  - 业务模式的模型请求里还有几处宿主的痕迹：dsh 的技能调用消息带着技能目录的绝对路径；上下文压缩的摘要指令是按编码助手写的；persona 里的 `{{cwd}}` 渲染成服务器上的路径，业务 persona 不要用它。另外，启动器仍会读它启动目录里的 `.env`（留给运维放部署配置）。
+  - 业务模式的模型请求里还有几处宿主的痕迹：dsh 的技能调用消息带着技能目录的绝对路径；上下文压缩的摘要指令是按编码助手写的；每个循环请求带一条 working-directory 运行时上下文，内容是服务器上 agent 工作目录的绝对路径。persona 里不能再写 `{{cwd}}`：dsh 不再提供这个变量，留着它请求前就报错。另外，启动器仍会读它启动目录里的 `.env`（留给运维放部署配置）。
   - 没有记忆和推荐问。旁路调用默认用 agent 自己的模型；技能路由可以在 `lyteboatAgentDef` 的 `skillRouting` 里另指 provider 和 model，准入分类还不能单独指定。
 - 后续计划见[参考实现对齐分析](docs/04-reference-alignment.md)。
 
