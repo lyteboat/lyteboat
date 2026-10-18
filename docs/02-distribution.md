@@ -672,7 +672,7 @@ G2 只收 `*.spec.ts`。内核包的 `tests/` 里另有 4 个非 spec 文件不�
 
 **步骤**（按 `overlay.ts` `g3` 的实际顺序）：
 
-1. **列测试。** 找出所有声明依赖内核包的上游包的 `*.spec.ts`（`dependentTestFiles`；`--match` 按包目录过滤）。
+1. **列测试。** 找出所有声明依赖内核包的上游包的 `*.spec.ts`（`dependentTestFiles`；`--match` 按包目录过滤），去掉 `G3_TEST_EXCLUDES` 列出的文件。现在只排除一个：`typert/generator` 的 `cordis-catalog.spec.ts`。它拿整个工作区重新生成上游的 `docs/cordis-api` 页面，再和提交的页面逐字节比较；内核扩展声明的事件不在上游页面里，所以它在带扩展的内核上永远过不了。它测的是上游仓库的文档，和 G2 排除的仓库脚本测试同类。
 2. **跑基线（若无缓存）。** 缓存文件是 `$LYTEBOAT_DIST_CACHE/g3-baseline-<钉住的 dsh 版本号>-<测试文件清单 sha256 的前 12 位>.json`。没有缓存时，reset checkout，在原样树上跑一遍并写缓存。
 3. **铺上 lyteboat 内核。** `applyOverlay` 这时才核对 `HEAD` 是否等于钉住的提交，不是就报 `… is at <head>; dsh.upstream.json pins <commit>` 退出。然后把 lyteboat 的 `dsh/<dir>` 拷到 `packages/<dir>`（`package.json` 和 `tsconfig.json` 除外），删掉 lyteboat 删过的文件。
 4. **再跑一遍，之后 reset**。

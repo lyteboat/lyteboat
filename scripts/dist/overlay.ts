@@ -129,6 +129,11 @@ function packageSpecFiles(checkout: string, dir: string): string[] {
     .map(file => `packages/${dir}/tests/${file}`)
 }
 
+/** Dependent spec files G3 does not run: they check upstream's repository, not the dependent package's behavior on the kernel. */
+const G3_TEST_EXCLUDES: readonly { file: string; reason: string }[] = [
+  { file: 'packages/typert/generator/tests/cordis-catalog.spec.ts', reason: 'regenerates upstream\'s docs/cordis-api pages from the whole workspace and compares them with the committed ones, which list no event a kernel extension declares' },
+]
+
 /** Upstream packages outside the kernel that declare a dependency on a kernel package. */
 function dependentTestFiles(checkout: string, match: RegExp): string[] {
   const kernel = new Set(kernelPackages().map(pkg => pkg.name))
@@ -145,7 +150,8 @@ function dependentTestFiles(checkout: string, match: RegExp): string[] {
       if (Object.keys(deps).some(name => kernel.has(name))) files.push(...packageSpecFiles(checkout, dir))
     }
   }
-  return files.sort()
+  const excluded = new Set(G3_TEST_EXCLUDES.map(entry => entry.file))
+  return files.filter(file => !excluded.has(file)).sort()
 }
 
 interface VitestReport {
