@@ -9,7 +9,6 @@ export default lyteboatAgentDef({
   agentName: '技能路由示例',
   persona: {
     prefix: 'You are ROUTED-PRESET-PERSONA, a test agent powered by the {{model}} model.',
-    suffix: 'Your working directory is {{cwd}}.',
   },
   skillDirs: ['skills'],
   skillRouting: { mode: 'dynamic', historyWindow: 6, timeoutMs: 10000 },

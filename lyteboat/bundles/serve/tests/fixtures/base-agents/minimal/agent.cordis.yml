@@ -6,4 +6,3 @@
   config:
     prefix: >-
       You are MINIMAL-PRESET-PERSONA, a test agent powered by the {{model}} model.
-    suffix: Your working directory is {{cwd}}.

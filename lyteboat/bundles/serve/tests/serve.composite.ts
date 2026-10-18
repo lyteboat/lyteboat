@@ -122,8 +122,12 @@ describe('lyteboat serve (in process, scripted model)', () => {
     expect(loop?.systemText).not.toContain('SERVE-WORKSPACE-INSTRUCTIONS')
     // `skill` is the one dsh-base tool the business base leaves, and beta declares no policy.
     expect(loop?.toolNames).toEqual(['skill'])
-    // No runtime context either: no sandbox or approval policy, no state.
-    expect(loop?.body.messages).toEqual([{ role: 'user', content: [{ type: 'text', text: 'what do you see' }] }])
+    // No sandbox or approval policy and no state in the runtime context: only the working
+    // directory, a required context of dsh's working-directory service, which the skill tool needs.
+    expect(loop?.body.messages).toEqual([{ role: 'user', content: [
+      { type: 'text', text: 'what do you see' },
+      { type: 'text', text: `Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent working directory: ${JSON.stringify(join(home, 'agent-workdirs', 'beta'))}.` },
+    ] }])
     // The kernel's dsh-base keeps the session uploads off.
     expect(loop?.body['dsh_plugin_packages']).toBeUndefined()
     expect(loop?.body['dsh_session_log']).toBeUndefined()
@@ -185,6 +189,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
     expect(said(loop[1])).toEqual([...said(loop[0]), 'assistant:OK:继续刚才的话题', 'user:and now'])
     const records = await waitForSessionLog<LogRecord>(home, sessionId, log => turnEnds(log).length === 4)
     const sources = records.filter(record => record.type === 'user/message').map(record => record.data?.['source'] as { kind: string; traceId?: string; lyteboatRequest?: { traceId?: string } })
+      .filter(source => source.kind !== 'runtime-context')
     expect(sources.map(source => source.traceId ?? source.lyteboatRequest?.traceId)).toEqual(['trace-0001', 'trace-0002', 'trace-0003', 'trace-0004'])
     expect(sources.slice(0, 2)).toEqual([{ kind: 'plugin:lyteboat-history-import', traceId: 'trace-0001' }, { kind: 'plugin:lyteboat-history-import', traceId: 'trace-0002' }])
     const answers = records.filter(record => record.type === 'assistant/message').map(record => record.data?.['message'] as { source: { provider: string; model: string } } | undefined)

@@ -57,8 +57,8 @@ describe('lyteboat eval (in process, scripted model)', () => {
     const greeter = { id: 'greeter', digest: expect.stringMatching(/^sha256:[0-9a-f]{64}$/u) as string }
     expect(JSON.parse(readFileSync(join(realRun, 'run.json'), 'utf8'))).toMatchObject({ agent: greeter, model: { provider: 'deepseek-official', model: 'deepseek-flash' }, mode: 'real', cases: [{ id: 'hello', pass: true }, { id: 'short', pass: true }] })
     // Every recorded human message names the agent it went to.
-    const recorded = readSessionLog(join(realRun, 'sessions', 'hello', 'session.v4.jsonl')) as { type?: string; data?: { source?: { lyteboatRequest?: { agent?: unknown } } } }[]
-    expect(recorded.filter(line => line.type === 'user/message').map(line => line.data?.source?.lyteboatRequest?.agent)).toEqual([greeter, greeter])
+    const recorded = readSessionLog(join(realRun, 'sessions', 'hello', 'session.v4.jsonl')) as { type?: string; data?: { source?: { kind?: string; lyteboatRequest?: { agent?: unknown } } } }[]
+    expect(recorded.filter(line => line.type === 'user/message' && line.data?.source?.kind === 'user').map(line => line.data?.source?.lyteboatRequest?.agent)).toEqual([greeter, greeter])
     const results = readJsonLines<{ case: string; turn: number; observed: unknown }>(join(realRun, 'results.jsonl'))
     expect(results.map(result => [result.case, result.turn, result.observed])).toEqual([
       ['hello', 1, { skill: null, tools: [], cards: [], outcome: 'completed', text: 'OK:hello', modelRequests: 1 }],

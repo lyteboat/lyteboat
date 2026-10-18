@@ -4,4 +4,3 @@
   config:
     prefix: >-
       You are SERVE-SMOKE, a test agent powered by the {{model}} model.
-    suffix: Your working directory is {{cwd}}.
