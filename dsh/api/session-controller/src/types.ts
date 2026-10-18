@@ -349,7 +349,7 @@ export interface SessionPromptRequest {
   /** At least one non-whitespace text part or attachment. */
   readonly content: readonly PromptContentPart[]
   readonly clientTimeZone?: string
-  /** lyteboat: fields added to the accepted user message's source, beside the ones the controller writes (`kind`, `rpcId`, `clientTimeZone`). */
+  /** lyteboat: fields added to the accepted user message's source, beside the ones the controller writes (`kind`, `rpcId`, `clientTimeZone`, `principal`). */
   readonly sourceFields?: { readonly [key: string]: JsonValue }
 }
 

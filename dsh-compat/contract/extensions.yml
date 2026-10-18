@@ -71,7 +71,7 @@ extensions:
     surface: >-
       SessionPromptRequest takes `sourceFields`, a JSON object whose fields `prompt` adds to the
       source of the user message it appends, beside the ones the controller writes (`kind: 'user'`,
-      the request id as `rpcId`, `clientTimeZone`); a request that sets one of those fails with
+      the request id as `rpcId`, `clientTimeZone`, `principal`); a request that sets one of those fails with
       `gateway/bad-request` before the message reaches the agent. The Typert Host face and Remote
       client accept the field.
     contract:
