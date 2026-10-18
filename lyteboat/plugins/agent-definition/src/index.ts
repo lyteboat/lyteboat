@@ -79,8 +79,11 @@ export interface LyteboatAgentHost {
   readonly modelSideCall: Pick<ModelSideCallService, 'generate'>
   /** The context of the request a message answers to. */
   readonly requestContext: Pick<RequestContextService, 'contextOf'>
-  /** Makes declared `auto` tools visible to one agent instance, such as from a `lyteboat/pre-assemble` listener. */
-  readonly toolPolicy: Pick<ToolPolicyService, 'activate'>
+  /**
+   * Makes declared `auto` tools visible to one agent instance, such as from a `lyteboat/pre-assemble` listener,
+   * and reads the session's accumulated tool state, which a tool checks its arguments against.
+   */
+  readonly toolPolicy: Pick<ToolPolicyService, 'activate' | 'sessionState'>
 }
 
 /** A business agent's declaration. Relative paths resolve against the agent directory. */
