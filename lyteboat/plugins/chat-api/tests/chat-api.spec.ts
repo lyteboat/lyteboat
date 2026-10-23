@@ -3,6 +3,8 @@
  * frame order, numbering, and decorators.
  */
 import { describe, expect, it } from 'vitest'
+import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { chatHistoryOf, checkChatHistoryLimit, parseChatHistoryQuery } from '../src/chat-history.ts'
 import { ChatApiError, parseChatRequest } from '../src/chat-request.ts'
 import { isChatSessionOwner } from '../src/chat-session-owner.ts'
 import { ChatEnterpriseWriter, sseFrame, type ChatEnterpriseFrame, type ChatFrameDecorator } from '../src/enterprise-frames.ts'
@@ -30,6 +32,63 @@ describe('isChatSessionOwner', () => {
     expect(isChatSessionOwner({ kind: 'system', id: 'u-1' }, user)).toBe(false)
     expect(isChatSessionOwner(null, user)).toBe(false)
     expect(isChatSessionOwner(undefined, operator)).toBe(false)
+  })
+})
+
+describe('chatHistoryOf', () => {
+  const event = (seq: number, type: string, data: object, surfaceOp: unknown = 'append'): SessionEvent =>
+    ({ seq, time: 1000 + seq, type, data, surfaceOp }) as unknown as SessionEvent
+
+  it('lists the person\'s messages and the agent\'s answers, leaving out tool-calling steps, injected context, and replaced copies', () => {
+    const events = [
+      event(1, 'user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: ' 查一下 ' }] }),
+      event(2, 'user/message', { source: { kind: 'notice' }, content: [{ type: 'text', text: 'reminder' }] }),
+      event(3, 'assistant/message', { message: { content: [{ type: 'text', text: '我先查' }, { type: 'tool-call', id: 'c1', name: 'search', arguments: '{}' }] } }),
+      event(4, 'tool/result', { message: { content: [{ type: 'text', text: 'found' }] } }),
+      event(5, 'assistant/message', { message: { content: [{ type: 'reasoning', text: 'think' }, { type: 'text', text: '找到 2 位' }] } }),
+      event(6, 'assistant/message', { message: { content: [{ type: 'text', text: 'pruned' }] } }, { startSeq: 5, endSeq: 5 }),
+    ]
+
+    expect(chatHistoryOf(events, 40)).toEqual([{ role: 'user', text: '查一下', at: 1001 }, { role: 'assistant', text: '找到 2 位', at: 1005 }])
+    expect(chatHistoryOf(events, 1)).toEqual([{ role: 'assistant', text: '找到 2 位', at: 1005 }])
+  })
+
+  it('lists an imported round\'s question with its answer, in log order before the person\'s own message', () => {
+    const imported = { kind: 'plugin:lyteboat-history-import', traceId: 'trace-0001' }
+    const events = [
+      event(1, 'user/message', { source: imported, content: [{ type: 'text', text: '看看资产' }] }),
+      event(2, 'assistant/message', { message: { source: { provider: 'lyteboat', model: 'history-import' }, content: [{ type: 'text', text: '总额 100' }] } }),
+      event(3, 'user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: '继续' }] }),
+    ]
+
+    expect(chatHistoryOf(events, 40).map(({ role, text }) => `${role}:${text}`)).toEqual(['user:看看资产', 'assistant:总额 100', 'user:继续'])
+  })
+})
+
+describe('checkChatHistoryLimit', () => {
+  it('takes 40 when absent and passes 1 and 200', () => {
+    expect([checkChatHistoryLimit(undefined), checkChatHistoryLimit(1), checkChatHistoryLimit(200)]).toEqual([40, 1, 200])
+  })
+
+  it('refuses 0, 201, and 1.5 as an invalid request', () => {
+    for (const limit of [0, 201, 1.5]) {
+      let refused: unknown
+      try {
+        checkChatHistoryLimit(limit)
+      } catch (error: unknown) {
+        refused = error
+      }
+      expect(refused).toBeInstanceOf(ChatApiError)
+      expect(refused).toMatchObject({ code: 'invalid_request', message: 'limit: an integer from 1 to 200' })
+    }
+  })
+})
+
+describe('parseChatHistoryQuery', () => {
+  it('reads the query with a default limit and refuses a missing field or a limit out of range', () => {
+    expect(parseChatHistoryQuery(new URLSearchParams('agent_id=a&user_id=u&session_id=s'))).toEqual({ agentId: 'a', userId: 'u', sessionId: 's', limit: 40 })
+    expect(() => parseChatHistoryQuery(new URLSearchParams('agent_id=a&session_id=s'))).toThrow('user_id: required')
+    expect(() => parseChatHistoryQuery(new URLSearchParams('agent_id=a&user_id=u&session_id=s&limit=0'))).toThrow('limit: an integer from 1 to 200')
   })
 })
 

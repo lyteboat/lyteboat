@@ -10,6 +10,7 @@ lyteboat tracks dsh 0.2.1-rc.2 (tag `dsh-v0.2.1-rc.2`, upstream commit `687f282e
 - A business mode's model requests carry one more host trace: every loop request holds dsh's working-directory runtime context, `Current working directory: "<path>".`, the absolute path of the agent's working directory on the server (`$LYTEBOAT_HOME/agent-workdirs/<agent>`). dsh-tool-skill needs the `workingDirectory` service, so `@lyteboat/base` keeps that row and turns off only `tool-working-directory` (the `working_directory` tool).
 - `@lyteboat/testkit` no longer mounts dsh's invariant registry: upstream removed `@deepseek-ai/dsh-invariants` and the kernel packages' `./invariant` subpaths. That a request is reconstructable from the log is held by G2's `dsh/core/agent-loop/tests/request-reconstruction.spec.ts`.
 - The default catalog's `zod` is 4.4.3, the version the kernel publishes with, so the install holds one copy.
+- `@lyteboat/chat-api`: `history({ agentId, owner, sessionId, limit? })` is public, so a host that serves its own routes reads a session's conversation; a session that does not exist, belongs to another owner, or runs another agent reads as `undefined`. `GET /chat/history` calls it and answers as before. Both list the question of a round the caller imported with `history` before its answer, as the log holds them; they listed its answer alone.
 
 ## 0.1.1
 

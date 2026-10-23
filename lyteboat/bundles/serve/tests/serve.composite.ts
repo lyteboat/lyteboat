@@ -4,7 +4,8 @@
  * body or as the enterprise stream through dsh's session controller, records
  * the request on the human message, continues and queues within a session,
  * imports the history a request brings as turns of their own once each,
- * cancels the turn of a caller that left, refuses what it cannot answer
+ * cancels the turn of a caller that left, replays a session's conversation
+ * to its owner only, refuses what it cannot answer
  * with the status the protocol names, and records each turn's run metric.
  */
 import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -13,7 +14,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { postChat, streamChat, type ChatWireFrame } from '@lyteboat/testkit/chat-client'
-import { LYTEBOAT_SERVE_BUNDLES, bootComposition, startComposition, type RunningComposition } from '@lyteboat/testkit/composition'
+import { LYTEBOAT_SERVE_BUNDLES, bootComposition, pluginFileRow, startComposition, type RunningComposition } from '@lyteboat/testkit/composition'
 import { readJsonLines } from '@lyteboat/testkit/json-lines'
 import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
 import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testkit/session-log'
@@ -21,6 +22,7 @@ import { reopenRefusal } from '@lyteboat/testkit/session-reopen'
 import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel, type ScriptedReply } from '@lyteboat/testkit/scripted-model'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
+const HISTORY_READER = fileURLToPath(new URL('./fixtures/plugins/history-reader.mjs', import.meta.url))
 
 /** Replies the test holds back, by the message they answer. */
 const held = new Map<string, Promise<void>>()
@@ -55,7 +57,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
       bundles: LYTEBOAT_SERVE_BUNDLES,
       args: ['--agents', AGENTS, '--port', '0'],
       // A short keep-alive, so a held turn shows the stream's heartbeat.
-      patches: [{ id: 'chat-api', config: { auth: 'none', keepAliveMs: 50 } }],
+      patches: [{ id: 'chat-api', config: { auth: 'none', keepAliveMs: 50 } }, pluginFileRow(HISTORY_READER)],
       cwd: run.workspace,
       home,
       env: scriptedModelEnv(model),
@@ -162,7 +164,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
     expect(again).toEqual({ status: 409, body: { error: { code: 'message_duplicate', message: 'message "m-one" was already sent in this session', retryable: false } } })
   })
 
-  it('imports the history a request brings as turns of their own before its question, and not again when it comes back', async () => {
+  it('imports the history a request brings as turns of their own before its question, not again when it comes back, and replays its questions and answers', async () => {
     const entry = (role: string, traceId: string, text: string) => ({ role, traceId, parts: [{ type: 'text', text }] })
     const history = [
       entry('user', 'trace-0001', '看看资产'), entry('assistant', 'trace-0001', '总额 100'),
@@ -195,6 +197,9 @@ describe('lyteboat serve (in process, scripted model)', () => {
     const answers = records.filter(record => record.type === 'assistant/message').map(record => record.data?.['message'] as { source: { provider: string; model: string } } | undefined)
     expect(answers.slice(0, 2).map(answer => `${String(answer?.source.provider)}/${String(answer?.source.model)}`)).toEqual(['lyteboat/history-import', 'lyteboat/history-import'])
     expect(reopenRefusal(records)).toBeUndefined()
+    const replayed = await fetch(new URL(`/chat/history?agent_id=alpha&user_id=u-history&session_id=${sessionId}`, chat))
+    expect(((await replayed.json()) as { entries: { role: string; text: string }[] }).entries.map(({ role, text }) => `${role}:${text}`))
+      .toEqual(said(loop[1]).concat('assistant:OK:and now'))
   })
 
   it('queues a message sent while the session answers another, and answers each with its own turn', async () => {
@@ -252,6 +257,47 @@ describe('lyteboat serve (in process, scripted model)', () => {
     expect(await refusal({ agent_id: 'beta', user_id: 'owner', message: 'hi', session_id: sessionId })).toEqual([409, 'agent_mismatch'])
     const get = await fetch(chat)
     expect(get.status).toBe(405)
+  })
+
+  it('replays a session\'s conversation to its owner, and to nobody else', async () => {
+    const opened = await postChat(chat, { agent_id: 'alpha', user_id: 'reader', message: 'first' })
+    const sessionId = (opened.body as { session_id: string }).session_id
+    await postChat(chat, { agent_id: 'alpha', user_id: 'reader', message: 'second', session_id: sessionId })
+    const history = async (query: string): Promise<{ status: number; body: unknown }> => {
+      const reply = await fetch(new URL(`/chat/history?${query}`, chat))
+      return { status: reply.status, body: await reply.json() as unknown }
+    }
+
+    const mine = await history(`agent_id=alpha&user_id=reader&session_id=${sessionId}`)
+    expect(mine.status).toBe(200)
+    expect((mine.body as { entries: { role: string; text: string }[] }).entries.map(({ role, text }) => `${role}:${text}`))
+      .toEqual(['user:first', 'assistant:OK:first', 'user:second', 'assistant:OK:second'])
+    expect((await history(`agent_id=alpha&user_id=reader&session_id=${sessionId}&limit=1`)).body).toMatchObject({ entries: [{ role: 'assistant', text: 'OK:second' }] })
+    expect((await history(`agent_id=alpha&user_id=intruder&session_id=${sessionId}`)).status).toBe(404)
+    expect((await history(`agent_id=beta&user_id=reader&session_id=${sessionId}`)).status).toBe(404)
+    expect((await history(`agent_id=alpha&user_id=reader`)).body).toMatchObject({ error: { code: 'invalid_request', message: 'session_id: required' } })
+  })
+
+  it('reads a session\'s conversation through chatApi.history for its owner, and nothing for anyone else', async () => {
+    const opened = await postChat(chat, { agent_id: 'alpha', user_id: 'host-reader', message: 'one' })
+    const sessionId = (opened.body as { session_id: string }).session_id
+    await postChat(chat, { agent_id: 'alpha', user_id: 'host-reader', message: 'two', session_id: sessionId })
+    const read = async (query: string): Promise<{ found: boolean; entries?: { role: string; text: string }[] }> => {
+      const reply = await fetch(new URL(`/test/history-reader?${query}`, chat))
+      return await reply.json() as { found: boolean; entries?: { role: string; text: string }[] }
+    }
+
+    const mine = await read(`agent_id=alpha&owner_kind=user&owner_id=host-reader&session_id=${sessionId}`)
+    expect(mine.found).toBe(true)
+    expect(mine.entries?.map(({ role, text }) => `${role}:${text}`)).toEqual(['user:one', 'assistant:OK:one', 'user:two', 'assistant:OK:two'])
+    expect(await read(`agent_id=alpha&owner_kind=user&owner_id=host-reader&session_id=${sessionId}&limit=1`)).toMatchObject({ found: true, entries: [{ role: 'assistant', text: 'OK:two' }] })
+    expect(await read(`agent_id=alpha&owner_kind=user&owner_id=intruder&session_id=${sessionId}`)).toEqual({ found: false })
+    expect(await read(`agent_id=alpha&owner_kind=operator&owner_id=host-reader&session_id=${sessionId}`)).toEqual({ found: false })
+    expect(await read(`agent_id=beta&owner_kind=user&owner_id=host-reader&session_id=${sessionId}`)).toEqual({ found: false })
+    expect(await read('agent_id=alpha&owner_kind=user&owner_id=host-reader&session_id=no-such-session')).toEqual({ found: false })
+    // The HTTP route answers with the very entries the method read.
+    const route = await fetch(new URL(`/chat/history?agent_id=alpha&user_id=host-reader&session_id=${sessionId}`, chat))
+    expect(await route.json()).toEqual({ session_id: sessionId, entries: mine.entries })
   })
 
   it('lists the agents it serves, and reports healthy', async () => {

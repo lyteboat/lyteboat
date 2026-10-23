@@ -1,6 +1,7 @@
 /**
  * @lyteboat/chat-api — `/chat`, a business caller's entry to lyteboat's agents,
- * on the host's web server beside `GET /health` and `GET /agents`. Each
+ * on the host's web server beside `GET /chat/history`, `GET /health`, and
+ * `GET /agents`. Each
  * message goes through dsh's session controller in process: a new session is
  * created under the requested agent, a continued one is checked against the
  * caller and the agent it runs under, and the message is queued with its
@@ -14,9 +15,11 @@
  *
  * `auth: none` serves only a loopback listener; any other listener needs
  * `shared-secret`, a bearer token resolved from `credentialRef` per request.
- * `routes: false` registers none of the three endpoints: the service still
+ * `routes: false` registers none of the four endpoints: the service still
  * answers through `answer()`, which the Studio's test window calls with its
- * own sign-in and its account as the session's owner.
+ * own sign-in and its account as the session's owner, and reads a
+ * conversation through `history()`, which a host's own routes call for the
+ * owner they signed in.
  * @module @lyteboat/chat-api
  */
 
@@ -39,6 +42,7 @@ import type { AgentCatalogEntry } from '@lyteboat/agent-catalog'
 import type { JsonValue, LyteboatAgentIdentity, LyteboatRequestState } from '@lyteboat/contracts'
 import type {} from '@lyteboat/history-import'
 import type {} from '@lyteboat/request-context'
+import { chatHistoryOf, checkChatHistoryLimit, parseChatHistoryQuery, type ChatHistoryEntry, type ChatHistoryRequest } from './chat-history.ts'
 import { ChatApiError, parseChatRequest, readChatBody, type ChatRequest } from './chat-request.ts'
 import { isChatSessionOwner } from './chat-session-owner.ts'
 import { watchChatTurn, type ChatToolCall, type ChatTurnResult } from './chat-turn.ts'
@@ -46,6 +50,7 @@ import { ChatEnterpriseWriter, sseFrame, type ChatFrameContext, type ChatFrameDe
 
 export type { ChatEnterpriseEvent, ChatEnterpriseFrame, ChatEnterpriseFrameData, ChatFrameContext, ChatFrameDecorator, ChatUiProtocol } from './enterprise-frames.ts'
 export type { ChatApiErrorCode, ChatRequest } from './chat-request.ts'
+export type { ChatHistoryEntry, ChatHistoryRequest } from './chat-history.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -54,7 +59,7 @@ declare module '@deepseek-ai/cordis' {
 }
 
 export interface Config {
-  /** Register `/chat`, `/agents`, and `/health` on the web server; false leaves the endpoints out and only `answer()` serves. */
+  /** Register `/chat`, `/chat/history`, `/agents`, and `/health` on the web server; false leaves the endpoints out and only `answer()` serves. */
   routes?: boolean
   /** `shared-secret`: `Authorization: Bearer <secret>`; `none`: only on a loopback listener. Required with the routes. */
   auth?: 'shared-secret' | 'none'
@@ -133,6 +138,7 @@ export class ChatApiService extends Service {
       throw new Error('chat-api: auth shared-secret needs a credentialRef, the environment variable that holds the secret')
     }
     ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/chat', handler: (request, response) => this.chat(request, response) }), 'chat-api: /chat')
+    ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/chat/history', handler: (request, response) => this.historyRoute(request, response) }), 'chat-api: /chat/history')
     ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/health', handler: (_request, response) => { sendJson(response, 200, { status: 'ok' }) } }), 'chat-api: /health')
     ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/agents', handler: (request, response) => this.agents(request, response) }), 'chat-api: /agents')
   }
@@ -186,6 +192,43 @@ export class ChatApiService extends Service {
         agents: this.ctx.agentCatalog.list().map(agent => ({ id: agent.id, name: agent.name ?? agent.id, ...agent.description === undefined ? {} : { description: agent.description }, ...agent.identity.version === undefined ? {} : { version: agent.identity.version } })),
         failures: this.ctx.agentCatalog.failures().map(failure => ({ id: failure.id, reason: failure.reason })),
       })
+    } catch (error: unknown) {
+      this.refuse(response, error)
+    }
+  }
+
+  /**
+   * One session's conversation, for its owner: the person's messages and the
+   * agent's answers in log order, the newest `limit` of them.
+   * @param request - the session, the agent it should run, and who asks.
+   * @returns the entries (empty when nothing was said yet), or `undefined` when
+   *   the session does not exist, belongs to another owner, or runs another
+   *   agent; the three are not told apart.
+   * @throws ChatApiError `invalid_request` when `limit` is out of range.
+   */
+  async history(request: ChatHistoryRequest): Promise<ChatHistoryEntry[] | undefined> {
+    // The type admits 0, and `slice(-0)` in chatHistoryOf would keep every entry.
+    const limit = checkChatHistoryLimit(request.limit)
+    const sessionId = brandString<SessionId>(request.sessionId)
+    const projections = await this.ctx.sessionController.projections({ sessionId }, new AbortController().signal)
+    const owner = (projections?.values['lyteboatRequest'] as Partial<LyteboatRequestState> | undefined)?.owner
+    if (projections === null || !isChatSessionOwner(owner, request.owner) || projections.values['agentPreset'] !== request.agentId) return undefined
+    const inspection = await this.ctx.sessionController.inspect(sessionId)
+    return chatHistoryOf(inspection.events, limit)
+  }
+
+  /** `GET /chat/history?agent_id&user_id&session_id[&limit]`: `history()` for an end user; a session it does not answer is a 404. */
+  private async historyRoute(request: IncomingMessage, response: ServerResponse): Promise<void> {
+    if (request.method !== 'GET') {
+      sendJson(response, 405, new ChatApiError('invalid_request', 'use GET').body())
+      return
+    }
+    try {
+      await this.authorize(request)
+      const query = parseChatHistoryQuery(new URL(request.url ?? '/', 'http://chat-api').searchParams)
+      const entries = await this.history({ agentId: query.agentId, owner: { kind: 'user', id: query.userId }, sessionId: query.sessionId, limit: query.limit })
+      if (entries === undefined) throw new ChatApiError('session_not_found', `session ${JSON.stringify(query.sessionId)} does not exist`)
+      sendJson(response, 200, { session_id: query.sessionId, entries })
     } catch (error: unknown) {
       this.refuse(response, error)
     }

@@ -120,7 +120,10 @@ export async function mountLyteboatAgent(ctx: Context, agentDef: LyteboatAgentDe
     a2ui: { renderCard: (...cardArgs) => ctx.a2ui.renderCard(...cardArgs) },
     modelSideCall: { generate: (...callArgs) => ctx.modelSideCall.generate(...callArgs) },
     requestContext: { contextOf: (...contextArgs) => ctx.requestContext.contextOf(...contextArgs) },
-    toolPolicy: { activate: (...activateArgs) => ctx.toolPolicy.activate(...activateArgs) },
+    toolPolicy: {
+      activate: (...activateArgs) => ctx.toolPolicy.activate(...activateArgs),
+      sessionState: (...stateArgs) => ctx.toolPolicy.sessionState(...stateArgs),
+    },
   }
   if (admission !== undefined) await step('admission', () => ctx.requestAdmission.register(admission(hostOfAgent())))
   if (tools !== undefined) {
