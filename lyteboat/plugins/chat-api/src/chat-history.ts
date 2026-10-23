@@ -1,14 +1,16 @@
 /**
- * `GET /chat/history`: what a caller shows when it reopens a conversation.
- * Only the person's messages and the agent's answers are listed, in log
- * order; an assistant message that calls a tool is a step on the way, not an
- * answer, and context the harness injected (notices, reminders, a routed
- * skill's invocation) is not a person's message. Cards are not replayed.
+ * `GET /chat/history` and `chatApi.history()`: what a caller shows when it
+ * reopens a conversation. Only the person's messages and the agent's answers
+ * are listed, in log order; an assistant message that calls a tool is a step
+ * on the way, not an answer, and context the harness injected (notices,
+ * reminders, a routed skill's invocation) is not a person's message. Cards
+ * are not replayed.
  * @module @lyteboat/chat-api/chat-history
  */
 
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type { LyteboatRequestOwner } from '@lyteboat/contracts'
 import { ChatApiError } from './chat-request.ts'
 
 /** One entry of a replayed conversation. */
@@ -17,6 +19,18 @@ export interface ChatHistoryEntry {
   text: string
   /** When the message was logged, epoch ms. */
   at: number
+}
+
+/** What `chatApi.history()` reads: one session's conversation, asked for by whoever claims to own it. */
+export interface ChatHistoryRequest {
+  /** The agent the caller expects the session to run. */
+  agentId: string
+  /** Who asks; only the session's owner gets its entries. */
+  owner: LyteboatRequestOwner
+  /** The session to read, as `/chat` returned it. */
+  sessionId: string
+  /** The newest entries kept, an integer from 1 to 200; 40 when absent. */
+  limit?: number
 }
 
 /** The query `GET /chat/history` reads. */
@@ -36,6 +50,20 @@ function textOf(content: readonly ContentBlock[]): string {
 }
 
 /**
+ * Check how many entries a history read keeps.
+ * @param limit - the newest entries asked for; absent for the default.
+ * @returns the limit to read with, 40 when absent.
+ * @throws ChatApiError `invalid_request` unless it is an integer from 1 to 200.
+ */
+export function checkChatHistoryLimit(limit: number | undefined): number {
+  const checked = limit ?? CHAT_HISTORY_DEFAULT_LIMIT
+  if (!Number.isInteger(checked) || checked < 1 || checked > CHAT_HISTORY_MAX_LIMIT) {
+    throw new ChatApiError('invalid_request', `limit: an integer from 1 to ${String(CHAT_HISTORY_MAX_LIMIT)}`)
+  }
+  return checked
+}
+
+/**
  * Read and check the query string of `GET /chat/history`.
  * @param search - the request URL's query parameters.
  * @throws ChatApiError `invalid_request` naming the first problem.
@@ -47,10 +75,7 @@ export function parseChatHistoryQuery(search: URLSearchParams): ChatHistoryQuery
     return value
   }
   const limitText = search.get('limit')
-  const limit = limitText === null ? CHAT_HISTORY_DEFAULT_LIMIT : Number(limitText)
-  if (!Number.isInteger(limit) || limit < 1 || limit > CHAT_HISTORY_MAX_LIMIT) {
-    throw new ChatApiError('invalid_request', `limit: an integer from 1 to ${String(CHAT_HISTORY_MAX_LIMIT)}`)
-  }
+  const limit = checkChatHistoryLimit(limitText === null ? undefined : Number(limitText))
   return { agentId: required('agent_id'), userId: required('user_id'), sessionId: required('session_id'), limit }
 }
 

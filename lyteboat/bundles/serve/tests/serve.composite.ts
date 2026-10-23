@@ -14,7 +14,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { postChat, streamChat, type ChatWireFrame } from '@lyteboat/testkit/chat-client'
-import { LYTEBOAT_SERVE_BUNDLES, bootComposition, startComposition, type RunningComposition } from '@lyteboat/testkit/composition'
+import { LYTEBOAT_SERVE_BUNDLES, bootComposition, pluginFileRow, startComposition, type RunningComposition } from '@lyteboat/testkit/composition'
 import { readJsonLines } from '@lyteboat/testkit/json-lines'
 import { createLyteboatScratch } from '@lyteboat/testkit/scratch'
 import { waitForSessionLog, type SessionLogRecord } from '@lyteboat/testkit/session-log'
@@ -22,6 +22,7 @@ import { reopenRefusal } from '@lyteboat/testkit/session-reopen'
 import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, type ScriptedModel, type ScriptedReply } from '@lyteboat/testkit/scripted-model'
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
+const HISTORY_READER = fileURLToPath(new URL('./fixtures/plugins/history-reader.mjs', import.meta.url))
 
 /** Replies the test holds back, by the message they answer. */
 const held = new Map<string, Promise<void>>()
@@ -56,7 +57,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
       bundles: LYTEBOAT_SERVE_BUNDLES,
       args: ['--agents', AGENTS, '--port', '0'],
       // A short keep-alive, so a held turn shows the stream's heartbeat.
-      patches: [{ id: 'chat-api', config: { auth: 'none', keepAliveMs: 50 } }],
+      patches: [{ id: 'chat-api', config: { auth: 'none', keepAliveMs: 50 } }, pluginFileRow(HISTORY_READER)],
       cwd: run.workspace,
       home,
       env: scriptedModelEnv(model),
@@ -272,6 +273,28 @@ describe('lyteboat serve (in process, scripted model)', () => {
     expect((await history(`agent_id=alpha&user_id=intruder&session_id=${sessionId}`)).status).toBe(404)
     expect((await history(`agent_id=beta&user_id=reader&session_id=${sessionId}`)).status).toBe(404)
     expect((await history(`agent_id=alpha&user_id=reader`)).body).toMatchObject({ error: { code: 'invalid_request', message: 'session_id: required' } })
+  })
+
+  it('reads a session\'s conversation through chatApi.history for its owner, and nothing for anyone else', async () => {
+    const opened = await postChat(chat, { agent_id: 'alpha', user_id: 'host-reader', message: 'one' })
+    const sessionId = (opened.body as { session_id: string }).session_id
+    await postChat(chat, { agent_id: 'alpha', user_id: 'host-reader', message: 'two', session_id: sessionId })
+    const read = async (query: string): Promise<{ found: boolean; entries?: { role: string; text: string }[] }> => {
+      const reply = await fetch(new URL(`/test/history-reader?${query}`, chat))
+      return await reply.json() as { found: boolean; entries?: { role: string; text: string }[] }
+    }
+
+    const mine = await read(`agent_id=alpha&owner_kind=user&owner_id=host-reader&session_id=${sessionId}`)
+    expect(mine.found).toBe(true)
+    expect(mine.entries?.map(({ role, text }) => `${role}:${text}`)).toEqual(['user:one', 'assistant:OK:one', 'user:two', 'assistant:OK:two'])
+    expect(await read(`agent_id=alpha&owner_kind=user&owner_id=host-reader&session_id=${sessionId}&limit=1`)).toMatchObject({ found: true, entries: [{ role: 'assistant', text: 'OK:two' }] })
+    expect(await read(`agent_id=alpha&owner_kind=user&owner_id=intruder&session_id=${sessionId}`)).toEqual({ found: false })
+    expect(await read(`agent_id=alpha&owner_kind=operator&owner_id=host-reader&session_id=${sessionId}`)).toEqual({ found: false })
+    expect(await read(`agent_id=beta&owner_kind=user&owner_id=host-reader&session_id=${sessionId}`)).toEqual({ found: false })
+    expect(await read('agent_id=alpha&owner_kind=user&owner_id=host-reader&session_id=no-such-session')).toEqual({ found: false })
+    // The HTTP route answers with the very entries the method read.
+    const route = await fetch(new URL(`/chat/history?agent_id=alpha&user_id=host-reader&session_id=${sessionId}`, chat))
+    expect(await route.json()).toEqual({ session_id: sessionId, entries: mine.entries })
   })
 
   it('lists the agents it serves, and reports healthy', async () => {

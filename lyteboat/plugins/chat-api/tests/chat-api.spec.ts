@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
-import { chatHistoryOf, parseChatHistoryQuery } from '../src/chat-history.ts'
+import { chatHistoryOf, checkChatHistoryLimit, parseChatHistoryQuery } from '../src/chat-history.ts'
 import { ChatApiError, parseChatRequest } from '../src/chat-request.ts'
 import { isChatSessionOwner } from '../src/chat-session-owner.ts'
 import { ChatEnterpriseWriter, sseFrame, type ChatEnterpriseFrame, type ChatFrameDecorator } from '../src/enterprise-frames.ts'
@@ -51,6 +51,25 @@ describe('chatHistoryOf', () => {
 
     expect(chatHistoryOf(events, 40)).toEqual([{ role: 'user', text: '查一下', at: 1001 }, { role: 'assistant', text: '找到 2 位', at: 1005 }])
     expect(chatHistoryOf(events, 1)).toEqual([{ role: 'assistant', text: '找到 2 位', at: 1005 }])
+  })
+})
+
+describe('checkChatHistoryLimit', () => {
+  it('takes 40 when absent and passes 1 and 200', () => {
+    expect([checkChatHistoryLimit(undefined), checkChatHistoryLimit(1), checkChatHistoryLimit(200)]).toEqual([40, 1, 200])
+  })
+
+  it('refuses 0, 201, and 1.5 as an invalid request', () => {
+    for (const limit of [0, 201, 1.5]) {
+      let refused: unknown
+      try {
+        checkChatHistoryLimit(limit)
+      } catch (error: unknown) {
+        refused = error
+      }
+      expect(refused).toBeInstanceOf(ChatApiError)
+      expect(refused).toMatchObject({ code: 'invalid_request', message: 'limit: an integer from 1 to 200' })
+    }
   })
 })
 
