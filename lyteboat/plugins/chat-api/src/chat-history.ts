@@ -3,13 +3,16 @@
  * reopens a conversation. Only the person's messages and the agent's answers
  * are listed, in log order; an assistant message that calls a tool is a step
  * on the way, not an answer, and context the harness injected (notices,
- * reminders, a routed skill's invocation) is not a person's message. Cards
- * are not replayed.
+ * reminders, a routed skill's invocation) is not a person's message. A round
+ * the caller imported with `history` is part of the conversation: its
+ * question (source `plugin:lyteboat-history-import`) is listed like a
+ * person's message, its answer like the agent's. Cards are not replayed.
  * @module @lyteboat/chat-api/chat-history
  */
 
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { LYTEBOAT_HISTORY_IMPORT_SOURCE } from '@lyteboat/contracts'
 import type { LyteboatRequestOwner } from '@lyteboat/contracts'
 import { ChatApiError } from './chat-request.ts'
 
@@ -83,7 +86,7 @@ export function parseChatHistoryQuery(search: URLSearchParams): ChatHistoryQuery
  * The conversation one session's log holds.
  * @param events - the session's events in log order.
  * @param limit - the newest entries kept.
- * @returns the person's messages and the agent's answers.
+ * @returns the person's messages and the agent's answers, imported rounds included.
  */
 export function chatHistoryOf(events: readonly SessionEvent[], limit: number): ChatHistoryEntry[] {
   const entries: ChatHistoryEntry[] = []
@@ -92,7 +95,8 @@ export function chatHistoryOf(events: readonly SessionEvent[], limit: number): C
     switch (event.type) {
       case 'user/message': {
         const text = textOf(event.data.content)
-        if (event.data.source.kind === 'user' && text !== '') entries.push({ role: 'user', text, at: event.time })
+        const { kind } = event.data.source
+        if ((kind === 'user' || kind === LYTEBOAT_HISTORY_IMPORT_SOURCE) && text !== '') entries.push({ role: 'user', text, at: event.time })
         break
       }
       case 'assistant/message': {

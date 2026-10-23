@@ -52,6 +52,17 @@ describe('chatHistoryOf', () => {
     expect(chatHistoryOf(events, 40)).toEqual([{ role: 'user', text: '查一下', at: 1001 }, { role: 'assistant', text: '找到 2 位', at: 1005 }])
     expect(chatHistoryOf(events, 1)).toEqual([{ role: 'assistant', text: '找到 2 位', at: 1005 }])
   })
+
+  it('lists an imported round\'s question with its answer, in log order before the person\'s own message', () => {
+    const imported = { kind: 'plugin:lyteboat-history-import', traceId: 'trace-0001' }
+    const events = [
+      event(1, 'user/message', { source: imported, content: [{ type: 'text', text: '看看资产' }] }),
+      event(2, 'assistant/message', { message: { source: { provider: 'lyteboat', model: 'history-import' }, content: [{ type: 'text', text: '总额 100' }] } }),
+      event(3, 'user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: '继续' }] }),
+    ]
+
+    expect(chatHistoryOf(events, 40).map(({ role, text }) => `${role}:${text}`)).toEqual(['user:看看资产', 'assistant:总额 100', 'user:继续'])
+  })
 })
 
 describe('checkChatHistoryLimit', () => {

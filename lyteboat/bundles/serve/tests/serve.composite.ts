@@ -164,7 +164,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
     expect(again).toEqual({ status: 409, body: { error: { code: 'message_duplicate', message: 'message "m-one" was already sent in this session', retryable: false } } })
   })
 
-  it('imports the history a request brings as turns of their own before its question, and not again when it comes back', async () => {
+  it('imports the history a request brings as turns of their own before its question, not again when it comes back, and replays its questions and answers', async () => {
     const entry = (role: string, traceId: string, text: string) => ({ role, traceId, parts: [{ type: 'text', text }] })
     const history = [
       entry('user', 'trace-0001', '看看资产'), entry('assistant', 'trace-0001', '总额 100'),
@@ -197,6 +197,9 @@ describe('lyteboat serve (in process, scripted model)', () => {
     const answers = records.filter(record => record.type === 'assistant/message').map(record => record.data?.['message'] as { source: { provider: string; model: string } } | undefined)
     expect(answers.slice(0, 2).map(answer => `${String(answer?.source.provider)}/${String(answer?.source.model)}`)).toEqual(['lyteboat/history-import', 'lyteboat/history-import'])
     expect(reopenRefusal(records)).toBeUndefined()
+    const replayed = await fetch(new URL(`/chat/history?agent_id=alpha&user_id=u-history&session_id=${sessionId}`, chat))
+    expect(((await replayed.json()) as { entries: { role: string; text: string }[] }).entries.map(({ role, text }) => `${role}:${text}`))
+      .toEqual(said(loop[1]).concat('assistant:OK:and now'))
   })
 
   it('queues a message sent while the session answers another, and answers each with its own turn', async () => {
