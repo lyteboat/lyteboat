@@ -11,6 +11,7 @@ lyteboat tracks dsh 0.2.1-rc.2 (tag `dsh-v0.2.1-rc.2`, upstream commit `687f282e
 - `@lyteboat/testkit` no longer mounts dsh's invariant registry: upstream removed `@deepseek-ai/dsh-invariants` and the kernel packages' `./invariant` subpaths. That a request is reconstructable from the log is held by G2's `dsh/core/agent-loop/tests/request-reconstruction.spec.ts`.
 - The default catalog's `zod` is 4.4.3, the version the kernel publishes with, so the install holds one copy.
 - `@lyteboat/chat-api`: `history({ agentId, owner, sessionId, limit? })` is public, so a host that serves its own routes reads a session's conversation; a session that does not exist, belongs to another owner, or runs another agent reads as `undefined`. `GET /chat/history` calls it and answers as before. Both list the question of a round the caller imported with `history` before its answer, as the log holds them; they listed its answer alone.
+- `@lyteboat/chat-api`: `archiveSessions({ agentId, owner })` archives every session of one owner under one agent through dsh's Workspace registry and returns how many it archived (0 when none are left, so calling again is safe). A running turn of such a session is cancelled (`aborted`) and its queue dropped; from then on `history()` reads it as `undefined` and `/chat` refuses to continue it with 404 `session_not_found`. The logs stay on disk: dsh has no way to delete a session. The package now peers on `@deepseek-ai/dsh-workspace`.
 
 ## 0.1.1
 

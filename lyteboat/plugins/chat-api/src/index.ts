@@ -19,7 +19,9 @@
  * answers through `answer()`, which the Studio's test window calls with its
  * own sign-in and its account as the session's owner, and reads a
  * conversation through `history()`, which a host's own routes call for the
- * owner they signed in.
+ * owner they signed in. `archiveSessions()` retires all of one owner's
+ * sessions under one agent through the Workspace registry: from then on
+ * neither `history()` nor `answer()` finds them.
  * @module @lyteboat/chat-api
  */
 
@@ -33,6 +35,7 @@ import type { SessionRequestId } from '@deepseek-ai/dsh-api-session-controller/t
 import { brandString } from '@deepseek-ai/dsh-brand'
 import { credentialRef } from '@deepseek-ai/dsh-credentials'
 import type {} from '@deepseek-ai/dsh-host-webserver'
+import type {} from '@deepseek-ai/dsh-workspace'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { SessionId } from '@deepseek-ai/dsh-session'
 import { AnonymousEntries, ScopedLayers, scopeOf } from '@deepseek-ai/dsh-scope'
@@ -44,6 +47,7 @@ import type {} from '@lyteboat/history-import'
 import type {} from '@lyteboat/request-context'
 import { chatHistoryOf, checkChatHistoryLimit, parseChatHistoryQuery, type ChatHistoryEntry, type ChatHistoryRequest } from './chat-history.ts'
 import { ChatApiError, parseChatRequest, readChatBody, type ChatRequest } from './chat-request.ts'
+import { archiveOwnerChatSessions, isOwnChatSession, type ChatSessionsArchiveRequest } from './chat-owner-sessions.ts'
 import { isChatSessionOwner } from './chat-session-owner.ts'
 import { watchChatTurn, type ChatToolCall, type ChatTurnResult } from './chat-turn.ts'
 import { ChatEnterpriseWriter, sseFrame, type ChatFrameContext, type ChatFrameDecorator } from './enterprise-frames.ts'
@@ -51,6 +55,7 @@ import { ChatEnterpriseWriter, sseFrame, type ChatFrameContext, type ChatFrameDe
 export type { ChatEnterpriseEvent, ChatEnterpriseFrame, ChatEnterpriseFrameData, ChatFrameContext, ChatFrameDecorator, ChatUiProtocol } from './enterprise-frames.ts'
 export type { ChatApiErrorCode, ChatRequest } from './chat-request.ts'
 export type { ChatHistoryEntry, ChatHistoryRequest } from './chat-history.ts'
+export type { ChatSessionsArchiveRequest } from './chat-owner-sessions.ts'
 
 declare module '@deepseek-ai/cordis' {
   interface Context {
@@ -112,7 +117,7 @@ function cardsOf(parts: readonly LyteboatTurnPart[]): ChatCard[] {
 
 /** Host service: answers messages (over `/chat`, or for the Studio), and holds the frame decorators agents register. */
 export class ChatApiService extends Service {
-  static inject = ['webServer', 'sessionController', 'agentCatalog', 'requestContext', 'historyImport', 'a2ui', 'turnOutcome', 'credentials']
+  static inject = ['webServer', 'sessionController', 'agentCatalog', 'requestContext', 'historyImport', 'a2ui', 'turnOutcome', 'credentials', 'workspaceRegistry']
   // The loader applies a class plugin's static Config, not the module's.
   static Config = Config
 
@@ -202,19 +207,30 @@ export class ChatApiService extends Service {
    * agent's answers in log order, the newest `limit` of them.
    * @param request - the session, the agent it should run, and who asks.
    * @returns the entries (empty when nothing was said yet), or `undefined` when
-   *   the session does not exist, belongs to another owner, or runs another
-   *   agent; the three are not told apart.
+   *   the session does not exist, is archived, belongs to another owner, or
+   *   runs another agent; the four are not told apart.
    * @throws ChatApiError `invalid_request` when `limit` is out of range.
    */
   async history(request: ChatHistoryRequest): Promise<ChatHistoryEntry[] | undefined> {
     // The type admits 0, and `slice(-0)` in chatHistoryOf would keep every entry.
     const limit = checkChatHistoryLimit(request.limit)
     const sessionId = brandString<SessionId>(request.sessionId)
-    const projections = await this.ctx.sessionController.projections({ sessionId }, new AbortController().signal)
-    const owner = (projections?.values['lyteboatRequest'] as Partial<LyteboatRequestState> | undefined)?.owner
-    if (projections === null || !isChatSessionOwner(owner, request.owner) || projections.values['agentPreset'] !== request.agentId) return undefined
+    if (!await isOwnChatSession(this.ctx, sessionId, request.owner, request.agentId)) return undefined
     const inspection = await this.ctx.sessionController.inspect(sessionId)
     return chatHistoryOf(inspection.events, limit)
+  }
+
+  /**
+   * Archive every session of one owner under one agent: a running turn is
+   * cancelled and its queue dropped, and from then on `history()` reads none
+   * of them and `answer()` continues none, as if they did not exist. The logs
+   * stay on disk; dsh keeps no way to delete one. A failure propagates as
+   * thrown, after the sessions before it were archived; calling again is safe.
+   * @param request - the agent and the owner whose sessions go.
+   * @returns how many sessions this call archived; 0 when the owner has none left.
+   */
+  async archiveSessions(request: ChatSessionsArchiveRequest): Promise<number> {
+    return await archiveOwnerChatSessions(this.ctx, request)
   }
 
   /** `GET /chat/history?agent_id&user_id&session_id[&limit]`: `history()` for an end user; a session it does not answer is a 404. */
@@ -249,8 +265,8 @@ export class ChatApiService extends Service {
     const sessionId = brandString<SessionId>(request.sessionId)
     const projections = await this.ctx.sessionController.projections({ sessionId }, new AbortController().signal)
     const owner = (projections?.values['lyteboatRequest'] as Partial<LyteboatRequestState> | undefined)?.owner
-    // A session the caller does not own answers as one that does not exist.
-    if (projections === null || !isChatSessionOwner(owner, request.owner)) {
+    // A session the caller does not own, or one archived, answers as one that does not exist.
+    if (projections === null || !isChatSessionOwner(owner, request.owner) || this.ctx.workspaceRegistry.archivedSessionIds.includes(sessionId)) {
       throw new ChatApiError('session_not_found', `session ${JSON.stringify(sessionId)} does not exist`)
     }
     const agentPreset = projections.values['agentPreset']

@@ -5,7 +5,8 @@
  * the request on the human message, continues and queues within a session,
  * imports the history a request brings as turns of their own once each,
  * cancels the turn of a caller that left, replays a session's conversation
- * to its owner only, refuses what it cannot answer
+ * to its owner only, archives one owner's sessions for a host's route (a
+ * running turn stops), refuses what it cannot answer
  * with the status the protocol names, and records each turn's run metric.
  */
 import { cpSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
@@ -23,6 +24,7 @@ import { scriptedModelEnv, startScriptedModel, withTitle, type RecordedRequest, 
 
 const AGENTS = fileURLToPath(new URL('./fixtures/agents', import.meta.url))
 const HISTORY_READER = fileURLToPath(new URL('./fixtures/plugins/history-reader.mjs', import.meta.url))
+const SESSION_ARCHIVER = fileURLToPath(new URL('./fixtures/plugins/session-archiver.mjs', import.meta.url))
 
 /** Replies the test holds back, by the message they answer. */
 const held = new Map<string, Promise<void>>()
@@ -57,7 +59,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
       bundles: LYTEBOAT_SERVE_BUNDLES,
       args: ['--agents', AGENTS, '--port', '0'],
       // A short keep-alive, so a held turn shows the stream's heartbeat.
-      patches: [{ id: 'chat-api', config: { auth: 'none', keepAliveMs: 50 } }, pluginFileRow(HISTORY_READER)],
+      patches: [{ id: 'chat-api', config: { auth: 'none', keepAliveMs: 50 } }, pluginFileRow(HISTORY_READER), pluginFileRow(SESSION_ARCHIVER)],
       cwd: run.workspace,
       home,
       env: scriptedModelEnv(model),
@@ -298,6 +300,43 @@ describe('lyteboat serve (in process, scripted model)', () => {
     // The HTTP route answers with the very entries the method read.
     const route = await fetch(new URL(`/chat/history?agent_id=alpha&user_id=host-reader&session_id=${sessionId}`, chat))
     expect(await route.json()).toEqual({ session_id: sessionId, entries: mine.entries })
+  })
+
+  it('archives one owner\'s sessions under one agent through chatApi.archiveSessions, after which neither history nor /chat finds them', async () => {
+    const open = async (agentId: string, userId: string, message: string): Promise<string> =>
+      ((await postChat(chat, { agent_id: agentId, user_id: userId, message })).body as { session_id: string }).session_id
+    const first = await open('alpha', 'leaver', 'one')
+    const second = await open('alpha', 'leaver', 'two')
+    const elsewhere = await open('beta', 'leaver', 'three')
+    const kept = await open('alpha', 'stayer', 'four')
+    const archive = async (agentId: string, ownerId: string): Promise<unknown> =>
+      await (await fetch(new URL(`/test/session-archiver?agent_id=${agentId}&owner_kind=user&owner_id=${ownerId}`, chat), { method: 'POST' })).json()
+    const found = async (agentId: string, ownerId: string, sessionId: string): Promise<boolean> =>
+      ((await (await fetch(new URL(`/test/history-reader?agent_id=${agentId}&owner_kind=user&owner_id=${ownerId}&session_id=${sessionId}`, chat))).json()) as { found: boolean }).found
+
+    expect(await archive('alpha', 'leaver')).toEqual({ archived: 2 })
+    expect([await found('alpha', 'leaver', first), await found('alpha', 'leaver', second)]).toEqual([false, false])
+    expect([await found('beta', 'leaver', elsewhere), await found('alpha', 'stayer', kept)]).toEqual([true, true])
+    const continued = await postChat(chat, { agent_id: 'alpha', user_id: 'leaver', message: 'again', session_id: first })
+    expect([continued.status, (continued.body as { error: { code: string } }).error.code]).toEqual([404, 'session_not_found'])
+    expect(await archive('alpha', 'leaver')).toEqual({ archived: 0 })
+    expect(await archive('alpha', 'nobody')).toEqual({ archived: 0 })
+  })
+
+  it('stops a running turn of a session it archives', async () => {
+    held.set('archived-while-running', new Promise<void>(() => {}))
+    const sessionId = ((await postChat(chat, { agent_id: 'alpha', user_id: 'runner', message: 'opening' })).body as { session_id: string }).session_id
+    let started = false
+
+    const running = streamChat(chat, { agent_id: 'alpha', user_id: 'runner', message: 'archived-while-running', session_id: sessionId }, { onFrame: (frame) => { if (frame.event === 'run_started') started = true } })
+    await vi.waitFor(() => { expect(started).toBe(true) })
+    const archived = await (await fetch(new URL('/test/session-archiver?agent_id=alpha&owner_kind=user&owner_id=runner', chat), { method: 'POST' })).json() as unknown
+    const stream = await running
+
+    expect(archived).toEqual({ archived: 1 })
+    expect(stream.frames.at(-1)?.data).toMatchObject({ extra: { run_outcome: 'aborted' } })
+    const records = await waitForSessionLog<LogRecord>(home, sessionId, log => turnEnds(log).length === 2)
+    expect(turnEnds(records).map(record => record.data?.['reason'])).toMatchObject([{ kind: 'completed' }, { kind: 'aborted' }])
   })
 
   it('lists the agents it serves, and reports healthy', async () => {

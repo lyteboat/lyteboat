@@ -1,11 +1,14 @@
 /**
- * The `/chat` request as the endpoint reads it, and the enterprise stream's
- * frame order, numbering, and decorators.
+ * The `/chat` request as the endpoint reads it, which sessions are an
+ * owner's and archiving them, and the enterprise stream's frame order,
+ * numbering, and decorators.
  */
 import { describe, expect, it } from 'vitest'
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
+import type { LyteboatRequestOwner } from '@lyteboat/contracts'
 import { chatHistoryOf, checkChatHistoryLimit, parseChatHistoryQuery } from '../src/chat-history.ts'
 import { ChatApiError, parseChatRequest } from '../src/chat-request.ts'
+import { archiveOwnerChatSessions, isOwnChatSession, type ChatOwnerSessionServices } from '../src/chat-owner-sessions.ts'
 import { isChatSessionOwner } from '../src/chat-session-owner.ts'
 import { ChatEnterpriseWriter, sseFrame, type ChatEnterpriseFrame, type ChatFrameDecorator } from '../src/enterprise-frames.ts'
 
@@ -81,6 +84,83 @@ describe('checkChatHistoryLimit', () => {
       expect(refused).toBeInstanceOf(ChatApiError)
       expect(refused).toMatchObject({ code: 'invalid_request', message: 'limit: an integer from 1 to 200' })
     }
+  })
+})
+
+/** A stored session as the session controller's projections report it. */
+interface StoredChatSession {
+  owner?: LyteboatRequestOwner
+  agentPreset: string
+}
+
+/** The session controller and the Workspace registry over `sessions`, recording each archive. */
+function ownerSessionServices(sessions: Record<string, StoredChatSession>, archivedBefore: string[] = []): { services: ChatOwnerSessionServices; archives: { sessionId: string; stopActivity: boolean | undefined }[] } {
+  const archived = [...archivedBefore]
+  const archives: { sessionId: string; stopActivity: boolean | undefined }[] = []
+  const services = {
+    sessionController: {
+      list: () => Promise.resolve({ items: Object.keys(sessions).map(sessionId => ({ sessionId })) }),
+      projections: ({ sessionId }: { sessionId: string }) => {
+        const stored = sessions[sessionId]
+        return Promise.resolve(stored === undefined ? null : { kind: 'sequenced', values: { agentPreset: stored.agentPreset, ...stored.owner === undefined ? {} : { lyteboatRequest: { owner: stored.owner } } } })
+      },
+    },
+    workspaceRegistry: {
+      get archivedSessionIds() { return archived },
+      archiveSession: (sessionId: string, options?: { stopActivity?: boolean }) => {
+        archived.push(sessionId)
+        archives.push({ sessionId, stopActivity: options?.stopActivity })
+        return Promise.resolve()
+      },
+    },
+  }
+  // The two dsh services, reduced to the members the functions call.
+  return { services: services as unknown as ChatOwnerSessionServices, archives }
+}
+
+describe('archiveOwnerChatSessions', () => {
+  const doctor = { kind: 'user', id: '胸外科/li' } as const
+
+  it('archives the owner\'s sessions under the agent, stopping their work, and counts them', async () => {
+    const { services, archives } = ownerSessionServices({
+      's-1': { owner: doctor, agentPreset: 'doctor' },
+      's-2': { owner: doctor, agentPreset: 'doctor' },
+    })
+
+    expect(await archiveOwnerChatSessions(services, { agentId: 'doctor', owner: doctor })).toBe(2)
+    expect(archives).toEqual([{ sessionId: 's-1', stopActivity: true }, { sessionId: 's-2', stopActivity: true }])
+  })
+
+  it('leaves another owner\'s, an operator\'s with the same id, another agent\'s, an unowned, and an archived session, and archives nothing twice', async () => {
+    const { services, archives } = ownerSessionServices({
+      mine: { owner: doctor, agentPreset: 'doctor' },
+      other: { owner: { kind: 'user', id: '心内科/li' }, agentPreset: 'doctor' },
+      operator: { owner: { kind: 'operator', id: '胸外科/li' }, agentPreset: 'doctor' },
+      finance: { owner: doctor, agentPreset: 'finance' },
+      unowned: { agentPreset: 'doctor' },
+      gone: { owner: doctor, agentPreset: 'doctor' },
+    }, ['gone'])
+
+    expect(await archiveOwnerChatSessions(services, { agentId: 'doctor', owner: doctor })).toBe(1)
+    expect(archives.map(({ sessionId }) => sessionId)).toEqual(['mine'])
+    expect(await archiveOwnerChatSessions(services, { agentId: 'doctor', owner: doctor })).toBe(0)
+  })
+
+  it('archives nothing and answers 0 when there are no sessions', async () => {
+    const { services, archives } = ownerSessionServices({})
+
+    expect(await archiveOwnerChatSessions(services, { agentId: 'doctor', owner: doctor })).toBe(0)
+    expect(archives).toEqual([])
+  })
+})
+
+describe('isOwnChatSession', () => {
+  it('answers false for the owner\'s own session once it is archived, and for a session that does not exist', async () => {
+    const owner = { kind: 'user', id: 'u-1' } as const
+    const { services } = ownerSessionServices({ open: { owner, agentPreset: 'alpha' }, archived: { owner, agentPreset: 'alpha' } }, ['archived'])
+    const own = (sessionId: string): Promise<boolean> => isOwnChatSession(services, sessionId as SessionId, owner, 'alpha')
+
+    expect([await own('open'), await own('archived'), await own('missing')]).toEqual([true, false, false])
   })
 })
 
