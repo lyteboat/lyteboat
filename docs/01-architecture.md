@@ -93,7 +93,7 @@ flowchart TB
 | 外部元素 | 是什么 | 和 lyteboat 的关系 | 依据 |
 |---|---|---|---|
 | 终端用户 | 跑 `lyteboat serve`、`lyteboat eval`、`lyteboat release`、`lyteboat inspect` 或 `lyteboat studio` 的人；`lyteboat web` 和 `lyteboat headless "任务"` 是原生底座，跑 dsh 自己的模板和 dsh 自己的 agent；`lyteboat headless` 的参数点名业务 agent（`--agent`、`--agents`）时，它启动前就以 1 退出，指向 serve 和 eval | 通过命令行参数交互；`lyteboat studio account …` 从标准输入读口令建 Studio 账户 | `lyteboat/apps/cli/src/args.ts` `parseLyteboatArgs` 和 `headless` 的 `agentRefusal`，`lyteboat/bundles/studio/src/startup.ts` `accountCommands` |
-| 业务调用方 | 经 HTTP 调 `lyteboat serve` 的服务或前端 | `POST /chat` 发一条消息，拿回一个 JSON 或 enterprise 事件流；`GET /agents`、`GET /health` | `lyteboat/plugins/chat-api/src/index.ts` `ChatApiService` |
+| 业务调用方 | 经 HTTP 调 `lyteboat serve` 的服务或前端 | `POST /chat` 发一条消息，拿回一个 JSON 或 enterprise 事件流；`GET /chat/history` 回放一个会话里的对话，只给会话的主人；`GET /agents`、`GET /health` | `lyteboat/plugins/chat-api/src/index.ts` `ChatApiService` |
 | Studio 使用者 | 在浏览器里打开 `lyteboat studio` 的人（admin、editor、viewer），用 Studio 自己的账户登录，或经授权网关进来 | 页面在 `/studio/`，数据经 `/api/studio`；只查看 agent、会话、轮次指标和评测运行，写只有账户与角色、admin 的技能热修和 editor 及以上起的评测运行（[1.5](#15-studio-工作台另一个进程同一个-lyteboat_home)） | `lyteboat/plugins/studio-web/src/index.ts`，`lyteboat/plugins/studio-api/src/index.ts`，`lyteboat/plugins/studio-auth/src/index.ts` |
 | 业务开发 | 写 `examples/agents/<id>` 目录、`--plugin` 文件、`--patch` 文件的人 | 业务逻辑只放在 agent 目录里，框架包不带业务词汇 | `CLAUDE.md`「Architecture boundaries」的 “Framework packages stay domain-neutral” |
 | dsh 上游 | `deepseek-ai/deepseek-harness` 仓库 | lyteboat 每个 tag 导入一次内核源码，三方合并 lyteboat 的改动 | `dsh.upstream.json`，`.claude/skills/dsh-sync/SKILL.md` |
@@ -788,7 +788,7 @@ sequenceDiagram
     - `workspace`、`connection`、`file-upload`、`session-controller`：dsh 的会话控制器，不带 Web 界面，前三行是它的宿主服务。`session-controller` 注入 `agentDefaultModel`、`agents`、`llm`、`sessions`、`sessionProjections`、`sessionQuery`、`fs`、`workspaceRegistry` 等（`dsh/api/session-controller/src/index.ts` `SessionController.inject`），发布 `sessionController`。
     - `turn-metrics`：轮次指标的记录器，注入 `sessionProjections`、`turnOutcome`，写什么见第 27 步。
     - `webserver` 的行级 inject 满足后监听启动行给的 `host`、`port`（[2.3](#23-dsh-与-lyteboat-的-di-怎么交互) 例子 2）。
-    - `chat-api` 静态注入 `webServer`、`sessionController`、`agentCatalog`、`requestContext`、`historyImport`、`a2ui`、`turnOutcome`、`credentials`，行级注入 `lyteboatServeStartup`（`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService.inject`），在 web 服务器上挂 `POST /chat`、`GET /agents`、`GET /health`，发布 `chatApi`。
+    - `chat-api` 静态注入 `webServer`、`sessionController`、`agentCatalog`、`requestContext`、`historyImport`、`a2ui`、`turnOutcome`、`credentials`，行级注入 `lyteboatServeStartup`（`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService.inject`），在 web 服务器上挂 `POST /chat`、`GET /chat/history`、`GET /agents`、`GET /health`，发布 `chatApi`。
     - `lyteboat-serve` 注入 `agentCatalog`、`webServer`、`chatApi`（`lyteboat/bundles/serve/src/index.ts` `LyteboatServeRunner.inject`），所以最后激活。它要求 `appExit` 存在，然后在一个不等待的异步块里做第 21 步的事，`boot()` 可以先返回。它不在 dsh 的必须激活名单上，由启动器的模式 runner 检查兜底（第 17 步）。
 
 **E. 声明 agent，第一条请求建出 agent**（`lyteboat/bundles/serve/src/index.ts` `LyteboatServeRunner`；`lyteboat/plugins/chat-api/src/index.ts` `ChatApiService`；session-controller：`dsh/api/session-controller/src/agent.ts` `ApiSessionAgentController`、`commands.ts` `SessionCommandController`）

@@ -68,6 +68,9 @@ catalogs:
     '@deepseek-ai/dsh-typert-generator':
       specifier: 0.2.1-rc.2
       version: 0.2.1-rc.2
+    '@deepseek-ai/dsh-workspace':
+      specifier: 0.2.1-rc.2
+      version: 0.2.1-rc.2
 
 overrides:
   '@deepseek-ai/dsh-llm': workspace:*
@@ -1984,6 +1987,9 @@ importers:
       '@deepseek-ai/dsh-session':
         specifier: workspace:*
         version: link:../../../dsh/core/session
+      '@deepseek-ai/dsh-workspace':
+        specifier: catalog:dsh
+        version: 0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-session-persistence@dsh+session+session-persistence)(@deepseek-ai/dsh-session@dsh+core+session)(@deepseek-ai/dsh-storage-domain@0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)(@deepseek-ai/dsh-storage@0.2.1-rc.2(@deepseek-ai/cordis@4.0.5)))(@deepseek-ai/dsh-storage@0.2.1-rc.2(@deepseek-ai/cordis@4.0.5))(@deepseek-ai/dsh-typert-protocol@0.2.1-rc.2(@deepseek-ai/cordis@4.0.5))
 
   lyteboat/plugins/distro:
     dependencies:

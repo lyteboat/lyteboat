@@ -33,7 +33,7 @@ import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
 import type {} from '@deepseek-ai/dsh-session-projection'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { LYTEBOAT_STATE_CONTEXT_ORDER } from '@lyteboat/contracts'
-import type { LyteboatInheritedToolVisibility, LyteboatToolMeta, JsonValue } from '@lyteboat/contracts'
+import type { LyteboatInheritedToolVisibility, LyteboatStateValue, LyteboatToolMeta, JsonValue } from '@lyteboat/contracts'
 import { lyteboatStateProjectionDefinition, isJsonObject, mergeStateDelta, renderLyteboatState } from './state.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -224,6 +224,15 @@ export class ToolPolicyService extends Service {
     if (state === undefined) return
     state.activated.clear()
     this.reconcile(agent)
+  }
+
+  /**
+   * The session's accumulated tool state, as the `lyteboat:state` context shows it to the model.
+   * @param agent - an agent instance; its session's `lyteboatState` projection is read.
+   * @returns the folded state, `{}` before any tool returned a delta.
+   */
+  sessionState(agent: Agent): LyteboatStateValue {
+    return this.ctx.sessionProjections.stateOf(agent.session, 'lyteboatState') ?? {}
   }
 
   /** The names one agent activated, sorted. */

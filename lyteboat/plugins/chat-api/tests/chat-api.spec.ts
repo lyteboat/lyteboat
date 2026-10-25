@@ -1,9 +1,14 @@
 /**
- * The `/chat` request as the endpoint reads it, and the enterprise stream's
- * frame order, numbering, and decorators.
+ * The `/chat` request as the endpoint reads it, which sessions are an
+ * owner's and archiving them, and the enterprise stream's frame order,
+ * numbering, and decorators.
  */
 import { describe, expect, it } from 'vitest'
+import type { SessionEvent, SessionId } from '@deepseek-ai/dsh-session'
+import type { LyteboatRequestOwner } from '@lyteboat/contracts'
+import { chatHistoryOf, checkChatHistoryLimit, parseChatHistoryQuery } from '../src/chat-history.ts'
 import { ChatApiError, parseChatRequest } from '../src/chat-request.ts'
+import { archiveOwnerChatSessions, isOwnChatSession, type ChatOwnerSessionServices } from '../src/chat-owner-sessions.ts'
 import { isChatSessionOwner } from '../src/chat-session-owner.ts'
 import { ChatEnterpriseWriter, sseFrame, type ChatEnterpriseFrame, type ChatFrameDecorator } from '../src/enterprise-frames.ts'
 
@@ -30,6 +35,140 @@ describe('isChatSessionOwner', () => {
     expect(isChatSessionOwner({ kind: 'system', id: 'u-1' }, user)).toBe(false)
     expect(isChatSessionOwner(null, user)).toBe(false)
     expect(isChatSessionOwner(undefined, operator)).toBe(false)
+  })
+})
+
+describe('chatHistoryOf', () => {
+  const event = (seq: number, type: string, data: object, surfaceOp: unknown = 'append'): SessionEvent =>
+    ({ seq, time: 1000 + seq, type, data, surfaceOp }) as unknown as SessionEvent
+
+  it('lists the person\'s messages and the agent\'s answers, leaving out tool-calling steps, injected context, and replaced copies', () => {
+    const events = [
+      event(1, 'user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: ' 查一下 ' }] }),
+      event(2, 'user/message', { source: { kind: 'notice' }, content: [{ type: 'text', text: 'reminder' }] }),
+      event(3, 'assistant/message', { message: { content: [{ type: 'text', text: '我先查' }, { type: 'tool-call', id: 'c1', name: 'search', arguments: '{}' }] } }),
+      event(4, 'tool/result', { message: { content: [{ type: 'text', text: 'found' }] } }),
+      event(5, 'assistant/message', { message: { content: [{ type: 'reasoning', text: 'think' }, { type: 'text', text: '找到 2 位' }] } }),
+      event(6, 'assistant/message', { message: { content: [{ type: 'text', text: 'pruned' }] } }, { startSeq: 5, endSeq: 5 }),
+    ]
+
+    expect(chatHistoryOf(events, 40)).toEqual([{ role: 'user', text: '查一下', at: 1001 }, { role: 'assistant', text: '找到 2 位', at: 1005 }])
+    expect(chatHistoryOf(events, 1)).toEqual([{ role: 'assistant', text: '找到 2 位', at: 1005 }])
+  })
+
+  it('lists an imported round\'s question with its answer, in log order before the person\'s own message', () => {
+    const imported = { kind: 'plugin:lyteboat-history-import', traceId: 'trace-0001' }
+    const events = [
+      event(1, 'user/message', { source: imported, content: [{ type: 'text', text: '看看资产' }] }),
+      event(2, 'assistant/message', { message: { source: { provider: 'lyteboat', model: 'history-import' }, content: [{ type: 'text', text: '总额 100' }] } }),
+      event(3, 'user/message', { source: { kind: 'user' }, content: [{ type: 'text', text: '继续' }] }),
+    ]
+
+    expect(chatHistoryOf(events, 40).map(({ role, text }) => `${role}:${text}`)).toEqual(['user:看看资产', 'assistant:总额 100', 'user:继续'])
+  })
+})
+
+describe('checkChatHistoryLimit', () => {
+  it('takes 40 when absent and passes 1 and 200', () => {
+    expect([checkChatHistoryLimit(undefined), checkChatHistoryLimit(1), checkChatHistoryLimit(200)]).toEqual([40, 1, 200])
+  })
+
+  it('refuses 0, 201, and 1.5 as an invalid request', () => {
+    for (const limit of [0, 201, 1.5]) {
+      let refused: unknown
+      try {
+        checkChatHistoryLimit(limit)
+      } catch (error: unknown) {
+        refused = error
+      }
+      expect(refused).toBeInstanceOf(ChatApiError)
+      expect(refused).toMatchObject({ code: 'invalid_request', message: 'limit: an integer from 1 to 200' })
+    }
+  })
+})
+
+/** A stored session as the session controller's projections report it. */
+interface StoredChatSession {
+  owner?: LyteboatRequestOwner
+  agentPreset: string
+}
+
+/** The session controller and the Workspace registry over `sessions`, recording each archive. */
+function ownerSessionServices(sessions: Record<string, StoredChatSession>, archivedBefore: string[] = []): { services: ChatOwnerSessionServices; archives: { sessionId: string; stopActivity: boolean | undefined }[] } {
+  const archived = [...archivedBefore]
+  const archives: { sessionId: string; stopActivity: boolean | undefined }[] = []
+  const services = {
+    sessionController: {
+      list: () => Promise.resolve({ items: Object.keys(sessions).map(sessionId => ({ sessionId })) }),
+      projections: ({ sessionId }: { sessionId: string }) => {
+        const stored = sessions[sessionId]
+        return Promise.resolve(stored === undefined ? null : { kind: 'sequenced', values: { agentPreset: stored.agentPreset, ...stored.owner === undefined ? {} : { lyteboatRequest: { owner: stored.owner } } } })
+      },
+    },
+    workspaceRegistry: {
+      get archivedSessionIds() { return archived },
+      archiveSession: (sessionId: string, options?: { stopActivity?: boolean }) => {
+        archived.push(sessionId)
+        archives.push({ sessionId, stopActivity: options?.stopActivity })
+        return Promise.resolve()
+      },
+    },
+  }
+  // The two dsh services, reduced to the members the functions call.
+  return { services: services as unknown as ChatOwnerSessionServices, archives }
+}
+
+describe('archiveOwnerChatSessions', () => {
+  const doctor = { kind: 'user', id: '胸外科/li' } as const
+
+  it('archives the owner\'s sessions under the agent, stopping their work, and counts them', async () => {
+    const { services, archives } = ownerSessionServices({
+      's-1': { owner: doctor, agentPreset: 'doctor' },
+      's-2': { owner: doctor, agentPreset: 'doctor' },
+    })
+
+    expect(await archiveOwnerChatSessions(services, { agentId: 'doctor', owner: doctor })).toBe(2)
+    expect(archives).toEqual([{ sessionId: 's-1', stopActivity: true }, { sessionId: 's-2', stopActivity: true }])
+  })
+
+  it('leaves another owner\'s, an operator\'s with the same id, another agent\'s, an unowned, and an archived session, and archives nothing twice', async () => {
+    const { services, archives } = ownerSessionServices({
+      mine: { owner: doctor, agentPreset: 'doctor' },
+      other: { owner: { kind: 'user', id: '心内科/li' }, agentPreset: 'doctor' },
+      operator: { owner: { kind: 'operator', id: '胸外科/li' }, agentPreset: 'doctor' },
+      finance: { owner: doctor, agentPreset: 'finance' },
+      unowned: { agentPreset: 'doctor' },
+      gone: { owner: doctor, agentPreset: 'doctor' },
+    }, ['gone'])
+
+    expect(await archiveOwnerChatSessions(services, { agentId: 'doctor', owner: doctor })).toBe(1)
+    expect(archives.map(({ sessionId }) => sessionId)).toEqual(['mine'])
+    expect(await archiveOwnerChatSessions(services, { agentId: 'doctor', owner: doctor })).toBe(0)
+  })
+
+  it('archives nothing and answers 0 when there are no sessions', async () => {
+    const { services, archives } = ownerSessionServices({})
+
+    expect(await archiveOwnerChatSessions(services, { agentId: 'doctor', owner: doctor })).toBe(0)
+    expect(archives).toEqual([])
+  })
+})
+
+describe('isOwnChatSession', () => {
+  it('answers false for the owner\'s own session once it is archived, and for a session that does not exist', async () => {
+    const owner = { kind: 'user', id: 'u-1' } as const
+    const { services } = ownerSessionServices({ open: { owner, agentPreset: 'alpha' }, archived: { owner, agentPreset: 'alpha' } }, ['archived'])
+    const own = (sessionId: string): Promise<boolean> => isOwnChatSession(services, sessionId as SessionId, owner, 'alpha')
+
+    expect([await own('open'), await own('archived'), await own('missing')]).toEqual([true, false, false])
+  })
+})
+
+describe('parseChatHistoryQuery', () => {
+  it('reads the query with a default limit and refuses a missing field or a limit out of range', () => {
+    expect(parseChatHistoryQuery(new URLSearchParams('agent_id=a&user_id=u&session_id=s'))).toEqual({ agentId: 'a', userId: 'u', sessionId: 's', limit: 40 })
+    expect(() => parseChatHistoryQuery(new URLSearchParams('agent_id=a&session_id=s'))).toThrow('user_id: required')
+    expect(() => parseChatHistoryQuery(new URLSearchParams('agent_id=a&user_id=u&session_id=s&limit=0'))).toThrow('limit: an integer from 1 to 200')
   })
 })
 

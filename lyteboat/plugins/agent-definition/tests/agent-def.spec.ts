@@ -174,7 +174,7 @@ describe('lyteboatAgentDef', () => {
     let seen: LyteboatAgentHost | undefined
     await mountAgentStandingScope(ctx, join(AGENTS, 'desk'), lyteboatAgentDef({ ...DESK_DEF, tools: (host) => { seen = host; return [] } }))
     expect([Object.keys(seen?.a2ui ?? {}), Object.keys(seen?.modelSideCall ?? {}), Object.keys(seen?.requestContext ?? {}), Object.keys(seen?.toolPolicy ?? {})])
-      .toEqual([['renderCard'], ['generate'], ['contextOf'], ['activate']])
+      .toEqual([['renderCard'], ['generate'], ['contextOf'], ['activate', 'sessionState']])
   })
 
   it('lets a pre-assemble listener activate an auto tool for this step', async () => {

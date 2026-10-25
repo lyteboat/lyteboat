@@ -233,10 +233,17 @@ describe('state', () => {
     expect(result.data.meta).toEqual({ card: 'own', lyteboat: { stateDelta: { 'portfolio.total': 5 } } })
     expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatState')).toEqual({ portfolio: { total: 5 } })
     expect(ctx.sessionProjections.snapshot(agent.session).values['lyteboatState']).toEqual({ portfolio: { total: 5 } })
+    expect(ctx.toolPolicy.sessionState(agent)).toEqual({ portfolio: { total: 5 } })
     // The second request carries the runtime context with the state; the first had none.
     expect(JSON.stringify(adapter.requests[0]!.messages)).not.toContain('Session state')
     expect(JSON.stringify(adapter.requests[1]!.messages)).toContain('Session state, accumulated from tool results')
     expect(JSON.stringify(adapter.requests[1]!.messages)).toContain('portfolio')
+  })
+
+  it('answers sessionState with an empty object before any tool returned a delta', async () => {
+    const ctx = await harness(new MockAdapter([]))
+    const agent = await ctx.agentLoop.create(SessionId('state-empty'), { provider: 'mock', model: 'mock' })
+    expect(ctx.toolPolicy.sessionState(agent)).toEqual({})
   })
 
   it('fails the call, not the session, when the delta hook derives a path the state cannot hold', async () => {
