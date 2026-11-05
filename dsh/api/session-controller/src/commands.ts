@@ -32,6 +32,7 @@ import {
   hasApiSessionSubagentOwner,
   type ApiSessionCreated,
 } from './agent.ts'
+import { lyteboatPromptSourceFields } from './lyteboat/prompt-source.ts'
 import type {
   SessionAttachmentRequest,
   SessionAttachmentValue,
@@ -304,6 +305,8 @@ export class SessionCommandController {
   async prompt(request: SessionPromptRequest, source: MessageSource): Promise<SessionPromptValue> {
     const agent = await this.resolveAgent(request.sessionId)
     if (hasPromptRequest(agent, request.requestId)) return { accepted: true }
+    // lyteboat: the caller's own source fields (session-controller-prompt-source).
+    source = { ...source, ...lyteboatPromptSourceFields(request.sourceFields) }
     const admission = resolvePromptFileReceipts(
       request.content,
       receiptId => this.ctx.fileUploads.resolve(agent, receiptId),

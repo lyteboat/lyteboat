@@ -5,17 +5,19 @@
 import { Context } from '@deepseek-ai/cordis'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { createInboxStub } from '@deepseek-ai/dsh-agent-loop-testkit'
+import { createInboxStub, unsupportedModel } from '@deepseek-ai/dsh-agent-loop-testkit'
 import AttachmentStore from '@deepseek-ai/dsh-attachment'
-import FileUploads from '@deepseek-ai/dsh-client-file-upload'
 import CommandRuntime from '@deepseek-ai/dsh-commands'
+import FileUploads from '@deepseek-ai/dsh-client-file-upload'
 import type { MessageSource, UserMessage } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
-import { createScope } from '@deepseek-ai/dsh-scope'
+import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
+import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
 import { describe, expect, it, vi } from 'vitest'
-import type { ApiSessionAgentController } from '../../src/agent.ts'
+import { ApiSessionAgentController } from '../../src/agent.ts'
 import { SessionCommandController } from '../../src/commands.ts'
 import type { SessionPromptRequest, SessionRequestId } from '../../src/types.ts'
+import { installSessionReadTestServices } from '../test-remote.ts'
 
 const SESSION = SessionId('prompt-source-session')
 // The source the Remote method builds before it hands the prompt to the command controller.
@@ -24,31 +26,37 @@ const CONTROLLER_SOURCE = { kind: 'user', rpcId: 'req-1' as SessionRequestId } s
 async function promptHarness(): Promise<{ controller: SessionCommandController; followup: ReturnType<typeof vi.fn> }> {
   const ctx = new Context()
   await ctx.plugin(SessionStore)
+  await ctx.plugin(SessionProjectionRegistry)
   await ctx.plugin(AgentRegistry)
+  await ctx.plugin(TypertRegistry)
   await ctx.plugin(CommandRuntime)
+  installSessionReadTestServices(ctx)
   const session = ctx.sessions.create(SESSION, { meta: { cwd: '/workspace' } })
   const followup = vi.fn()
   const agent = {
     id: session.id,
+    options: { provider: 'fixture', model: 'fixture-model' },
+    whenIdle: vi.fn(() => Promise.resolve()),
+    runMaintenance: async () => { throw new Error('unexpected maintenance') },
+    send: vi.fn(),
+    inject: vi.fn(),
     session,
+    model: unsupportedModel(),
     inbox: createInboxStub(),
     status: 'idle',
-    ctx: undefined,
+    ctx,
     steer: vi.fn(),
     followup,
     cancel: vi.fn(),
-  } as unknown as Agent
-  ;(agent as { ctx: Context }).ctx = createScope(ctx, agent).ctx
+  } satisfies Agent
   await ctx.agents.register(agent)
   ctx.provide('attachments', Object.setPrototypeOf({
     saveImages: () => Promise.reject(new Error('fixture did not expect image persistence')),
   }, AttachmentStore.prototype) as never)
   ctx.provide('connection', { fetch: { register: () => () => {} } } as never)
-  await ctx.plugin(FileUploads)
-  const agents = {
-    resolveAgent: () => Promise.resolve({ agent }),
-    serializeImageAdmission: <Value>(_agent: Agent, operation: () => Promise<Value>) => operation(),
-  } as unknown as ApiSessionAgentController
+  const agents = new ApiSessionAgentController(ctx)
+  vi.spyOn(agents, 'resolveAgent').mockResolvedValue({ agent })
+  new FileUploads(ctx)
   return { controller: new SessionCommandController(ctx, agents, '/workspace'), followup }
 }
 
