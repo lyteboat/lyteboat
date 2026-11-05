@@ -15,7 +15,5 @@ export const DSH_BASE = '0.2.2-rc.1'
 export const DISTRO_EXTENSIONS: readonly LyteboatDistroExtension[] = Object.freeze([
   { id: 'agent-loop-intake', package: '@deepseek-ai/dsh-agent-loop', kind: 'event' },
   { id: 'agent-loop-pre-assemble', package: '@deepseek-ai/dsh-agent-loop', kind: 'event' },
-  { id: 'session-append-ignorable', package: '@deepseek-ai/dsh-session', kind: 'api-option' },
   { id: 'session-controller-prompt-source', package: '@deepseek-ai/dsh-api-session-controller', kind: 'api-option' },
-  { id: 'headless-hooks', package: '@deepseek-ai/dsh-headless', kind: 'event' },
 ])

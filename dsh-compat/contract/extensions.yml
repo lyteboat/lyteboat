@@ -48,23 +48,6 @@ extensions:
       prompt and tool set (agent/pre-step fires after assembly).
     tests:
       - dsh/core/agent-loop/tests/lyteboat/pre-assemble.spec.ts
-  - id: session-append-ignorable
-    package: '@deepseek-ai/dsh-session'
-    kind: api-option
-    surface: >-
-      Session.append takes `{ ignorable: true }` for a non-surface event of a type this build does not
-      know, and writes `ignorable: true` on its envelope, so a reader that does not know the type skips
-      it instead of refusing the log (the read and seed paths already honour the marker). A type the
-      build knows, surface types included, is refused. Exports LyteboatAppendOptions.
-    contract:
-      - api › @deepseek-ai/dsh-session › exports › . › Session › append
-      - api › @deepseek-ai/dsh-session › exports › . › LyteboatAppendOptions
-    exit: >-
-      Upstream gives Session.append (or another write path) a way to set SessionEvent.ignorable; then
-      @lyteboat plugins use it instead.
-    tests:
-      - dsh/core/session/tests/lyteboat/append-ignorable.spec.ts
-      - dsh/session/session-persistence/tests/lyteboat/reopen-ignorable.spec.ts
   - id: session-controller-prompt-source
     package: '@deepseek-ai/dsh-api-session-controller'
     kind: api-option
@@ -82,27 +65,3 @@ extensions:
       @lyteboat plugins pass them that way.
     tests:
       - dsh/api/session-controller/tests/lyteboat/prompt-source.host.spec.ts
-  - id: headless-hooks
-    package: '@deepseek-ai/dsh-headless'
-    kind: event
-    surface: >-
-      Three waterfalls around the one-shot runner's run, each carrying the runner's plan for that point:
-      `lyteboat/headless-start` (the working directory, the agent preset a new Session records and a
-      continued one must run under, the per-Agent setup, and a seed for a new Session) before it creates
-      or adopts the Agent; `lyteboat/headless-submit` (how the task reaches the Agent) before the task is
-      submitted; `lyteboat/headless-report` (the answer stdout carries) before the answer is printed. A
-      listener edits the plan and calls `next()`; with no listener the plan is the official runner's.
-      Exports LyteboatHeadlessStartPlan, LyteboatHeadlessSubmitPlan, LyteboatHeadlessReportPlan.
-    contract:
-      - events › @deepseek-ai/dsh-headless › lyteboat/headless-start
-      - events › @deepseek-ai/dsh-headless › lyteboat/headless-submit
-      - events › @deepseek-ai/dsh-headless › lyteboat/headless-report
-      - api › @deepseek-ai/dsh-headless › exports › . › LyteboatHeadlessStartPlan
-      - api › @deepseek-ai/dsh-headless › exports › . › LyteboatHeadlessSubmitPlan
-      - api › @deepseek-ai/dsh-headless › exports › . › LyteboatHeadlessReportPlan
-    exit: >-
-      Upstream's one-shot runner lets a plugin compose and place the Agent it creates, submit the task,
-      and shape what it prints; then a plugin uses those seams instead. No lyteboat row listens to
-      these waterfalls.
-    tests:
-      - dsh/bundle/headless/tests/lyteboat/headless-hooks.spec.ts
