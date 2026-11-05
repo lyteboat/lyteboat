@@ -1488,6 +1488,7 @@ const _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema 
   'receiptId': z.string().readonly(),
 })])).readonly().describe('At least one non-whitespace text part or attachment.'),
   'clientTimeZone': z.string().readonly().optional(),
+  'sourceFields': z.record(z.string(), z.json()).readonly().readonly().optional().describe('lyteboat: fields added to the accepted user message\'s source, beside the ones the controller writes (`kind`, `rpcId`, `clientTimeZone`, `principal`).'),
 }))
 let _deepseek_ai_dsh_api_session_controller_session_prompt_result$schema$value
 const _deepseek_ai_dsh_api_session_controller_session_prompt_result$schema = () => (_deepseek_ai_dsh_api_session_controller_session_prompt_result$schema$value ??= z.object({
@@ -1776,6 +1777,7 @@ const _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0_strict$
   'receiptId': z.string().readonly(),
 })])).readonly().describe('At least one non-whitespace text part or attachment.'),
   'clientTimeZone': z.string().readonly().optional(),
+  'sourceFields': z.record(z.string(), z.json()).readonly().readonly().optional().describe('lyteboat: fields added to the accepted user message\'s source, beside the ones the controller writes (`kind`, `rpcId`, `clientTimeZone`, `principal`).'),
 }))
 let _deepseek_ai_dsh_api_session_controller_session_rename_parameter_0_strict$schema$value
 const _deepseek_ai_dsh_api_session_controller_session_rename_parameter_0_strict$schema = () => (_deepseek_ai_dsh_api_session_controller_session_rename_parameter_0_strict$schema$value ??= z.strictObject({
@@ -2392,13 +2394,13 @@ const $remote = createTypertRemoteInfo({
             mode: 'strict',
             typeSymbol: '@deepseek-ai/dsh-api-session-controller/types#SessionPromptRequest',
             create: _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0$schema,
-            jsonSchema: {"type":"object","properties":{"requestId":{"type":"string","description":"Client-minted identity persisted on the exact accepted user message."},"sessionId":{"type":"string"},"mode":{"type":"string","enum":["queue","steer"]},"content":{"type":"array","items":{"oneOf":[{"type":"object","properties":{"type":{"type":"string","const":"text"},"text":{"type":"string"}},"required":["type","text"],"additionalProperties":true},{"type":"object","properties":{"type":{"type":"string","const":"image"},"mediaType":{"type":"string","enum":["image/png","image/jpeg","image/webp","image/gif"]},"data":{"type":"string"},"name":{"type":"string"}},"required":["type","mediaType","data"],"additionalProperties":true},{"type":"object","properties":{"type":{"type":"string","const":"file"},"receiptId":{"type":"string"}},"required":["type","receiptId"],"additionalProperties":true}]},"description":"At least one non-whitespace text part or attachment."},"clientTimeZone":{"type":"string"}},"required":["requestId","sessionId","mode","content"],"additionalProperties":true},
+            jsonSchema: {"type":"object","properties":{"requestId":{"type":"string","description":"Client-minted identity persisted on the exact accepted user message."},"sessionId":{"type":"string"},"mode":{"type":"string","enum":["queue","steer"]},"content":{"type":"array","items":{"oneOf":[{"type":"object","properties":{"type":{"type":"string","const":"text"},"text":{"type":"string"}},"required":["type","text"],"additionalProperties":true},{"type":"object","properties":{"type":{"type":"string","const":"image"},"mediaType":{"type":"string","enum":["image/png","image/jpeg","image/webp","image/gif"]},"data":{"type":"string"},"name":{"type":"string"}},"required":["type","mediaType","data"],"additionalProperties":true},{"type":"object","properties":{"type":{"type":"string","const":"file"},"receiptId":{"type":"string"}},"required":["type","receiptId"],"additionalProperties":true}]},"description":"At least one non-whitespace text part or attachment."},"clientTimeZone":{"type":"string"},"sourceFields":{"type":"object","properties":{},"required":[],"additionalProperties":true,"description":"lyteboat: fields added to the accepted user message's source, beside the ones the controller writes (`kind`, `rpcId`, `clientTimeZone`, `principal`)."}},"required":["requestId","sessionId","mode","content"],"additionalProperties":true},
           },
           strictCodec: {
             mode: 'strict',
             typeSymbol: '@deepseek-ai/dsh-api-session-controller/types#SessionPromptRequest',
             create: _deepseek_ai_dsh_api_session_controller_session_prompt_parameter_0_strict$schema,
-            jsonSchema: {"type":"object","properties":{"requestId":{"type":"string","description":"Client-minted identity persisted on the exact accepted user message."},"sessionId":{"type":"string"},"mode":{"type":"string","enum":["queue","steer"]},"content":{"type":"array","items":{"oneOf":[{"type":"object","properties":{"type":{"type":"string","const":"text"},"text":{"type":"string"}},"required":["type","text"],"additionalProperties":false},{"type":"object","properties":{"type":{"type":"string","const":"image"},"mediaType":{"type":"string","enum":["image/png","image/jpeg","image/webp","image/gif"]},"data":{"type":"string"},"name":{"type":"string"}},"required":["type","mediaType","data"],"additionalProperties":false},{"type":"object","properties":{"type":{"type":"string","const":"file"},"receiptId":{"type":"string"}},"required":["type","receiptId"],"additionalProperties":false}]},"description":"At least one non-whitespace text part or attachment."},"clientTimeZone":{"type":"string"}},"required":["requestId","sessionId","mode","content"],"additionalProperties":false},
+            jsonSchema: {"type":"object","properties":{"requestId":{"type":"string","description":"Client-minted identity persisted on the exact accepted user message."},"sessionId":{"type":"string"},"mode":{"type":"string","enum":["queue","steer"]},"content":{"type":"array","items":{"oneOf":[{"type":"object","properties":{"type":{"type":"string","const":"text"},"text":{"type":"string"}},"required":["type","text"],"additionalProperties":false},{"type":"object","properties":{"type":{"type":"string","const":"image"},"mediaType":{"type":"string","enum":["image/png","image/jpeg","image/webp","image/gif"]},"data":{"type":"string"},"name":{"type":"string"}},"required":["type","mediaType","data"],"additionalProperties":false},{"type":"object","properties":{"type":{"type":"string","const":"file"},"receiptId":{"type":"string"}},"required":["type","receiptId"],"additionalProperties":false}]},"description":"At least one non-whitespace text part or attachment."},"clientTimeZone":{"type":"string"},"sourceFields":{"type":"object","properties":{},"required":[],"additionalProperties":true,"description":"lyteboat: fields added to the accepted user message's source, beside the ones the controller writes (`kind`, `rpcId`, `clientTimeZone`, `principal`)."}},"required":["requestId","sessionId","mode","content"],"additionalProperties":false},
           },
         },
       ],
@@ -3753,7 +3755,7 @@ export const TYPERT = {
           },
           {
             "name": "SessionPromptRequest",
-            "declaration": "export interface SessionPromptRequest {\n    readonly requestId: SessionRequestId;\n    readonly sessionId: SessionId;\n    readonly mode: 'queue' | 'steer';\n    readonly content: readonly PromptContentPart[];\n    readonly clientTimeZone?: string;\n}"
+            "declaration": "export interface SessionPromptRequest {\n    readonly requestId: SessionRequestId;\n    readonly sessionId: SessionId;\n    readonly mode: 'queue' | 'steer';\n    readonly content: readonly PromptContentPart[];\n    readonly clientTimeZone?: string;\n    readonly sourceFields?: { readonly [key: string]: JsonValue; };\n}"
           },
           {
             "name": "SessionPromptValue",
