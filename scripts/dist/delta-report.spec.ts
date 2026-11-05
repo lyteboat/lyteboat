@@ -30,16 +30,16 @@ describe('delta report: the policy class', () => {
   })
 })
 
-function commit(sha: string, subject: string, trailers: Record<string, string[]>): DistCommit {
+function kernelCommit(sha: string, subject: string, trailers: Record<string, string[]>): DistCommit {
   return { sha, date: '2026-11-05', subject, trailers: new Map(Object.entries(trailers)), files: ['dsh/core/session/src/index.ts'] }
 }
 
 describe('delta report: dropping an extension', () => {
-  const added = commit('1111111111aa', 'dsh-session — extend: marker', { 'Dist-Change': ['extend'], 'Dist-Extension': ['marker'] })
-  const kept = commit('2222222222bb', 'dsh-session — extend: kept', { 'Dist-Change': ['extend'], 'Dist-Extension': ['kept'] })
+  const added = kernelCommit('1111111111aa', 'dsh-session — extend: marker', { 'Dist-Change': ['extend'], 'Dist-Extension': ['marker'] })
+  const kept = kernelCommit('2222222222bb', 'dsh-session — extend: kept', { 'Dist-Change': ['extend'], 'Dist-Extension': ['kept'] })
 
   test('a drop commit retires the extension, so the commits that added it stay valid', () => {
-    const dropped = commit('3333333333cc', 'dsh-session — drop: marker', { 'Dist-Change': ['drop'], 'Dist-Exit': ['upstream API'], 'Dist-Extension': ['marker'] })
+    const dropped = kernelCommit('3333333333cc', 'dsh-session — drop: marker', { 'Dist-Change': ['drop'], 'Dist-Exit': ['upstream API'], 'Dist-Extension': ['marker'] })
     expect(violations([added, kept, dropped], new Set(['kept']))).toEqual([])
   })
 
@@ -48,7 +48,7 @@ describe('delta report: dropping an extension', () => {
   })
 
   test('a drop commit whose extension is still registered is refused', () => {
-    const dropped = commit('3333333333cc', 'dsh-session — drop: marker', { 'Dist-Change': ['drop'], 'Dist-Exit': ['upstream API'], 'Dist-Extension': ['marker'] })
+    const dropped = kernelCommit('3333333333cc', 'dsh-session — drop: marker', { 'Dist-Change': ['drop'], 'Dist-Exit': ['upstream API'], 'Dist-Extension': ['marker'] })
     expect(violations([added, kept, dropped], new Set(['kept', 'marker']))).toEqual([
       '3333333333 dsh-session — drop: marker: drops marker, which is still in dsh-compat/contract/extensions.yml',
     ])
