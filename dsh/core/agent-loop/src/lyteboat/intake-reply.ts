@@ -37,20 +37,14 @@ export function lyteboatIntakeMessages(claimed: UserMessage[], reply: LyteboatIn
   return replaced
 }
 
-/** Whether the surface already holds a system node (surface node 0 is reserved for the prompt). */
-function hasSystemNode(session: Session): boolean {
-  for (const seq of session.surface.nodes) {
-    if (session.eventAt(seq)?.type === 'system/message') return true
-  }
-  return false
-}
-
 /**
- * Commit an intake reply inside the open step. An empty system head is
- * appended first when none exists, so the next real step's prompt replaces
- * node 0 instead of trailing the history; the claimed messages are admitted
- * as they would be on a model step; the reply is an assistant message whose
- * provider is lyteboat and whose model names the deciding plugin.
+ * Commit an intake reply inside the open step. Surface node 0 belongs to the
+ * system prompt, so a reply on an empty surface first appends an empty
+ * system head there, and the next real step's prompt replaces node 0 instead
+ * of trailing the history; a non-empty surface already holds its node 0. The
+ * claimed messages are admitted as they would be on a model step; the reply
+ * is an assistant message whose provider is lyteboat and whose model names
+ * the deciding plugin.
  * @param session - the agent's session, inside the step's `step/start`.
  * @param position - the open step.
  * @param messages - the claimed messages the reply answers.
@@ -63,7 +57,7 @@ export function appendLyteboatIntakeReply(
   reply: LyteboatIntakeReply,
 ): void {
   const { turn, step } = position
-  if (!hasSystemNode(session)) {
+  if (session.surface.nodes.length === 0) {
     session.append(
       'system/message',
       { turn, step, message: createSystemMessage('') },
