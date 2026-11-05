@@ -56,7 +56,7 @@ async function promptHarness(): Promise<{ controller: SessionCommandController; 
   ctx.provide('connection', { fetch: { register: () => () => {} } } as never)
   const agents = new ApiSessionAgentController(ctx)
   vi.spyOn(agents, 'resolveAgent').mockResolvedValue({ agent })
-  new FileUploads(ctx)
+  await ctx.plugin(FileUploads)
   return { controller: new SessionCommandController(ctx, agents, '/workspace'), followup }
 }
 
