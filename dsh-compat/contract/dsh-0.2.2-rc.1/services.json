@@ -1,0 +1,42 @@
+{
+  "@deepseek-ai/dsh-agent": {
+    "agents": "agents: AgentRegistry;"
+  },
+  "@deepseek-ai/dsh-agent-loop": {
+    "agentLoop": "agentLoop: AgentLoop;",
+    "configuredAgentIdentities": "configuredAgentIdentities?: ConfiguredAgentIdentities;"
+  },
+  "@deepseek-ai/dsh-api-session-controller": {
+    "sessionController": "sessionController: SessionController;",
+    "sessionFileReferences": "sessionFileReferences: SessionFileReferences;",
+    "sessionSkillCatalog": "sessionSkillCatalog: SessionSkillCatalog;",
+    "sessions": "sessions: import('./contract/sessions.ts').ISessions;"
+  },
+  "@deepseek-ai/dsh-compaction": {
+    "compaction": "compaction: CompactionEngine;"
+  },
+  "@deepseek-ai/dsh-headless": {
+    "headlessStartup": "headlessStartup: HeadlessStartupValues;"
+  },
+  "@deepseek-ai/dsh-llm": {
+    "llm": "llm: LlmRuntime;"
+  },
+  "@deepseek-ai/dsh-session": {
+    "sessions": "sessions: SessionStore;"
+  },
+  "@deepseek-ai/dsh-session-persistence": {
+    "sessionPersistence": "sessionPersistence: SessionPersistence;"
+  },
+  "@deepseek-ai/dsh-session-projection": {
+    "sessionProjections": "sessionProjections: SessionProjectionRegistry;"
+  },
+  "@deepseek-ai/dsh-skill": {
+    "skills": "skills: SkillRegistry;"
+  },
+  "@deepseek-ai/dsh-system-prompt": {
+    "systemPrompt": "systemPrompt: SystemPrompt;"
+  },
+  "@deepseek-ai/dsh-tools": {
+    "tools": "tools: ToolsService;"
+  }
+}

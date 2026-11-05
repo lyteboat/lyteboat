@@ -1,0 +1,156 @@
+{
+  "@deepseek-ai/dsh-agent": {
+    "agent/assistant-stream": {
+      "mode": "emit",
+      "signature": "'agent/assistant-stream'(this: Scoped<Agent>, payload: { agent: Agent; frame: AssistantStreamFrame; }): void;"
+    },
+    "agent/created": {
+      "mode": "serial",
+      "signature": "'agent/created'(this: Scoped<Agent>, payload: { agent: Agent; source: SessionStartSource; signal?: AbortSignal; }): undefined | Promise<undefined>;"
+    },
+    "agent/disposed": {
+      "mode": "emit",
+      "signature": "'agent/disposed'(this: Scoped<Agent>, payload: { agent: Agent; }): void;"
+    },
+    "agent/error": {
+      "mode": "emit",
+      "signature": "'agent/error'(this: Scoped<Agent>, payload: { agent: Agent; turn: number; step: number; error: unknown; }): void;"
+    },
+    "agent/inbox/claimed": {
+      "mode": "emit",
+      "signature": "'agent/inbox/claimed'(this: Scoped<Agent>, payload: { agent: Agent; message: UserMessage; turn: number; }): void;"
+    },
+    "agent/inbox/discarded": {
+      "mode": "emit",
+      "signature": "'agent/inbox/discarded'(this: Scoped<Agent>, payload: { agent: Agent; message: UserMessage; }): void;"
+    },
+    "agent/inbox/inserted": {
+      "mode": "emit",
+      "signature": "'agent/inbox/inserted'(this: Scoped<Agent>, payload: { agent: Agent; message: UserMessage; }): void;"
+    },
+    "agent/pre-step": {
+      "mode": "waterfall",
+      "signature": "'agent/pre-step'(this: Scoped<Agent>, payload: { agent: Agent; messages: UserMessage[]; turn: number; step: number; signal: AbortSignal; modelSelection: Readonly<ModelSelection>; }, next: () => Promise<PreStepDecision>): Promise<PreStepDecision>;"
+    },
+    "agent/request": {
+      "mode": "waterfall",
+      "signature": "'agent/request'(this: Scoped<Agent>, payload: { agent: Agent; turn: number; step: number; signal: AbortSignal; }, next: () => Promise<LlmCallConfig>): Promise<LlmCallConfig>;"
+    },
+    "agent/request-error": {
+      "mode": "waterfall",
+      "signature": "'agent/request-error'(this: Scoped<Agent>, payload: { agent: Agent; turn: number; step: number; provider: string; failure: LlmFailure; retryPolicy: ResolvedRetryPolicy | undefined; signal: AbortSignal; }, next: () => Promise<RequestErrorAction>): Promise<RequestErrorAction>;"
+    },
+    "agent/status": {
+      "mode": "emit",
+      "signature": "'agent/status'(this: Scoped<Agent>, payload: { agent: Agent; status: AgentStatus; }): void;"
+    },
+    "agent/turn-stopping": {
+      "mode": "serial",
+      "signature": "'agent/turn-stopping'(this: Scoped<Agent>, payload: { agent: Agent; turn: number; signal: AbortSignal; }): Promise<void> | void;"
+    }
+  },
+  "@deepseek-ai/dsh-agent-loop": {
+    "agent-loop/config-start-failed": {
+      "mode": "emit",
+      "signature": "'agent-loop/config-start-failed'(payload: { sessionId: SessionId; error: unknown; }): void;"
+    }
+  },
+  "@deepseek-ai/dsh-api-session-controller": {
+    "api-session/activity": {
+      "mode": "emit",
+      "signature": "'api-session/activity'(sessionId: SessionId, updatedAt: number): void;"
+    },
+    "api-session/added": {
+      "mode": "emit",
+      "signature": "'api-session/added'(summary: SessionSummary): void;"
+    },
+    "api-session/error": {
+      "mode": "emit",
+      "signature": "'api-session/error'(sessionId: SessionId, message: string): void;"
+    },
+    "api-session/removed": {
+      "mode": "emit",
+      "signature": "'api-session/removed'(sessionId: SessionId): void;"
+    },
+    "api-session/status": {
+      "mode": "emit",
+      "signature": "'api-session/status'(sessionId: SessionId, running: boolean): void;"
+    }
+  },
+  "@deepseek-ai/dsh-compaction": {
+    "compaction/summary-error": {
+      "mode": "waterfall",
+      "signature": "'compaction/summary-error'(payload: { session: Session; sourceEventSeqs: readonly SessionSeq[]; error: unknown; signal?: AbortSignal; }, next: () => boolean): boolean;"
+    }
+  },
+  "@deepseek-ai/dsh-llm": {
+    "llm/adapters-updated": {
+      "mode": "emit",
+      "signature": "'llm/adapters-updated'(): void;"
+    },
+    "llm/models-updated": {
+      "mode": "emit",
+      "signature": "'llm/models-updated'(provider: string): void;"
+    },
+    "llm/stream": {
+      "mode": "waterfall",
+      "signature": "'llm/stream'(this: LlmRuntime, options: GenerateOptions, next: () => AsyncIterable<StreamChunk>): AsyncIterable<StreamChunk>;"
+    }
+  },
+  "@deepseek-ai/dsh-session": {
+    "session/created": {
+      "mode": "emit",
+      "signature": "'session/created'(this: Scoped<Session>, session: Session): void;"
+    },
+    "session/disposed": {
+      "mode": "emit",
+      "signature": "'session/disposed'(this: Scoped<Session>, session: Session): void;"
+    },
+    "session/event": {
+      "mode": "emit",
+      "signature": "'session/event'(this: Scoped<Session>, session: Session, event: SessionEvent): void;"
+    },
+    "session/flush": {
+      "mode": "parallel",
+      "signature": "'session/flush'(this: Scoped<Session>, session: Session): Promise<void> | void;"
+    }
+  },
+  "@deepseek-ai/dsh-skill": {
+    "skills/change": {
+      "mode": "emit",
+      "signature": "'skills/change'(): void;"
+    }
+  },
+  "@deepseek-ai/dsh-system-prompt": {
+    "system-prompt/assemble": {
+      "mode": "waterfall",
+      "signature": "'system-prompt/assemble'(this: Scoped<SystemPrompt>, assembly: PromptPresentation, context: AssembleContext, next: () => Promise<PromptPresentation>): Promise<PromptPresentation>;"
+    },
+    "system-prompt/change": {
+      "mode": "emit",
+      "signature": "'system-prompt/change'(): void;"
+    }
+  },
+  "@deepseek-ai/dsh-tools": {
+    "tools/change": {
+      "mode": "emit",
+      "signature": "'tools/change'(): void;"
+    },
+    "tools/execute": {
+      "mode": "waterfall",
+      "signature": "'tools/execute'(this: Scoped<ToolsService>, exec: ToolDispatchExecution, next: () => Promise<ToolExecutionResult>): Promise<ToolExecutionResult>;"
+    },
+    "tools/post-execute": {
+      "mode": "waterfall",
+      "signature": "'tools/post-execute'(this: Scoped<ToolsService>, exec: ToolExecution, result: Readonly<ToolExecutionResult>, next: () => Promise<PostToolDecision>): Promise<PostToolDecision>;"
+    },
+    "tools/pre-execute": {
+      "mode": "waterfall",
+      "signature": "'tools/pre-execute'(this: Scoped<ToolsService>, exec: ToolExecution, next: () => Promise<PreToolDecision>): Promise<PreToolDecision>;"
+    },
+    "tools/result": {
+      "mode": "emit",
+      "signature": "'tools/result'(this: Scoped<ToolsService>, exec: Readonly<ToolExecution>, result: Readonly<ToolExecutionResult>): undefined;"
+    }
+  }
+}
