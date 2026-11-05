@@ -104,10 +104,13 @@
 - id: session-projection-cache
   disabled: true
 
-# The typed-RPC gateway mounts /api/remote.mux for dsh's own web client once
-# a client connection is mounted; the Studio has no such client.
+# The session controller reads the typed-RPC gateway's pending remote events,
+# so the gateway runs; its /api handler and /api/remote.mux serve dsh's own web
+# client, which the Studio has none of, and mount only beside a client
+# connection, which the gateway's own realm leaves out.
 - id: typert-gateway
-  disabled: true
+  isolate:
+    connection: true
 
 # A service applies the user layers at startup only, as serve does.
 - id: hmr
