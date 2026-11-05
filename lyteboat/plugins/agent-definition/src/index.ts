@@ -33,16 +33,6 @@ export interface LyteboatAgentToolPolicy {
   tools?: Record<string, LyteboatToolPolicy>
 }
 
-/**
- * Overrides laid over every model request of this agent's loop. The provider,
- * the model, and the reasoning effort stay the model selection's.
- */
-export interface LyteboatAgentModelRequest {
-  temperature?: number
-  maxTokens?: number
-  stop?: readonly string[]
-}
-
 /** The generic `render_a2ui` tool, over a templates directory relative to the agent directory. */
 export type LyteboatAgentA2uiRenderTool = Omit<RenderToolOptions, 'templates'> & { templatesDir: string }
 
@@ -52,10 +42,12 @@ export type LyteboatAgentTool = LyteboatToolMeta & { definition: ToolDefinition 
 /**
  * The events dsh delivers per agent: their listeners run with the agent as
  * `this`, so a listener in the agent's scope sees only this agent's events.
+ * `agent/request` is left out: dsh deprecated it (a model choice goes through
+ * `agent.model.select()` before the step is prepared).
  */
-export type LyteboatAgentEventName = {
+export type LyteboatAgentEventName = Exclude<{
   [EventName in keyof Events]: ThisParameterType<Events[EventName]> extends Scoped<object> ? EventName : never
-}[keyof Events]
+}[keyof Events], 'agent/request'>
 
 /** Event name → listener, for the events dsh delivers per agent (`agent/*`, `tools/*`, `lyteboat/intake`, `lyteboat/pre-assemble`, …). */
 export type LyteboatAgentEventListeners = { [EventName in LyteboatAgentEventName]?: Events[EventName] }
@@ -96,8 +88,6 @@ export interface LyteboatAgentDef {
   /** Overrides the host's routing defaults (`mode: off`) for this agent. */
   skillRouting?: Partial<SkillRouterSettings>
   toolPolicy?: LyteboatAgentToolPolicy
-  /** Its fields win over the same fields an `agent/request` listener in `eventListeners` returns. */
-  modelRequest?: LyteboatAgentModelRequest
   /** The agent's own tools, in registration order. */
   tools?: (host: LyteboatAgentHost) => readonly LyteboatAgentTool[]
   /** The admission that may answer a request at its turn's first step, without a model request. */

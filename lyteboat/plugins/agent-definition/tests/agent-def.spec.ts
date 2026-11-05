@@ -6,7 +6,8 @@ import type { GenerateOptions } from '@deepseek-ai/dsh-llm'
 import { createScope } from '@deepseek-ai/dsh-scope'
 import { SessionId } from '@deepseek-ai/dsh-session'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
-import { defineContentToolFixture, type ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { type ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { defineContentToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import A2uiService from '@lyteboat/a2ui'
 import { lyteboatAgentDef, type LyteboatAgentDef, type LyteboatAgentHost } from '@lyteboat/agent-definition'
 import LyteboatDistroService from '@lyteboat/distro'
@@ -46,7 +47,6 @@ const DESK_DEF: LyteboatAgentDef = {
   persona: { prefix: 'You are DESK.' },
   skillRouting: { mode: 'full' },
   toolPolicy: { inherited: 'hidden' },
-  modelRequest: { temperature: 0, maxTokens: 321 },
   tools: () => [{ definition: echo('lookup_quote'), visibility: 'auto' }],
   admission: () => ({ name: 'desk-admission', admit: async () => ({ decision: 'pass', verdict: 'in-scope' }) }),
   a2uiRenderTool: { templatesDir: 'assets/a2ui', name: 'render_notice' },
@@ -63,7 +63,7 @@ describe('lyteboatAgentDef', () => {
       ...DESK_DEF,
       eventListeners: (host) => {
         hosts.push(host)
-        return { 'agent/request': async (payload, next) => { requestTurns.push(payload.turn); return await next() } }
+        return { 'agent/pre-step': async (payload, next) => { requestTurns.push(payload.turn); return await next() } }
       },
     })
     const deskScope = await mountAgentStandingScope(ctx, join(AGENTS, 'desk'), DeskAgent)
@@ -76,8 +76,6 @@ describe('lyteboatAgentDef', () => {
     // full routing puts the default skill directory's skill in the prompt and activates the tool it requires.
     expect(systemText(request)).toContain('Call lookup_quote with the code the user names.')
     expect(request === undefined ? [] : toolNames(request)).toEqual(['lookup_quote', 'render_notice'])
-    expect(request?.temperature).toBe(0)
-    expect(request?.maxTokens).toBe(321)
     expect(requestTurns).toEqual([1])
     expect(ctx.requestAdmission.admissionFor(agent)?.name).toBe('desk-admission')
     expect(hosts[0]?.agentPath('assets/a2ui')).toBe(join(AGENTS, 'desk', 'assets', 'a2ui'))
@@ -90,7 +88,7 @@ describe('lyteboatAgentDef', () => {
     const requestTurns: string[] = []
     const DeskAgent = lyteboatAgentDef({
       ...DESK_DEF,
-      eventListeners: () => ({ 'agent/request': async (payload, next) => { requestTurns.push(payload.agent.session.id); return await next() } }),
+      eventListeners: () => ({ 'agent/pre-step': async (payload, next) => { requestTurns.push(payload.agent.session.id); return await next() } }),
     })
     const deskScope = await mountAgentStandingScope(ctx, join(AGENTS, 'desk'), DeskAgent)
     const desk = await deskScope.createAgentInstance('desk-session')
@@ -163,8 +161,11 @@ describe('lyteboatAgentDef', () => {
     const desk = join(AGENTS, 'desk')
     await expect(mountAgentStandingScope(ctx, desk, lyteboatAgentDef({ ...DESK_DEF, tools: () => [{ definition: echo('lookup_quote'), visiblity: 'auto' }] } as never)))
       .rejects.toThrow(/lyteboat agent def desk: tools: \[0\]: unknown key "visiblity"/u)
-    await expect(mountAgentStandingScope(ctx, desk, lyteboatAgentDef({ ...DESK_DEF, eventListeners: () => ({ 'agent/requst': () => undefined }) } as never)))
-      .rejects.toThrow(/lyteboat agent def desk: eventListeners: unknown event "agent\/requst" \(an agent listens to .*agent\/request,/u)
+    await expect(mountAgentStandingScope(ctx, desk, lyteboatAgentDef({ ...DESK_DEF, eventListeners: () => ({ 'agent/pre-stpe': () => undefined }) } as never)))
+      .rejects.toThrow(/lyteboat agent def desk: eventListeners: unknown event "agent\/pre-stpe" \(an agent listens to .*agent\/pre-step,/u)
+    // dsh deprecated agent/request; a model choice goes through agent.model.select() instead.
+    await expect(mountAgentStandingScope(ctx, desk, lyteboatAgentDef({ ...DESK_DEF, eventListeners: () => ({ 'agent/request': () => undefined }) } as never)))
+      .rejects.toThrow(/lyteboat agent def desk: eventListeners: unknown event "agent\/request"/u)
     await expect(mountAgentStandingScope(ctx, desk, lyteboatAgentDef({ ...DESK_DEF, tools: [] } as never)))
       .rejects.toThrow(/lyteboat agent def: tools: must be a function \(host\) => tools/u)
   })
