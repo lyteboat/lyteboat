@@ -14,8 +14,8 @@
 # G5. The canaries are the clean candidates, up to three per category in ranking order
 # (fewer where a category has fewer clean ones).
 #
-# The list is validated on dsh 0.2.1-rc.2 (replacements chosen 2026-10-18): G5 runs every canary on the official release
-# as well, and each one runs clean there. Five canaries of the 0.2.0-rc.2 list fail on the official 0.2.1-rc.2
+# The list is validated on dsh 0.2.2-rc.1 (2026-11-05): G5 runs every canary on the official release as well, and
+# each one runs clean there and on lyteboat, unchanged from the 0.2.1-rc.2 list (replacements chosen 2026-10-18). Five canaries of the 0.2.0-rc.2 list fail on the official 0.2.1-rc.2
 # itself: dsh-permission-rules 0.7.4, dsh-git-ui, and @yadsh/dsh-kv-persist are refused at install by their dsh peers,
 # dsh-file-review-kcoder was unpublished, and dsh-loom stays pending on the credentials service. dsh-permission-rules
 # moves to 0.7.15, its newest version, whose peers admit the release; the other four have no such version and are replaced by the next clean candidates of their
