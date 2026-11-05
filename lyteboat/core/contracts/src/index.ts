@@ -16,9 +16,9 @@
  * for cards and state deltas, the assistant message `source` for a reply's
  * author, dsh's own skill-invocation message for a routed skill — so every
  * lyteboat session reopens. The one record type of lyteboat's own,
- * `lyteboat/aux-llm-call`, is informational and appended ignorable (the kernel
- * extension `session-append-ignorable`), so a reader that does not know it
- * skips it.
+ * `plugin:lyteboat/aux-llm-call`, is informational and written as a dsh plugin
+ * record (`appendPluginRecord`, read back with `pluginRecordOf`), which every
+ * reader that does not know it skips.
  * @module @lyteboat/contracts
  */
 
@@ -187,7 +187,10 @@ export type LyteboatStateValue = { [key: string]: JsonValue }
 /** The schema of {@link LyteboatStateValue}. */
 export const lyteboatStateValueSchema: z.ZodType<LyteboatStateValue> = lyteboatJsonObjectSchema
 
-/** One side model call, as its `lyteboat/aux-llm-call` record keeps it. */
+/** The plugin record type of one side model call (`@lyteboat/model-side-call`); an older log's `lyteboat/aux-llm-call` reads back under this name. */
+export const LYTEBOAT_AUX_LLM_CALL_RECORD = 'plugin:lyteboat/aux-llm-call'
+
+/** One side model call, as its `plugin:lyteboat/aux-llm-call` record keeps it. */
 export interface LyteboatAuxLlmCallRecord {
   /** What the call was for: `skill-router`, `intake`, … */
   purpose: string
@@ -205,6 +208,20 @@ export interface LyteboatAuxLlmCallRecord {
   failure?: { reason: string; message: string }
   durationMs: number
 }
+
+/** The schema of {@link LyteboatAuxLlmCallRecord}; a stored record is checked against it before use. */
+export const lyteboatAuxLlmCallRecordSchema: z.ZodType<LyteboatAuxLlmCallRecord> = z.strictObject({
+  purpose: z.string(),
+  route: z.strictObject({ provider: z.string(), model: z.string() }),
+  system: z.string(),
+  prompt: z.string(),
+  maxTokens: z.number(),
+  temperature: z.number(),
+  reasoningEffort: z.string().exactOptional(),
+  output: z.string().exactOptional(),
+  failure: z.strictObject({ reason: z.string(), message: z.string() }).exactOptional(),
+  durationMs: z.number(),
+})
 
 /**
  * An admission function's decision on one request, made at its turn's first
@@ -523,7 +540,7 @@ export type LyteboatTurnOutcome = {
   steps: number
   /** Model answers and failed attempts that streamed. */
   modelRequests: number
-  /** Side model calls (`lyteboat/aux-llm-call`) made while the turn was open. */
+  /** Side model calls (`plugin:lyteboat/aux-llm-call` records) made while the turn was open. */
   auxCalls: number
   /** When the first content arrived: the first answer text streamed, an answer with text, or an immediate card. */
   firstContentAt?: number
@@ -742,36 +759,19 @@ declare module '@deepseek-ai/dsh-llm' {
 }
 
 declare module '@deepseek-ai/dsh-session/types' {
-  interface SessionEventMap {
-    /**
-     * One side model call a plugin made for the agent, appended ignorable by
-     * `@lyteboat/model-side-call`: no reader needs it to rebuild the session.
-     */
-    'lyteboat/aux-llm-call': LyteboatAuxLlmCallRecord
+  interface PluginRecordMap {
+    /** One side model call a plugin made for the agent, written by `@lyteboat/model-side-call`: no reader needs it to rebuild the session. */
+    'plugin:lyteboat/aux-llm-call': LyteboatAuxLlmCallRecord
   }
 }
 
 declare module '@deepseek-ai/dsh-session-projection/types' {
-  interface SessionProjectionStateMap {
-    /** Session tool state (host fold of `tool/result.meta.lyteboat.stateDelta`), owned by `@lyteboat/tool-policy`. */
-    lyteboatState: LyteboatStateValue
-    /** The skill active for the session, folded from skill-invocation messages and `skill` tool calls; owned by `@lyteboat/skill-router`. */
-    lyteboatActiveSkill: LyteboatActiveSkillState
-    /** Cards from `tool/result.meta.lyteboat.cards` and admission replies, in log order; a `surfaceUpdate` replaces its surface. Owned by `@lyteboat/a2ui`. */
-    lyteboatCards: LyteboatCard[]
-    /** The request context and the latest verdict, folded from human messages that carry a request. Owned by `@lyteboat/request-context`. */
-    lyteboatRequest: LyteboatRequestState
-    /** Each turn's request, counts, tool calls, and outcome, folded from the log; host-only. Owned by `@lyteboat/turn-outcome`. */
-    lyteboatTurnOutcomes: LyteboatTurnOutcomesState
-    /** The trace ids the session already holds, from its requests and imported rounds; host-only. Owned by `@lyteboat/history-import`. */
-    lyteboatTraceIds: LyteboatTraceIdsState
-  }
   interface SessionProjectionMap {
     /** Session tool state as the client sees it: the fold state itself. */
     lyteboatState: LyteboatStateValue
     /** The active skill as the client sees it; null before any skill is active. */
     lyteboatActiveSkill: string | null
-    /** Every card the session prepared, as the client sees it; what a turn shows is `ctx.a2ui.turnParts`. */
+    /** Every card the session prepared, as the client sees it; what one turn shows is an `a2ui` live turn fed with that turn's events. */
     lyteboatCards: LyteboatCard[]
     /** The request state as the client sees it. */
     lyteboatRequest: LyteboatRequestState

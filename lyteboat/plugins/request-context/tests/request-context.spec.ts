@@ -67,7 +67,7 @@ describe('the request on a human message', () => {
     expect(ctx.requestContext.contextOf(agent)).toEqual({ customer: 'c-1', channel: 'app' })
 
     await send(agent, ctx.requestContext.message('第三句', { context: { customer: 'c-2' } }))
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatRequest')).toEqual({ requests: 3, context: { customer: 'c-2' }, intake: null, owner: null })
+    expect(ctx.sessionProjections.snapshot(agent.session, ['lyteboatRequest']).values['lyteboatRequest']).toEqual({ requests: 3, context: { customer: 'c-2' }, intake: null, owner: null })
   })
 
   it('keeps the first owner a request names as the session owner', async () => {
@@ -78,7 +78,7 @@ describe('the request on a human message', () => {
     await send(agent, ctx.requestContext.message('第二句', { owner: { kind: 'user', id: 'u-1' }, traceId: 't-1' }))
     await send(agent, ctx.requestContext.message('第三句', { owner: { kind: 'user', id: 'u-2' } }))
 
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatRequest')?.owner).toEqual({ kind: 'user', id: 'u-1' })
+    expect(ctx.sessionProjections.snapshot(agent.session, ['lyteboatRequest']).values['lyteboatRequest']).toMatchObject({ owner: { kind: 'user', id: 'u-1' } })
   })
 })
 

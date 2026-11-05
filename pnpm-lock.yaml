@@ -62,7 +62,13 @@ catalogs:
     '@deepseek-ai/dsh-scope':
       specifier: 0.2.2-rc.1
       version: 0.2.2-rc.1
+    '@deepseek-ai/dsh-session-query':
+      specifier: 0.2.2-rc.1
+      version: 0.2.2-rc.1
     '@deepseek-ai/dsh-skill-filesystem':
+      specifier: 0.2.2-rc.1
+      version: 0.2.2-rc.1
+    '@deepseek-ai/dsh-tool-testkit':
       specifier: 0.2.2-rc.1
       version: 0.2.2-rc.1
     '@deepseek-ai/dsh-typert-generator':
@@ -1171,6 +1177,9 @@ importers:
       '@deepseek-ai/dsh-skill':
         specifier: workspace:*
         version: link:../../../dsh/skill/skill
+      '@deepseek-ai/dsh-tool-testkit':
+        specifier: catalog:dsh
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-tools@dsh+core+tools)
       '@lyteboat/a2ui':
         specifier: workspace:*
         version: link:../../../lyteboat/plugins/a2ui
@@ -1939,6 +1948,9 @@ importers:
       '@deepseek-ai/dsh-skill-filesystem':
         specifier: catalog:dsh
         version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-fs@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-brand@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0))(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-sandbox@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-session@dsh+core+session)))(@deepseek-ai/dsh-home-paths@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0))(@deepseek-ai/dsh-skill@dsh+skill+skill)
+      '@deepseek-ai/dsh-tool-testkit':
+        specifier: catalog:dsh
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-tools@dsh+core+tools)
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../../dsh/core/tools
@@ -1982,6 +1994,9 @@ importers:
       '@deepseek-ai/dsh-agent-preset-registry':
         specifier: catalog:dsh
         version: 0.2.2-rc.1(@deepseek-ai/cordis-plugin-group@1.1.0(@deepseek-ai/cordis-plugin-loader@1.1.0)(@deepseek-ai/cordis@4.1.0))(@deepseek-ai/cordis-plugin-include@1.1.0)(@deepseek-ai/cordis-plugin-loader@1.1.0)(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-home-paths@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0))(@deepseek-ai/dsh-launch-environment@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0))(@deepseek-ai/dsh-scope@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0))(@deepseek-ai/dsh-settings@0.2.2-rc.1(52adf76172e082009ce44b3d653c0411))(@deepseek-ai/dsh-tools@dsh+core+tools)(@deepseek-ai/dsh-typert-protocol@0.2.2-rc.1(@deepseek-ai/cordis@4.1.0))
+      '@deepseek-ai/dsh-tool-testkit':
+        specifier: catalog:dsh
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-tools@dsh+core+tools)
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../../dsh/core/tools
@@ -2117,6 +2132,9 @@ importers:
       '@deepseek-ai/dsh-session':
         specifier: workspace:*
         version: link:../../../dsh/core/session
+      '@deepseek-ai/dsh-session-query':
+        specifier: catalog:dsh
+        version: 0.2.2-rc.1(3127976f750e9086b8a18332878afbf9)
       '@lyteboat/testkit':
         specifier: workspace:*
         version: link:../../test-support/testkit
@@ -2179,9 +2197,6 @@ importers:
       '@deepseek-ai/dsh-session':
         specifier: workspace:*
         version: link:../../../dsh/core/session
-      '@lyteboat/distro':
-        specifier: workspace:*
-        version: link:../distro
       '@lyteboat/testkit':
         specifier: workspace:*
         version: link:../../test-support/testkit
@@ -2330,6 +2345,9 @@ importers:
       '@deepseek-ai/dsh-system-prompt':
         specifier: workspace:*
         version: link:../../../dsh/core/system-prompt
+      '@deepseek-ai/dsh-tool-testkit':
+        specifier: catalog:dsh
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-tools@dsh+core+tools)
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../../dsh/core/tools
@@ -2517,6 +2535,9 @@ importers:
       '@deepseek-ai/dsh-system-prompt':
         specifier: workspace:*
         version: link:../../../dsh/core/system-prompt
+      '@deepseek-ai/dsh-tool-testkit':
+        specifier: catalog:dsh
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-tools@dsh+core+tools)
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../../dsh/core/tools
@@ -2538,6 +2559,9 @@ importers:
       '@lyteboat/contracts':
         specifier: workspace:*
         version: link:../../core/contracts
+      '@lyteboat/skill-router':
+        specifier: workspace:*
+        version: link:../skill-router
       '@lyteboat/turn-outcome':
         specifier: workspace:*
         version: link:../turn-outcome
@@ -2554,9 +2578,12 @@ importers:
       '@deepseek-ai/dsh-session':
         specifier: workspace:*
         version: link:../../../dsh/core/session
-      '@deepseek-ai/dsh-session-projection':
+      '@deepseek-ai/dsh-skill':
         specifier: workspace:*
-        version: link:../../../dsh/session/session-projection
+        version: link:../../../dsh/skill/skill
+      '@deepseek-ai/dsh-tool-testkit':
+        specifier: catalog:dsh
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-tools@dsh+core+tools)
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../../dsh/core/tools
@@ -2566,9 +2593,15 @@ importers:
       '@lyteboat/history-import':
         specifier: workspace:*
         version: link:../history-import
+      '@lyteboat/model-side-call':
+        specifier: workspace:*
+        version: link:../model-side-call
       '@lyteboat/testkit':
         specifier: workspace:*
         version: link:../../test-support/testkit
+      '@lyteboat/tool-policy':
+        specifier: workspace:*
+        version: link:../tool-policy
 
   lyteboat/plugins/turn-outcome:
     dependencies:
@@ -2591,6 +2624,9 @@ importers:
       '@deepseek-ai/dsh-session-projection':
         specifier: workspace:*
         version: link:../../../dsh/session/session-projection
+      '@deepseek-ai/dsh-tool-testkit':
+        specifier: catalog:dsh
+        version: 0.2.2-rc.1(@deepseek-ai/cordis@4.1.0)(@deepseek-ai/dsh-llm@dsh+llm+llm)(@deepseek-ai/dsh-tools@dsh+core+tools)
       '@deepseek-ai/dsh-tools':
         specifier: workspace:*
         version: link:../../../dsh/core/tools

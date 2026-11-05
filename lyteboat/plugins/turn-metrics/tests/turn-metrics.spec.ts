@@ -12,12 +12,16 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import { SessionId } from '@deepseek-ai/dsh-session'
-import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
+import SkillRegistry from '@deepseek-ai/dsh-skill'
+import { defineContentToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import type { LyteboatTurnHeartbeat, LyteboatTurnMetric } from '@lyteboat/contracts'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testkit'
 import { readJsonLines } from '@lyteboat/testkit/json-lines'
 import LyteboatDistroService from '@lyteboat/distro'
 import HistoryImportService from '@lyteboat/history-import'
+import ModelSideCallService from '@lyteboat/model-side-call'
+import SkillRouterService from '@lyteboat/skill-router'
+import ToolPolicyService from '@lyteboat/tool-policy'
 import TurnMetricsRecorder from '@lyteboat/turn-metrics'
 import TurnMetricsReaderService from '@lyteboat/turn-metrics/reader'
 import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
@@ -26,6 +30,11 @@ import { turnMetricDayOf } from '../src/turn-metric-files.ts'
 
 async function recorderHost(adapter: MockAdapter, dir: string): Promise<Context> {
   const ctx = await createLyteboatUnitHost(adapter)
+  await ctx.plugin(SkillRegistry)
+  await ctx.plugin(LyteboatDistroService)
+  await ctx.plugin(ToolPolicyService)
+  await ctx.plugin(ModelSideCallService)
+  await ctx.plugin(SkillRouterService)
   await ctx.plugin(TurnOutcomeService)
   await ctx.plugin(TurnMetricsRecorder, { dir, heartbeatMs: 60_000 })
   for (const name of ['lookup', 'skill']) {
@@ -99,7 +108,6 @@ describe('the turn-metrics recorder', () => {
   it('leaves out an imported round\'s turn and records the question behind it', async () => {
     const dir = lyteboatTempDir('turn-metrics')
     const ctx = await recorderHost(new MockAdapter([textResponse('hi')]), dir)
-    await ctx.plugin(LyteboatDistroService)
     await ctx.plugin(HistoryImportService)
     const agent = await agentOf(ctx, 'imported', 'alpha')
 

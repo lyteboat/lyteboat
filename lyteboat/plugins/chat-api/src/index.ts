@@ -9,8 +9,9 @@
  * caller brings is queued first (`historyImport.enqueue`): each round the
  * session lacks by trace id becomes a turn of its own ahead of the message.
  * The answer returns as one JSON body or as an enterprise event stream (SSE), its cards
- * placed where the answer puts them, as `a2ui.turnParts` lays the turn out,
- * and its outcome as `turnOutcome` folds it.
+ * placed where the answer puts them, as an `a2ui` live turn lays the turn out
+ * from the events `turnOutcome.follow` hears, and its outcome as `turnOutcome`
+ * folds it. A message id the session already answered is refused.
  *
  * `auth: none` serves only a loopback listener; any other listener needs
  * `shared-secret`, a bearer token resolved from `credentialRef` per request.
@@ -198,7 +199,7 @@ export class ChatApiService extends Service {
   }
 
   /** The session a request continues or starts, after checking the caller and the agent. */
-  private async sessionFor(request: ChatRequest, agent: AgentCatalogEntry, messageId: string): Promise<SessionId> {
+  private async sessionFor(request: ChatRequest, agent: AgentCatalogEntry): Promise<SessionId> {
     if (request.sessionId === undefined) {
       const created = await this.ctx.sessionController.create({ cwd: agent.workdir, agentPreset: agent.id })
       return created.sessionId
@@ -214,9 +215,6 @@ export class ChatApiService extends Service {
     if (agentPreset !== request.agentId) {
       throw new ChatApiError('agent_mismatch', `session ${JSON.stringify(sessionId)} runs agent ${JSON.stringify(agentPreset ?? null)}, not ${JSON.stringify(request.agentId)}`)
     }
-    const inspection = await this.ctx.sessionController.inspect(sessionId)
-    const seen = inspection.events.some(event => event.type === 'user/message' && (event.data.source as { rpcId?: unknown }).rpcId === messageId)
-    if (seen) throw new ChatApiError('message_duplicate', `message ${JSON.stringify(messageId)} was already sent in this session`)
     return sessionId
   }
 
@@ -255,12 +253,15 @@ export class ChatApiService extends Service {
       if (chat.sessionId !== undefined && this.inFlight.has(`${chat.sessionId}\0${messageId}`)) {
         throw new ChatApiError('message_duplicate', `message ${JSON.stringify(messageId)} is already being answered`)
       }
-      const sessionId = await this.sessionFor(chat, agent, messageId)
+      const sessionId = await this.sessionFor(chat, agent)
       key = `${sessionId}\0${messageId}`
       if (this.inFlight.has(key)) throw new ChatApiError('message_duplicate', `message ${JSON.stringify(messageId)} is already being answered`)
       this.inFlight.add(key)
       const resolved = await this.ctx.sessionController.resolveAgent(sessionId)
       if ('error' in resolved) throw new ChatApiError('internal', resolved.error.message)
+      if (this.ctx.turnOutcome.forRequest(resolved.agent.session, messageId) !== undefined) {
+        throw new ChatApiError('message_duplicate', `message ${JSON.stringify(messageId)} was already sent in this session`)
+      }
       if (chat.history !== undefined) this.ctx.historyImport.enqueue(resolved.agent, this.ctx.historyImport.parse(chat.history))
       await this.answerTurn(chat, sessionId, messageId, resolved.agent, agent.identity, response)
     } catch (error: unknown) {

@@ -3,7 +3,8 @@
  * owns the template engine (the reference template mode, ported), the `render_a2ui`
  * tool a composition registers over a templates root, the `lyteboatCards`
  * projection that collects every prepared card from `tool/result.meta`, and
- * `turnParts`, which lays one finished turn out as a client shows it.
+ * `liveTurn`, which lays one turn out as a client shows it from that turn's
+ * events (`turnOutcome.follow`) and its streamed text.
  *
  * The tool reads its raw data from the session's `lyteboatState` projection (the
  * configured state keys, as the reference `state_keys`), renders the chosen card, and
@@ -18,7 +19,7 @@
 
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { SessionSeq, type Session, type SessionLogOffset } from '@deepseek-ai/dsh-session'
+import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { lyteboatResultCardSchema } from '@lyteboat/contracts'
 import type { LyteboatCard, LyteboatResultCard } from '@lyteboat/contracts'
@@ -31,7 +32,6 @@ import type { A2uiComponentCatalog } from './contract.ts'
 import { collectRawData, parseObjectArgs } from './render-tool-input.ts'
 import type { A2uiLog, RawData } from './transforms.ts'
 import { LyteboatLiveTurn } from './live-turn.ts'
-import type { LyteboatTurnPart } from './turn-parts.ts'
 
 export { cardsPresentationMeta } from './cards-projection.ts'
 export type { TemplateRenderOptions, TemplateRenderResult } from './engine.ts'
@@ -90,10 +90,14 @@ export class A2uiService extends Service {
   static inject = ['tools', 'toolPolicy', 'sessionProjections']
 
   private readonly engines = new Map<string, TemplateEngine>()
+  private cardsHandle!: ProjectionHandle<LyteboatCard[]>
 
   constructor(ctx: Context) {
     super(ctx, 'a2ui')
-    ctx.sessionProjections.register(lyteboatCardsProjectionDefinition)
+  }
+
+  async [Service.init](): Promise<void> {
+    this.cardsHandle = await this.ctx.sessionProjections.register(lyteboatCardsProjectionDefinition)
   }
 
   /** The log the engines degrade into. */
@@ -137,30 +141,15 @@ export class A2uiService extends Service {
 
   /** The cards one agent's session has prepared, in log order. */
   cardsOf(agent: Agent): LyteboatCard[] {
-    return this.ctx.sessionProjections.stateOf(agent.session, 'lyteboatCards') ?? []
+    return this.cardsHandle.stateOf(agent.session)
   }
 
   /**
-   * One finished turn as a client shows it: its answer text, step by step,
-   * with the cards its results (and an admission reply) prepared, placed by
-   * their markers and emission modes. A {@link liveTurn} fed as the turn
-   * happens shows the same parts.
-   * @param session - the session the turn ran in.
-   * @param fromSeq - the log position the turn starts at.
-   */
-  turnParts(session: Session, fromSeq: SessionLogOffset): LyteboatTurnPart[] {
-    const turn = new LyteboatLiveTurn()
-    for (let seq = fromSeq; seq < session.seq; seq++) {
-      const event = session.eventAt(SessionSeq(seq))
-      if (event !== undefined) turn.event(event)
-    }
-    return turn.parts()
-  }
-
-  /**
-   * A turn to feed as it happens, for a caller that streams it: the
-   * session's events and the assistant's streamed text, each returning the
-   * parts it adds.
+   * One turn as a client shows it: its answer text, step by step, with the
+   * cards its results (and an admission reply) prepared, placed by their
+   * markers and emission modes. Feed it the turn's events (`turnOutcome.follow`)
+   * and, for a caller that streams, the assistant's streamed text; each call
+   * returns the parts it adds, and `parts()` gives the whole turn.
    */
   liveTurn(): LyteboatLiveTurn {
     return new LyteboatLiveTurn()
@@ -182,7 +171,7 @@ export class A2uiService extends Service {
     const validation = options.validation ?? 'warn'
     const components = options.components ?? DEFAULT_A2UI_COMPONENT_CATALOG
     const log = this.log
-    const projections = this.ctx.sessionProjections
+    const toolPolicy = this.ctx.toolPolicy
     const tool = defineTool({
       name: options.name ?? 'render_a2ui',
       description: describeTool(catalog, options.cardDescriptions ?? {}),
@@ -226,7 +215,7 @@ export class A2uiService extends Service {
           .filter(([name, spec]) => spec['required'] === true && !templateArgs?.[name])
           .map(([name]) => name)
         if (missing.length > 0) log.warn(`template '${card}' 缺少必填 template_args [${missing.map(name => `'${name}'`).join(', ')}]（模型未抽取，卡片可能降级）`)
-        const raw = collectRawData(projections.stateOf(agent.session, 'lyteboatState'), stateKeys)
+        const raw = collectRawData(toolPolicy.sessionState(agent.session), stateKeys)
         if (templateArgs !== undefined) raw['args'] = templateArgs
         const result = await engine.render(card, raw, {
           hierarchy: typeof args.business_hierarchy === 'string' && args.business_hierarchy.trim() !== '' ? args.business_hierarchy.trim() : undefined,

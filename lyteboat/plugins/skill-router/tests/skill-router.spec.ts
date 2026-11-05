@@ -9,14 +9,15 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createScope } from '@deepseek-ai/dsh-scope'
 import type { GenerateOptions, UserMessage } from '@deepseek-ai/dsh-llm'
-import { SessionId, SessionLogOffset, SessionSeq, buildForkSeed, type SessionEvent } from '@deepseek-ai/dsh-session'
+import { SessionId, SessionLogOffset, SessionSeq, buildForkSeed, pluginRecordOf, type PluginRecord, type SessionEvent } from '@deepseek-ai/dsh-session'
 import SkillRegistry, { renderSkillContent } from '@deepseek-ai/dsh-skill'
-import { defineContentToolFixture, type ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { type ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { defineContentToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testkit'
 import LyteboatDistroService from '@lyteboat/distro'
 import ModelSideCallService from '@lyteboat/model-side-call'
 import ToolPolicyService from '@lyteboat/tool-policy'
-import type { LyteboatActiveSkillState } from '@lyteboat/contracts'
+import { LYTEBOAT_AUX_LLM_CALL_RECORD, lyteboatAuxLlmCallRecordSchema, type LyteboatActiveSkillState, type LyteboatAuxLlmCallRecord } from '@lyteboat/contracts'
 import SkillRouterService, { lyteboatActiveSkillProjectionDefinition, type Config } from '@lyteboat/skill-router'
 
 async function harness(adapter: MockAdapter, config: Config): Promise<Context> {
@@ -50,8 +51,11 @@ const invocations = (agent: Agent): [string, string][] =>
     .map(event => event.data)
     .filter((message: UserMessage) => message.source.kind === 'skill-invocation')
     .map(message => [message.source.kind === 'skill-invocation' ? message.source.name : '', message.content.map(block => block.type === 'text' ? block.text : '').join('\n')])
-const routerCalls = (agent: Agent): SessionEvent<'lyteboat/aux-llm-call'>[] =>
-  agent.session.snapshotEvents().filter((event): event is SessionEvent<'lyteboat/aux-llm-call'> => event.type === 'lyteboat/aux-llm-call')
+const routerCalls = (agent: Agent): (PluginRecord & { data: LyteboatAuxLlmCallRecord })[] =>
+  agent.session.snapshotEvents().flatMap((event) => {
+    const record = pluginRecordOf(event)
+    return record?.type === LYTEBOAT_AUX_LLM_CALL_RECORD ? [{ ...record, data: lyteboatAuxLlmCallRecordSchema.parse(record.data) }] : []
+  })
 const countOf = (text: string, part: string): number => text.split(part).length - 1
 const stepError = (agent: Agent): string => {
   const turnEnd = agent.session.snapshotEvents().findLast(event => event.type === 'turn/end') as SessionEvent<'turn/end'> | undefined
@@ -84,17 +88,17 @@ describe('dynamic mode', () => {
     expect(messagesText(first)).toContain('BODY-ASSET')
     expect(messagesText(first)).not.toContain('BODY-NEWS')
     expect(invocations(agent).map(([skill]) => skill)).toEqual(['asset-overview'])
-    expect(ctx.skillRouter.activeOf(agent)).toBe('asset-overview')
+    expect(ctx.skillRouter.activeOf(agent.session)).toBe('asset-overview')
     expect(ctx.sessionProjections.snapshot(agent.session).values['lyteboatActiveSkill']).toBe('asset-overview')
     const [audit] = routerCalls(agent)
-    expect(audit?.ignorable).toBe(true)
+    expect(audit?.type).toBe(LYTEBOAT_AUX_LLM_CALL_RECORD)
     expect(audit?.data).toMatchObject({ purpose: 'skill-router', route: { provider: 'mock', model: 'mock' }, maxTokens: 200, temperature: 0, output: '{"skill_id": "asset-overview", "reason": "看资产"}' })
     expect(audit?.data.prompt).toContain('<latest_user_input>看看我的资产</latest_user_input>')
 
     // Router says null: kept, and the body already in view is not injected again.
     await send(agent, '那总额呢')
     expect(invocations(agent)).toHaveLength(1)
-    expect(ctx.skillRouter.activeOf(agent)).toBe('asset-overview')
+    expect(ctx.skillRouter.activeOf(agent.session)).toBe('asset-overview')
     expect(messagesText(routerRequests(adapter)[1]!)).toContain('<current_active_skill>asset-overview</current_active_skill>')
     expect(messagesText(routerRequests(adapter)[1]!)).toContain('user: 看看我的资产')
     expect(toolNames(loopRequests(adapter)[1]!)).toEqual(['always_tool', 'lookup_assets'])
@@ -104,7 +108,7 @@ describe('dynamic mode', () => {
     await send(agent, '再说一遍')
     expect(routerCalls(agent).map(call => call.data.output)).toEqual(['{"skill_id": "asset-overview", "reason": "看资产"}', '{"skill_id": null, "reason": "追问"}', 'garbage'])
     expect(invocations(agent)).toHaveLength(1)
-    expect(ctx.skillRouter.activeOf(agent)).toBe('asset-overview')
+    expect(ctx.skillRouter.activeOf(agent.session)).toBe('asset-overview')
 
     // A valid new id switches: new body with a note on what it replaces, the previous skill's tools hidden.
     await send(agent, '今天行情怎么样')
@@ -113,7 +117,7 @@ describe('dynamic mode', () => {
     const fourth = loopRequests(adapter)[3]!
     expect(toolNames(fourth)).toEqual(['always_tool', 'fetch_news'])
     expect(messagesText(fourth)).toContain('BODY-NEWS')
-    expect(ctx.skillRouter.activeOf(agent)).toBe('market-news')
+    expect(ctx.skillRouter.activeOf(agent.session)).toBe('market-news')
   })
 
   it('keeps the current skill when the router call fails, records the failure, and injects nothing', async () => {
@@ -124,7 +128,7 @@ describe('dynamic mode', () => {
     const agent = await ctx.agentLoop.create(SessionId('failing'), { provider: 'mock', model: 'mock' })
     await send(agent, '看看资产')
     expect(routerCalls(agent).map(call => call.data.failure)).toEqual([{ reason: 'Error', message: 'boom' }])
-    expect(ctx.skillRouter.activeOf(agent)).toBeNull()
+    expect(ctx.skillRouter.activeOf(agent.session)).toBeNull()
     expect(invocations(agent)).toHaveLength(0)
     expect(loopRequests(adapter)).toHaveLength(1)
     expect(toolNames(loopRequests(adapter)[0]!)).toEqual(['always_tool'])
@@ -144,7 +148,7 @@ describe('dynamic mode', () => {
     }))
     const agent = await ctx.agentLoop.create(SessionId('model-load'), { provider: 'mock', model: 'mock' })
     await send(agent, '你好')
-    expect(ctx.skillRouter.activeOf(agent)).toBe('market-news')
+    expect(ctx.skillRouter.activeOf(agent.session)).toBe('market-news')
     const second = loopRequests(adapter)[1]!
     expect(toolNames(second)).toContain('fetch_news')
     expect(countOf(messagesText(second), 'BODY-NEWS')).toBe(1)
@@ -185,7 +189,7 @@ describe('dynamic mode', () => {
       inheritedEventCount: SessionLogOffset(events.length),
       agentOptions: { provider: 'mock', model: 'mock' },
     })
-    expect(ctx.skillRouter.activeOf(agent)).toBe('asset-overview')
+    expect(ctx.skillRouter.activeOf(agent.session)).toBe('asset-overview')
 
     await send(agent, '那总额呢')
     const request = loopRequests(adapter)[1]!
@@ -258,7 +262,7 @@ describe('off mode and preset settings', () => {
     await send(routedAgent, '行情')
     expect(routerRequests(adapter)).toHaveLength(1)
     expect(messagesText(routerRequests(adapter)[0]!)).toContain('(empty)')
-    expect(ctx.skillRouter.activeOf(routedAgent)).toBe('market-news')
+    expect(ctx.skillRouter.activeOf(routedAgent.session)).toBe('market-news')
   })
 })
 

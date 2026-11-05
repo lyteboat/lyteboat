@@ -14,7 +14,7 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { ContentBlock, GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import type { SessionEvent } from '@deepseek-ai/dsh-session'
 import SkillRegistry from '@deepseek-ai/dsh-skill'
-import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
+import { defineContentToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import { MockAdapter, createLyteboatUnitHost, mountAgentStandingScope, textResponse, toolCallResponse, type AgentStandingScope } from '@lyteboat/testkit'
 import ToolPolicyService from '@lyteboat/tool-policy'
 import LyteboatDistroService from '@lyteboat/distro'
@@ -151,7 +151,7 @@ describe('the finance agent on the unit host (scripted model)', () => {
     expect(results(agent)[0]?.text).toContain('status=fallback')
     expect(payloadsOf(agent)).toEqual([])
     // A pass is not recorded on the request; only a reply is.
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatRequest')?.intake).toBeNull()
+    expect(ctx.sessionProjections.snapshot(agent.session, ['lyteboatRequest']).values['lyteboatRequest']).toMatchObject({ intake: null })
   })
 
   it('every card passes strict A2UI validation when one session renders the overview and the diagnosis', async () => {

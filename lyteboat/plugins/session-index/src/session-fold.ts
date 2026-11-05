@@ -6,9 +6,11 @@
  * timing from the step's start; a tool call is paired with its result by call
  * id, which brings the areas of the cards it rendered and its state delta
  * (`tool/result.meta.lyteboat`, read from the appended result only); a side
- * model call is its `lyteboat/aux-llm-call` record, placed after the turn's
- * human message when it came first (the router and the intake classifier
- * decide on the queued message before the step records it). A surface replacement
+ * model call is its `plugin:lyteboat/aux-llm-call` record, placed after the
+ * turn's human message when it came first (the router and the intake
+ * classifier decide on the queued message before the step records it); a
+ * record that fails its schema is left out, as a reader that does not know it
+ * skips it. A surface replacement
  * (compaction, pruning) is shown once: a pruned tool result marks its call,
  * any other replacement is a compaction entry. A turn's outcome is the one
  * `turnOutcome.fold` gives for it. Imported history (events before the
@@ -18,11 +20,13 @@
  */
 
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
-import type { SessionEvent, SessionHeader } from '@deepseek-ai/dsh-session'
+import { pluginRecordOf, type SessionEvent, type SessionHeader } from '@deepseek-ai/dsh-session'
 import type {} from '@deepseek-ai/dsh-skill'
 import {
   LYTEBOAT_ASSISTANT_PROVIDER,
+  LYTEBOAT_AUX_LLM_CALL_RECORD,
   LYTEBOAT_HISTORY_IMPORT_SOURCE,
+  lyteboatAuxLlmCallRecordSchema,
   lyteboatRequestSchema,
   lyteboatResultMetaSchema,
   type JsonValue,
@@ -144,6 +148,16 @@ class SessionFold {
   add(event: SessionEvent): void {
     this.updatedAt = Math.max(this.updatedAt, event.time)
     const imported = event.seq < this.inherited || this.outcomes.get(this.turn)?.imported === true
+    const record = pluginRecordOf(event)
+    if (record !== undefined) {
+      const aux = record.type === LYTEBOAT_AUX_LLM_CALL_RECORD ? lyteboatAuxLlmCallRecordSchema.safeParse(record.data) : undefined
+      if (aux?.success !== true) return
+      (this.turnHasMessage ? this.items : this.heldAux).push({
+        kind: 'aux', seq: record.seq, turn: this.turn, time: record.time, purpose: aux.data.purpose, durationMs: aux.data.durationMs,
+        ...aux.data.failure === undefined ? {} : { failure: aux.data.failure.reason },
+      })
+      return
+    }
     switch (event.type) {
       case 'turn/start':
         this.releaseAux()
@@ -160,12 +174,6 @@ class SessionFold {
       case 'assistant/message': return this.assistantMessage(event, imported)
       case 'tool/call': return this.toolCall(event)
       case 'tool/result': return this.toolResult(event, imported)
-      case 'lyteboat/aux-llm-call':
-        (this.turnHasMessage ? this.items : this.heldAux).push({
-          kind: 'aux', seq: event.seq, turn: this.turn, time: event.time, purpose: event.data.purpose, durationMs: event.data.durationMs,
-          ...event.data.failure === undefined ? {} : { failure: event.data.failure.reason },
-        })
-        return
       default:
         // Log-only records (request headers, attempts, developer and system messages) are not on the timeline.
         return

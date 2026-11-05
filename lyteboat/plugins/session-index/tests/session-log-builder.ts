@@ -8,7 +8,7 @@
  */
 import { createAssistantMessage, createToolResultMessage, createUserMessage, ToolCallId, type ContentBlock, type UserMessage } from '@deepseek-ai/dsh-llm'
 import { SESSION_FORMAT_VERSION, SessionId, SessionSeq, type SessionEvent, type SessionHeader, type TurnEndReason } from '@deepseek-ai/dsh-session'
-import { LYTEBOAT_ASSISTANT_PROVIDER, LYTEBOAT_HISTORY_IMPORT_SOURCE, type JsonValue, type LyteboatAuxLlmCallRecord, type LyteboatRequest } from '@lyteboat/contracts'
+import { LYTEBOAT_ASSISTANT_PROVIDER, LYTEBOAT_AUX_LLM_CALL_RECORD, LYTEBOAT_HISTORY_IMPORT_SOURCE, type JsonValue, type LyteboatAuxLlmCallRecord, type LyteboatRequest } from '@lyteboat/contracts'
 
 const text = (value: string): ContentBlock[] => [{ type: 'text', text: value }]
 
@@ -104,7 +104,7 @@ export class SessionLogBuilder {
 
   aux(record: Partial<LyteboatAuxLlmCallRecord> = {}): this {
     const data: LyteboatAuxLlmCallRecord = { purpose: 'skill-router', route: { provider: 'mock', model: 'm1' }, system: 's', prompt: 'p', maxTokens: 200, temperature: 0, durationMs: 120, ...record }
-    return this.push({ type: 'lyteboat/aux-llm-call', data, ignorable: true })
+    return this.push({ type: LYTEBOAT_AUX_LLM_CALL_RECORD, data, ignorable: true })
   }
 
   turnEnd(kind: TurnEndReason['kind'] = 'completed'): this {

@@ -86,7 +86,7 @@ describe('render_a2ui', () => {
     expect(cards[0]).toMatchObject({ callId: 'c2', surfaceId: payload['surfaceId'] })
     expect(ctx.sessionProjections.snapshot(agent.session).values['lyteboatCards']).toEqual(cards)
     expect(JSON.stringify(adapter.requests[2]!.messages)).toContain(FULL.digest)
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatState')).toMatchObject({ assets_view: { auth_state: 'full' } })
+    expect(ctx.toolPolicy.sessionState(agent.session)).toMatchObject({ assets_view: { auth_state: 'full' } })
   })
 
   it('replaces a surface in lyteboatCards on surfaceUpdate and concludes the turn on a terminal card', async () => {

@@ -27,6 +27,7 @@
   ],
   "dependencies": {
     "@lyteboat/contracts": "workspace:*",
+    "@lyteboat/skill-router": "workspace:*",
     "@lyteboat/turn-outcome": "workspace:*",
     "@deepseek-ai/dsh-home-paths": "catalog:dsh",
     "@deepseek-ai/schemastery": "catalog:"
@@ -34,19 +35,21 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-llm": "workspace:*",
-    "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*"
+    "@deepseek-ai/dsh-session": "workspace:*"
   },
   "devDependencies": {
     "@lyteboat/distro": "workspace:*",
     "@lyteboat/history-import": "workspace:*",
+    "@lyteboat/model-side-call": "workspace:*",
     "@lyteboat/testkit": "workspace:*",
+    "@lyteboat/tool-policy": "workspace:*",
     "@deepseek-ai/cordis": "catalog:cordis",
     "@deepseek-ai/dsh-agent": "workspace:*",
     "@deepseek-ai/dsh-llm": "workspace:*",
     "@deepseek-ai/dsh-session": "workspace:*",
-    "@deepseek-ai/dsh-session-projection": "workspace:*",
-    "@deepseek-ai/dsh-tools": "workspace:*"
+    "@deepseek-ai/dsh-skill": "workspace:*",
+    "@deepseek-ai/dsh-tools": "workspace:*",
+    "@deepseek-ai/dsh-tool-testkit": "catalog:dsh"
   },
   "publishConfig": {
     "access": "public"

@@ -69,7 +69,7 @@ describe('admission at the first step of a turn', () => {
       [{ kind: 'model', provider: 'lyteboat', model: 'stock-gate' }, [{ type: 'text', text: '这个我帮不了。' }]],
     ])
     expect(humanSources(agent)).toEqual([{ kind: 'user', lyteboatRequest: { requestId: 'r-1', context: { channel: 'app' }, intake: REPLY } }])
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatRequest')?.intake).toEqual(REPLY)
+    expect(ctx.sessionProjections.snapshot(agent.session, ['lyteboatRequest']).values['lyteboatRequest']).toMatchObject({ intake: REPLY })
   })
 
   it('records a reply on a message that came with no request', async () => {
