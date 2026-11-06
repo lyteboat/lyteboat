@@ -1,11 +1,12 @@
 /**
  * One eval turn through dsh's session controller, the way `/chat` sends a
- * message: it is queued with its request on the source, and once the turn
- * that answers it ends (`turnOutcome.ended`, matched by the request id), the
- * session shows what the turn did: its outcome, tools, and model requests as
- * the turn outcome folds them, its text and cards as `a2ui.turnParts` lays
- * them out. A turn that does not end within the deadline is cancelled and
- * ends aborted.
+ * message: it is queued with its request on the source, and the turn that
+ * answers it (matched by the request id) is followed from its start
+ * (`turnOutcome.follow`) into an `a2ui` live turn. Once it ends
+ * (`turnOutcome.ended`), the session shows what the turn did: its outcome,
+ * tools, and model requests as the turn outcome folds them, its text and cards
+ * as the live turn lays them out. A turn that does not end within the deadline
+ * is cancelled and ends aborted.
  * @module @lyteboat/eval-runner/eval-turn
  */
 
@@ -14,8 +15,8 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import type { SessionRequestId } from '@deepseek-ai/dsh-api-session-controller/types'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type {} from '@deepseek-ai/dsh-api-session-controller'
-import { SessionLogOffset, type SessionId } from '@deepseek-ai/dsh-session'
-import type {} from '@lyteboat/a2ui'
+import type { SessionId } from '@deepseek-ai/dsh-session'
+import type { LyteboatTurnPart } from '@lyteboat/a2ui'
 import type { JsonValue, LyteboatTurnOutcome } from '@lyteboat/contracts'
 import type {} from '@lyteboat/turn-outcome'
 import type { EvalObservation } from './eval-check.ts'
@@ -32,8 +33,7 @@ interface EvalTurnInput {
 }
 
 /** What the session shows of one ended turn. */
-async function observe(ctx: Context, agent: Agent, sessionId: SessionId, outcome: LyteboatTurnOutcome): Promise<EvalObservation> {
-  const parts = ctx.a2ui.turnParts(agent.session, SessionLogOffset(outcome.fromSeq))
+async function observe(ctx: Context, sessionId: SessionId, outcome: LyteboatTurnOutcome, parts: readonly LyteboatTurnPart[]): Promise<EvalObservation> {
   const projections = await ctx.sessionController.projections({ sessionId }, new AbortController().signal)
   // The projection's wire view is the active skill's name, or null.
   const active = projections?.values['lyteboatActiveSkill']
@@ -57,6 +57,8 @@ async function observe(ctx: Context, agent: Agent, sessionId: SessionId, outcome
 export async function runEvalTurn(ctx: Context, input: EvalTurnInput): Promise<EvalObservation> {
   const { agent, sessionId, requestId } = input
   let timer: ReturnType<typeof setTimeout> | undefined
+  const liveTurn = ctx.a2ui.liveTurn()
+  const stopFollowing = ctx.turnOutcome.follow(agent.session, requestId, (event) => { liveTurn.event(event) })
   try {
     await ctx.sessionController.prompt({
       requestId: brandString<SessionRequestId>(requestId),
@@ -75,8 +77,9 @@ export async function runEvalTurn(ctx: Context, input: EvalTurnInput): Promise<E
     }, input.timeoutMs)
     // An ended turn resolves at once, so waiting may start after the message was queued.
     const outcome = await ctx.turnOutcome.ended(agent.session, requestId, new AbortController().signal)
-    return await observe(ctx, agent, sessionId, outcome)
+    return await observe(ctx, sessionId, outcome, liveTurn.parts())
   } finally {
     clearTimeout(timer)
+    stopFollowing()
   }
 }

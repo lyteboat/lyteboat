@@ -97,7 +97,7 @@ export const lyteboatStateProjectionDefinition = {
 } satisfies ProjectionDefinition<'lyteboatState', LyteboatStateValue>
 
 /** The model-facing rendering of the current state; empty when there is none. */
-export function renderLyteboatState(state: LyteboatStateValue | undefined): string {
-  if (state === undefined || Object.keys(state).length === 0) return ''
+export function renderLyteboatState(state: LyteboatStateValue): string {
+  if (Object.keys(state).length === 0) return ''
   return `Session state, accumulated from tool results (JSON):\n${JSON.stringify(state)}`
 }

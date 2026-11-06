@@ -7,7 +7,8 @@ import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createScope } from '@deepseek-ai/dsh-scope'
 import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
-import { defineContentToolFixture, defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { defineTool, type ToolDefinition } from '@deepseek-ai/dsh-tools'
+import { defineContentToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import LyteboatDistroService from '@lyteboat/distro'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testkit'
 import ToolPolicyService from '@lyteboat/tool-policy'
@@ -231,7 +232,7 @@ describe('state', () => {
     expect(events.map(event => event.type).filter(type => type.startsWith('lyteboat/'))).toEqual([])
     const result = events.find((event): event is SessionEvent<'tool/result'> => event.type === 'tool/result')!
     expect(result.data.meta).toEqual({ card: 'own', lyteboat: { stateDelta: { 'portfolio.total': 5 } } })
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatState')).toEqual({ portfolio: { total: 5 } })
+    expect(ctx.toolPolicy.sessionState(agent.session)).toEqual({ portfolio: { total: 5 } })
     expect(ctx.sessionProjections.snapshot(agent.session).values['lyteboatState']).toEqual({ portfolio: { total: 5 } })
     // The second request carries the runtime context with the state; the first had none.
     expect(JSON.stringify(adapter.requests[0]!.messages)).not.toContain('Session state')
@@ -259,7 +260,7 @@ describe('state', () => {
     expect(JSON.stringify(result.data.message.content)).toContain('state delta path \\"portfolio..total\\" has an empty segment')
     expect(result.data.meta).toBeUndefined()
     expect(events.at(-1)?.data).toMatchObject({ reason: { kind: 'completed' } })
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatState')).toEqual({})
+    expect(ctx.toolPolicy.sessionState(agent.session)).toEqual({})
   })
 
   it('records the tool\'s own meta unchanged when the delta hook derives nothing', async () => {
@@ -283,7 +284,7 @@ describe('state', () => {
       .filter((event): event is SessionEvent<'tool/result'> => event.type === 'tool/result')
       .map(event => event.data.meta)
     expect(metas).toEqual([{ card: 'own' }, {}])
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatState')).toEqual({})
+    expect(ctx.toolPolicy.sessionState(agent.session)).toEqual({})
   })
 })
 

@@ -20,7 +20,7 @@
  * successful `skill` tool calls from the log, so a resumed session restores
  * its tools, and a body compaction has shadowed is injected again. The router
  * call goes through `ctx.modelSideCall`, which records it (prompt, answer or failure)
- * as an ignorable `lyteboat/aux-llm-call`.
+ * as a `plugin:lyteboat/aux-llm-call` record.
  * @module @lyteboat/skill-router
  */
 
@@ -34,7 +34,7 @@ import { AnonymousEntries, ScopedLayers } from '@deepseek-ai/dsh-scope'
 import type { ScopeKey, ScopeLayer } from '@deepseek-ai/dsh-scope'
 import { isModelInvocable, renderSkillContent } from '@deepseek-ai/dsh-skill'
 import type { SkillDefinition, SkillInvocationSource, SkillViewOptions } from '@deepseek-ai/dsh-skill'
-import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
+import type { ProjectionDefinition, ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import type {} from '@deepseek-ai/dsh-tools'
 import type {} from '@lyteboat/tool-policy'
@@ -50,7 +50,7 @@ declare module '@deepseek-ai/cordis' {
   }
 }
 
-/** The router call's `purpose` in its `lyteboat/aux-llm-call` record. */
+/** The router call's `purpose` in its `plugin:lyteboat/aux-llm-call` record. */
 const SKILL_ROUTER_PURPOSE = 'skill-router'
 /** The dsh tool through which the model loads a skill itself. */
 const SKILL_TOOL = 'skill'
@@ -207,11 +207,11 @@ export class SkillRouterService extends Service {
 
   private readonly layers = new ScopedLayers(() => new SettingsLayer(), () => {})
   private readonly agents = new WeakMap<Agent, AgentSkillState>()
+  private activeHandle!: ProjectionHandle<LyteboatActiveSkillState>
 
   constructor(ctx: Context, config: Config = {}) {
     super(ctx, 'skillRouter')
     this.layers.global.entries.append(compact(config))
-    ctx.sessionProjections.register(lyteboatActiveSkillProjectionDefinition)
     ctx.systemPrompt.section({
       name: 'lyteboat:skills',
       order: LYTEBOAT_SKILLS_SECTION_ORDER,
@@ -270,9 +270,13 @@ export class SkillRouterService extends Service {
     return settings
   }
 
-  /** The skill active for one agent, as the log records it. */
-  activeOf(agent: Agent): string | null {
-    return this.ctx.sessionProjections.stateOf(agent.session, 'lyteboatActiveSkill')?.active ?? null
+  async [Service.init](): Promise<void> {
+    this.activeHandle = await this.ctx.sessionProjections.register(lyteboatActiveSkillProjectionDefinition)
+  }
+
+  /** The skill active in one session, as its log records it. */
+  activeOf(session: Session): string | null {
+    return this.activeHandle.stateOf(session).active
   }
 
   private stateOf(agent: Agent): AgentSkillState {
@@ -296,7 +300,7 @@ export class SkillRouterService extends Service {
       await this.prepareFull(agent, lookup)
       return
     }
-    const previous = this.activeOf(agent)
+    const previous = this.activeOf(agent.session)
     const input = userText(messages)
     const chosen = input === '' ? previous : await this.route(agent, settings, lookup, input, signal)
     await this.applyActive(agent, chosen, previous, lookup)
@@ -332,7 +336,7 @@ export class SkillRouterService extends Service {
     userInput: string,
     signal: AbortSignal,
   ): Promise<string | null> {
-    const current = this.activeOf(agent)
+    const current = this.activeOf(agent.session)
     const snapshot = await this.ctx.skills.snapshot(lookup)
     signal.throwIfAborted()
     const candidates: RouteCandidate[] = snapshot.skills.filter(isModelInvocable)

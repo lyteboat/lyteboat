@@ -29,3 +29,28 @@ describe('delta report: the policy class', () => {
     expect(ofCommit(violations([commit]))).toEqual(['a1b2c3d4e5 dsh-base — policy: uploads off: a policy change edits bundles\' cordis.patch.yml only, not dsh/bundle/base/src/index.ts'])
   })
 })
+
+function kernelCommit(sha: string, subject: string, trailers: Record<string, string[]>): DistCommit {
+  return { sha, date: '2026-11-05', subject, trailers: new Map(Object.entries(trailers)), files: ['dsh/core/session/src/index.ts'] }
+}
+
+describe('delta report: dropping an extension', () => {
+  const added = kernelCommit('1111111111aa', 'dsh-session — extend: marker', { 'Dist-Change': ['extend'], 'Dist-Extension': ['marker'] })
+  const kept = kernelCommit('2222222222bb', 'dsh-session — extend: kept', { 'Dist-Change': ['extend'], 'Dist-Extension': ['kept'] })
+
+  test('a drop commit retires the extension, so the commits that added it stay valid', () => {
+    const dropped = kernelCommit('3333333333cc', 'dsh-session — drop: marker', { 'Dist-Change': ['drop'], 'Dist-Exit': ['upstream API'], 'Dist-Extension': ['marker'] })
+    expect(violations([added, kept, dropped], new Set(['kept']))).toEqual([])
+  })
+
+  test('an extension removed from the registry without a drop commit is refused', () => {
+    expect(violations([added, kept], new Set(['kept']))).toEqual(['1111111111 dsh-session — extend: marker: Dist-Extension marker is not in dsh-compat/contract/extensions.yml'])
+  })
+
+  test('a drop commit whose extension is still registered is refused', () => {
+    const dropped = kernelCommit('3333333333cc', 'dsh-session — drop: marker', { 'Dist-Change': ['drop'], 'Dist-Exit': ['upstream API'], 'Dist-Extension': ['marker'] })
+    expect(violations([added, kept, dropped], new Set(['kept', 'marker']))).toEqual([
+      '3333333333 dsh-session — drop: marker: drops marker, which is still in dsh-compat/contract/extensions.yml',
+    ])
+  })
+})

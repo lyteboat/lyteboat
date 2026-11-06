@@ -3,10 +3,10 @@
  * package's tests (`packages/settings/settings/tests/live-config.ts`), which no
  * published package ships. This is that helper: mount a plugin behind a Loader
  * and edit its raw configuration the way profile reconciliation does.
- * Adapted from deepseek-ai/deepseek-harness @ dsh-v0.2.1-rc.2 (687f282e), MIT,
+ * Adapted from deepseek-ai/deepseek-harness @ dsh-v0.2.2-rc.1 (66491b05), MIT,
  * without the `omitsGeneratedPage` helper, which the ported specs do not use.
  */
-import { Context, resolveConfig, type Plugin } from '@deepseek-ai/cordis'
+import { Context, type Plugin } from '@deepseek-ai/cordis'
 import Loader from '@deepseek-ai/cordis-plugin-loader'
 
 function merge(base: Record<string, unknown>, patch: Record<string, unknown>): Record<string, unknown> {
@@ -33,7 +33,7 @@ export async function liveConfig(ctx: Context, plugin: Plugin, initial: object =
   await entry.fiber!.await()
   const replace = async (next: Record<string, unknown>) => {
     const fiber = entry.fiber!
-    resolveConfig(fiber.runtime!, fiber.ctx.waterfall(fiber, 'internal/config', next, () => next))
+    fiber.resolveConfig(next)
     await entry.update({ config: next })
     await entry.fiber!.await()
     ctx.emit('app-boot/config-reload')

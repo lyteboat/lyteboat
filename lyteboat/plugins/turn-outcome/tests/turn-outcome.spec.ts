@@ -9,9 +9,9 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createAssistantMessage, createUserMessage, type UserMessage } from '@deepseek-ai/dsh-llm'
-import { SessionId, SessionSeq, type SessionEvent } from '@deepseek-ai/dsh-session'
-import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
-import { LYTEBOAT_ASSISTANT_PROVIDER, LYTEBOAT_HISTORY_IMPORT_SOURCE, type LyteboatIntakeDecision, type LyteboatRequest, type LyteboatTurnOutcomesState } from '@lyteboat/contracts'
+import { SessionId, SessionSeq, appendPluginRecord, type SessionEvent } from '@deepseek-ai/dsh-session'
+import { defineContentToolFixture } from '@deepseek-ai/dsh-tool-testkit'
+import { LYTEBOAT_ASSISTANT_PROVIDER, LYTEBOAT_AUX_LLM_CALL_RECORD, LYTEBOAT_HISTORY_IMPORT_SOURCE, type LyteboatIntakeDecision, type LyteboatRequest, type LyteboatTurnOutcomesState } from '@lyteboat/contracts'
 import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textResponse, toolCallResponse } from '@lyteboat/testkit'
 import TurnOutcomeService, { foldTurnOutcomes } from '@lyteboat/turn-outcome'
 import { lyteboatTurnOutcomesProjectionDefinition } from '../src/turn-outcome-projection.ts'
@@ -46,9 +46,9 @@ function answeringAdmission(ctx: Context): void {
   ctx.on('lyteboat/intake', async (payload, next): Promise<LyteboatIntakeDecision> => {
     const decision = await next()
     if (payload.step !== 1) return decision
-    payload.agent.session.append('lyteboat/aux-llm-call', {
+    appendPluginRecord(payload.agent.session, LYTEBOAT_AUX_LLM_CALL_RECORD, {
       purpose: 'intake', route: { provider: 'mock', model: 'mock' }, system: 's', prompt: 'p', maxTokens: 10, temperature: 0, output: 'reply', durationMs: 5,
-    }, { ignorable: true })
+    })
     return { kind: 'reply', plugin: 'desk-admission', content: [{ type: 'text', text: '请先授权' }] }
   })
 }
@@ -233,5 +233,38 @@ describe('turnOutcome.ended', () => {
 
     await expect(pending).rejects.toThrow('caller left')
     await expect(ctx.turnOutcome.ended(agent.session, 'missing', stop.signal)).rejects.toThrow('caller left')
+  })
+})
+
+describe('turnOutcome.follow', () => {
+  it('hears the turn answering a request from its turn/start through its turn/end, and none of the turn before it', async () => {
+    const ctx = await outcomeHost(new MockAdapter([textResponse('first'), textResponse('second')]))
+    const agent = await agentOf(ctx, 'followed')
+    await send(agent, controllerMessage('earlier', 'rpc-0'))
+    const heard: [string, number][] = []
+
+    ctx.turnOutcome.follow(agent.session, 'rpc-1', (event, turn) => { heard.push([event.type, turn]) })
+    await send(agent, controllerMessage('hello', 'rpc-1'))
+
+    const types = heard.map(([type]) => type)
+    expect(types[0]).toBe('turn/start')
+    expect(types).toContain('user/message')
+    expect(types).toContain('assistant/message')
+    expect(types.at(-1)).toBe('turn/end')
+    expect(new Set(heard.map(([, turn]) => turn))).toEqual(new Set([2]))
+  })
+
+  it('stops after its turn ends, so a later turn is not heard', async () => {
+    const ctx = await outcomeHost(new MockAdapter([textResponse('first'), textResponse('second')]))
+    const agent = await agentOf(ctx, 'stopped')
+    const heard: string[] = []
+
+    ctx.turnOutcome.follow(agent.session, 'rpc-1', (event) => { heard.push(event.type) })
+    await send(agent, controllerMessage('hello', 'rpc-1'))
+    const afterFirst = heard.length
+    await send(agent, controllerMessage('again', 'rpc-2'))
+
+    expect(heard.at(-1)).toBe('turn/end')
+    expect(heard).toHaveLength(afterFirst)
   })
 })

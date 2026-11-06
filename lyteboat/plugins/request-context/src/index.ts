@@ -18,9 +18,9 @@
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage, type UserMessage } from '@deepseek-ai/dsh-llm'
-import type {} from '@deepseek-ai/dsh-session-projection'
+import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import { lyteboatRequestSchema } from '@lyteboat/contracts'
-import type { JsonValue, LyteboatIntakeVerdict, LyteboatRequest } from '@lyteboat/contracts'
+import type { JsonValue, LyteboatIntakeVerdict, LyteboatRequest, LyteboatRequestState } from '@lyteboat/contracts'
 import { lyteboatRequestOf, lyteboatRequestProjectionDefinition } from './request-projection.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -33,9 +33,14 @@ declare module '@deepseek-ai/cordis' {
 export class RequestContextService extends Service {
   static inject = ['sessionProjections']
 
+  private requestHandle!: ProjectionHandle<LyteboatRequestState>
+
   constructor(ctx: Context) {
     super(ctx, 'requestContext')
-    ctx.sessionProjections.register(lyteboatRequestProjectionDefinition)
+  }
+
+  async [Service.init](): Promise<void> {
+    this.requestHandle = await this.ctx.sessionProjections.register(lyteboatRequestProjectionDefinition)
   }
 
   /**
@@ -86,7 +91,7 @@ export class RequestContextService extends Service {
 
   /** The session's request context: the latest a request carried, empty before any. */
   contextOf(agent: Agent): { [key: string]: JsonValue } {
-    return this.ctx.sessionProjections.stateOf(agent.session, 'lyteboatRequest')?.context ?? {}
+    return this.requestHandle.stateOf(agent.session).context ?? {}
   }
 }
 

@@ -27,7 +27,7 @@ describe('@lyteboat/distro in the serve composition (in process, scripted model)
   it('serves a plugin that injects lyteboatDistro and answers through the intake extension', async () => {
     const { body, records } = await served.ask('minimal', 'which lyteboat is this')
 
-    expect(body.response).toBe(`lyteboat on dsh ${DSH_BASE}: agent-loop-intake, agent-loop-pre-assemble, session-append-ignorable, session-controller-prompt-source, headless-hooks`)
+    expect(body.response).toBe(`lyteboat on dsh ${DSH_BASE}: agent-loop-intake, agent-loop-pre-assemble, session-controller-prompt-source`)
     expect(model.requests).toHaveLength(0)
     // An intake reply is a plain assistant message and nothing of lyteboat's own, so dsh's persistence reopens the log.
     const types = records.map(record => record.type)

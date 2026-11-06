@@ -20,9 +20,9 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { createUserMessage } from '@deepseek-ai/dsh-llm'
 import type { MessageSource, UserMessage } from '@deepseek-ai/dsh-llm'
-import type {} from '@deepseek-ai/dsh-session-projection'
+import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import { LYTEBOAT_HISTORY_IMPORT_SOURCE } from '@lyteboat/contracts'
-import type { LyteboatIntakeDecision, LyteboatStepPayload } from '@lyteboat/contracts'
+import type { LyteboatIntakeDecision, LyteboatStepPayload, LyteboatTraceIdsState } from '@lyteboat/contracts'
 import { parseHistoryRounds } from './round-history.ts'
 import type { HistoryRound } from './round-history.ts'
 import { lyteboatTraceIdsProjectionDefinition, traceIdOf } from './trace-ids-projection.ts'
@@ -43,12 +43,17 @@ export class HistoryImportService extends Service {
   // lyteboatDistro: the answer rides the kernel extension agent-loop-intake.
   static inject = ['sessionProjections', 'lyteboatDistro']
 
+  private traceIdsHandle!: ProjectionHandle<LyteboatTraceIdsState>
+
   constructor(ctx: Context) {
     super(ctx, 'historyImport')
-    ctx.sessionProjections.register(lyteboatTraceIdsProjectionDefinition)
     // After `next()`: an imported round's answer is the caller's record, so it
     // stands whatever an inner listener decided; the other listeners still run.
     ctx.on('lyteboat/intake', async (payload, next) => answerImportedRound(payload, await next()))
+  }
+
+  async [Service.init](): Promise<void> {
+    this.traceIdsHandle = await this.ctx.sessionProjections.register(lyteboatTraceIdsProjectionDefinition)
   }
 
   /**
@@ -74,7 +79,7 @@ export class HistoryImportService extends Service {
    * @returns the rounds it queued.
    */
   enqueue(agent: Agent, rounds: readonly HistoryRound[]): HistoryRound[] {
-    const known = new Set(this.ctx.sessionProjections.stateOf(agent.session, 'lyteboatTraceIds')?.traceIds)
+    const known = new Set(this.traceIdsHandle.stateOf(agent.session).traceIds)
     for (const message of [...agent.inbox.nextStep, ...agent.inbox.nextTurn]) {
       const traceId = traceIdOf(message.source)
       if (traceId !== undefined) known.add(traceId)

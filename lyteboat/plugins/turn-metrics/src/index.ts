@@ -4,7 +4,7 @@
  * out, one line of
  * {@link LyteboatTurnMetric} appended to the UTC day's file after the turn
  * ends, from the turn's outcome (`ctx.turnOutcome`) and the skills active
- * while it ran, and a heartbeat file listing the turns this process is
+ * while it ran (`ctx.skillRouter`), and a heartbeat file listing the turns this process is
  * running, rewritten at each turn's start and end and every `heartbeatMs`.
  * Files are written in order through an asynchronous queue, and a failure is
  * logged and never reaches the turn. Nothing enters a model request or the
@@ -19,9 +19,9 @@ import { join } from 'node:path'
 import type { Context } from '@deepseek-ai/cordis'
 import { dshHomePath } from '@deepseek-ai/dsh-home-paths'
 import type { Session, SessionEvent } from '@deepseek-ai/dsh-session'
-import type {} from '@deepseek-ai/dsh-session-projection'
 import z from '@deepseek-ai/schemastery'
 import type { LyteboatTurnHeartbeat, LyteboatTurnMetric } from '@lyteboat/contracts'
+import type {} from '@lyteboat/skill-router'
 import type {} from '@lyteboat/turn-outcome'
 import { TURN_METRIC_RUNNING_DIR, turnMetricDayFile, turnMetricDayOf, turnMetricDayOfFile } from './turn-metric-files.ts'
 import { TurnMetricSkills, turnMetricOf } from './turn-metric.ts'
@@ -37,8 +37,8 @@ export interface TurnMetricsRecorderConfig {
 const DAY_MS = 86_400_000
 
 export default class TurnMetricsRecorder {
-  /** The session projections carry the active skill the recorder notes; the turn outcome, the rest of the line. */
-  static inject = ['sessionProjections', 'turnOutcome']
+  /** The skill router knows the active skill the recorder notes; the turn outcome, the rest of the line. */
+  static inject = ['skillRouter', 'turnOutcome']
   static Config: z<TurnMetricsRecorderConfig> = z.object({
     dir: z.string(),
     retentionDays: z.natural().default(90),
@@ -47,7 +47,7 @@ export default class TurnMetricsRecorder {
 
   /**
    * Record every turn of this process's sessions.
-   * @param ctx - the host context: session events and projections.
+   * @param ctx - the host context: session events, the skill router, and the turn outcome.
    * @param recorderConfig - the validated config.
    */
   constructor(ctx: Context, recorderConfig: TurnMetricsRecorderConfig) {
@@ -78,7 +78,7 @@ export default class TurnMetricsRecorder {
       const turn = turns.get(session)
       if (turn === undefined) return
       if (event.type !== 'turn/end') {
-        turn.skills.note(ctx.sessionProjections.stateOf(session, 'lyteboatActiveSkill')?.active)
+        turn.skills.note(ctx.skillRouter.activeOf(session))
         return
       }
       turns.delete(session)

@@ -58,8 +58,8 @@ export function recordedSessionFile(runDir: string, caseId: string): string {
  * @param file - the recording's path; its directory is created.
  * @param session - the session's header, its inherited prefix length, and its events in log order.
  */
-export function writeRecordedSession(file: string, session: { meta: SessionHeader; inheritedEventCount: number; events: readonly unknown[] }): void {
-  const header = sessionFormatCatalog.encodeCurrentHeader({ ...session.meta, delegationDepth: session.meta.delegationDepth ?? 0 }, SessionLogOffset(session.inheritedEventCount))
+export function writeRecordedSession(file: string, session: { header: SessionHeader; inheritedEventCount: number; events: readonly unknown[] }): void {
+  const header = sessionFormatCatalog.encodeCurrentHeader({ ...session.header, delegationDepth: session.header.delegationDepth ?? 0 }, SessionLogOffset(session.inheritedEventCount))
   mkdirSync(join(file, '..'), { recursive: true })
   writeFileSync(file, [header, ...session.events].map(line => JSON.stringify(line)).join('\n') + '\n')
 }

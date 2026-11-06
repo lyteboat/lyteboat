@@ -20,10 +20,11 @@
  * @module @lyteboat/turn-outcome/turn-outcome-projection
  */
 
-import type { SessionEvent } from '@deepseek-ai/dsh-session'
+import { pluginRecordOf, type SessionEvent } from '@deepseek-ai/dsh-session'
 import type { ProjectionDefinition } from '@deepseek-ai/dsh-session-projection'
 import {
   LYTEBOAT_ASSISTANT_PROVIDER,
+  LYTEBOAT_AUX_LLM_CALL_RECORD,
   LYTEBOAT_HISTORY_IMPORT_SOURCE,
   LYTEBOAT_TURN_OUTCOME_KIND_OF_REASON,
   lyteboatRequestSchema,
@@ -161,6 +162,7 @@ function withToolResult(turn: LyteboatTurnOutcome, event: SessionEvent<'tool/res
  * @returns the turns after it; the same state for an event that changes none.
  */
 function applyTurnOutcomeEvent(state: LyteboatTurnOutcomesState, event: SessionEvent): LyteboatTurnOutcomesState {
+  if (pluginRecordOf(event)?.type === LYTEBOAT_AUX_LLM_CALL_RECORD) return withOpenTurn(state, turn => ({ ...turn, auxCalls: turn.auxCalls + 1 }))
   switch (event.type) {
     case 'turn/start': return startTurn(state, event)
     case 'agent/inbox/spliced': return withInboxSplice(state, event)
@@ -168,7 +170,6 @@ function applyTurnOutcomeEvent(state: LyteboatTurnOutcomesState, event: SessionE
     case 'step/start': return withOpenTurn(state, turn => ({ ...turn, steps: turn.steps + 1 }))
     case 'assistant/attempt':
       return event.data.stream.length === 0 ? state : withOpenTurn(state, turn => ({ ...turn, modelRequests: turn.modelRequests + 1 }))
-    case 'lyteboat/aux-llm-call': return withOpenTurn(state, turn => ({ ...turn, auxCalls: turn.auxCalls + 1 }))
     case 'tool/call':
       return withOpenTurn(state, turn => ({ ...turn, tools: [...turn.tools, { callId: event.data.callId, name: event.data.name, calledAt: event.time, isError: false }] }))
     // A surface replacement (compaction, pruning) repeats what was folded when it was appended.

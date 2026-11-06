@@ -12,6 +12,7 @@ import { MockAdapter, createLyteboatUnitHost, followUpAndWait as send, textRespo
 import HistoryImportService from '@lyteboat/history-import'
 import { LYTEBOAT_ASSISTANT_PROVIDER, LYTEBOAT_HISTORY_IMPORT_SOURCE, type LyteboatRequest } from '@lyteboat/contracts'
 import type { HistoryRound } from '../src/round-history.ts'
+import { lyteboatTraceIdsProjectionDefinition } from '../src/trace-ids-projection.ts'
 
 async function harness(adapter: MockAdapter): Promise<Context> {
   const ctx = await createLyteboatUnitHost(adapter)
@@ -65,7 +66,8 @@ describe('rounds queued into a session', () => {
     expect(events.filter(event => event.type === 'turn/end').map(event => event.data)).toEqual([
       { turn: 1, reason: { kind: 'completed' } }, { turn: 2, reason: { kind: 'completed' } }, { turn: 3, reason: { kind: 'completed' } },
     ])
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatTraceIds')).toEqual({ traceIds: ['t1', 't2', 't3'] })
+    const traceIds = await ctx.sessionProjections.register(lyteboatTraceIdsProjectionDefinition)
+    expect(traceIds.stateOf(agent.session)).toEqual({ traceIds: ['t1', 't2', 't3'] })
   })
 
   it('skips a round whose trace id the session holds, one still queued, and one repeated in the list', async () => {
@@ -83,7 +85,8 @@ describe('rounds queued into a session', () => {
     await agent.whenIdle()
 
     expect(queued.map(entry => entry.traceId)).toEqual(['t-new'])
-    expect(ctx.sessionProjections.stateOf(agent.session, 'lyteboatTraceIds')).toEqual({ traceIds: ['t-own', 't-old', 't-queued', 't-new'] })
+    const traceIds = await ctx.sessionProjections.register(lyteboatTraceIdsProjectionDefinition)
+    expect(traceIds.stateOf(agent.session)).toEqual({ traceIds: ['t-own', 't-old', 't-queued', 't-new'] })
   })
 
   it('enqueue imports a round whose text repeats an earlier one when its trace id is new', async () => {

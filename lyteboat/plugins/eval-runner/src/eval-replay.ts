@@ -2,7 +2,7 @@
  * Keyless replay of recorded eval sessions. While a replay run lasts, an
  * `llm/stream` listener answers every model call of a session bound to its
  * case's recording, and nothing reaches a provider: a side call (its first
- * message from the aux-llm source) gets the next `lyteboat/aux-llm-call`
+ * message from the aux-llm source) gets the next `plugin:lyteboat/aux-llm-call`
  * record's answer, any other call the next entry of the loop script dsh's
  * replay derives from the recording's assistant settlements. A session is
  * bound by id when its case starts, not by the order of first calls, because
@@ -15,7 +15,8 @@
 import { readFileSync } from 'node:fs'
 import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 import { deriveReplayScript, parseSessionLog, type ReplayEntry } from '@deepseek-ai/dsh-llm-replay'
-import { LYTEBOAT_AUX_LLM_SOURCE, type LyteboatAuxLlmCallRecord } from '@lyteboat/contracts'
+import { pluginRecordOf } from '@deepseek-ai/dsh-session'
+import { LYTEBOAT_AUX_LLM_CALL_RECORD, LYTEBOAT_AUX_LLM_SOURCE, lyteboatAuxLlmCallRecordSchema, type LyteboatAuxLlmCallRecord } from '@lyteboat/contracts'
 
 interface RecordedSession {
   file: string
@@ -75,7 +76,13 @@ export class EvalReplay {
       throw new Error(`eval-runner: no recorded session at ${file}; record the case with --model real first`, { cause: error })
     }
     const events = parseSessionLog(text)
-    const aux = events.flatMap(event => event.type === 'lyteboat/aux-llm-call' ? [event.data] : [])
+    const aux = events.flatMap((event) => {
+      const record = pluginRecordOf(event)
+      if (record?.type !== LYTEBOAT_AUX_LLM_CALL_RECORD) return []
+      const parsed = lyteboatAuxLlmCallRecordSchema.safeParse(record.data)
+      if (!parsed.success) throw new Error(`eval-runner: ${file} holds a side call record (seq ${String(record.seq)}) that is not one lyteboat writes: record the case again`, { cause: parsed.error })
+      return [parsed.data]
+    })
     this.bound.set(sessionId, { file, loop: deriveReplayScript(events), aux, loopCalls: 0, auxCalls: 0 })
   }
 

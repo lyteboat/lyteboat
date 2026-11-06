@@ -2,11 +2,10 @@
  * The finance agent: its one declaration. The persona is the whole system
  * prompt; the router picks one of the three skills under `assets/skills` for
  * every request; every inherited tool but `skill` stays away from the model,
- * and each finance tool reaches it only while the routed skill requires it;
- * loop requests run at temperature 0 (tool choice favors a stable decision
- * over varied wording). The admission answers out-of-scope requests and
- * customers with nothing authorized before the loop runs. The customer is the
- * one the session's request context names (`customer`).
+ * and each finance tool reaches it only while the routed skill requires it.
+ * The admission answers out-of-scope requests and customers with nothing
+ * authorized before the loop runs. The customer is the one the session's
+ * request context names (`customer`).
  * @module @lyteboat/agent-finance/agent
  */
 
@@ -51,7 +50,6 @@ export default lyteboatAgentDef({
   persona: { prefix: FINANCE_PERSONA, complete: true },
   skillRouting: { mode: 'dynamic', historyWindow: 6, timeoutMs: 10_000 },
   toolPolicy: { inherited: 'hidden', tools: { skill: { visibility: 'always' } } },
-  modelRequest: { temperature: 0 },
   admission: host => financeAdmission({
     customers: financeCustomersOf(host),
     modelSideCall: host.modelSideCall,

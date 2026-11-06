@@ -2,7 +2,7 @@
  * Bounded, escalating process shutdown for the long-lived CLI surfaces.
  *
  * Adapted from deepseek-ai/deepseek-harness apps/cli/src/process-shutdown.ts
- * @ dsh-v0.2.1-rc.2 (687f282e), MIT — see THIRD_PARTY_NOTICES.md.
+ * @ dsh-v0.2.2-rc.1 (66491b05), MIT — see THIRD_PARTY_NOTICES.md.
  * @module @lyteboat/cli/process-shutdown
  */
 

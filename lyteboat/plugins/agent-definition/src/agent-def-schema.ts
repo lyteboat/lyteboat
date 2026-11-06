@@ -20,7 +20,6 @@ import type {
   LyteboatAgentDef,
   LyteboatAgentEventListeners,
   LyteboatAgentEventName,
-  LyteboatAgentModelRequest,
   LyteboatAgentTool,
   LyteboatAgentToolPolicy,
 } from './index.ts'
@@ -49,12 +48,6 @@ const skillRoutingSchema = z.strictObject({
   model: z.string().min(1).exactOptional(),
 } satisfies LyteboatAgentShape<SkillRouterSettings>)
 
-const modelRequestSchema = z.strictObject({
-  temperature: z.number().finite().exactOptional(),
-  maxTokens: z.int().positive().exactOptional(),
-  stop: z.array(z.string()).exactOptional(),
-} satisfies LyteboatAgentShape<LyteboatAgentModelRequest>)
-
 const a2uiRenderToolSchema = z.strictObject({
   templatesDir: z.string().min(1),
   stateKeys: z.array(z.string()).exactOptional(),
@@ -75,7 +68,6 @@ const lyteboatAgentDefSchema = z.strictObject({
   skillDirs: z.array(z.string().min(1)).exactOptional(),
   skillRouting: skillRoutingSchema.exactOptional(),
   toolPolicy: toolPolicySchema.exactOptional(),
-  modelRequest: modelRequestSchema.exactOptional(),
   tools: functionSchema('(host) => tools').exactOptional(),
   admission: functionSchema('(host) => admission').exactOptional(),
   a2uiRenderTool: a2uiRenderToolSchema.exactOptional(),
@@ -106,18 +98,15 @@ const LYTEBOAT_AGENT_EVENTS = {
   'agent/inbox/claimed': true,
   'agent/inbox/discarded': true,
   'agent/pre-step': true,
-  'agent/request': true,
   'agent/request-error': true,
   'agent/assistant-stream': true,
   'agent/turn-stopping': true,
   'agent/error': true,
   'lyteboat/intake': true,
   'lyteboat/pre-assemble': true,
-  'approval/request': true,
   'tools/pre-execute': true,
   'tools/execute': true,
   'tools/post-execute': true,
-  'tools/ptc-dispatch-log': true,
   'tools/result': true,
 } satisfies Record<LyteboatAgentEventName, true>
 

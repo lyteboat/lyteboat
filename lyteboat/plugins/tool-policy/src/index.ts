@@ -26,14 +26,15 @@
 
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
+import type { Session } from '@deepseek-ai/dsh-session'
 import { NamedEntries, ScopedLayers, scopeOf, scopeParentOf } from '@deepseek-ai/dsh-scope'
 import type { ScopeKey, ScopeLayer } from '@deepseek-ai/dsh-scope'
 import { RUN_CODE_NAME } from '@deepseek-ai/dsh-tools'
 import type { ToolDefinition } from '@deepseek-ai/dsh-tools'
-import type {} from '@deepseek-ai/dsh-session-projection'
+import type { ProjectionHandle } from '@deepseek-ai/dsh-session-projection'
 import type {} from '@deepseek-ai/dsh-system-prompt'
 import { LYTEBOAT_STATE_CONTEXT_ORDER } from '@lyteboat/contracts'
-import type { LyteboatInheritedToolVisibility, LyteboatToolMeta, JsonValue } from '@lyteboat/contracts'
+import type { LyteboatInheritedToolVisibility, LyteboatStateValue, LyteboatToolMeta, JsonValue } from '@lyteboat/contracts'
 import { lyteboatStateProjectionDefinition, isJsonObject, mergeStateDelta, renderLyteboatState } from './state.ts'
 
 declare module '@deepseek-ai/cordis' {
@@ -106,17 +107,17 @@ export class ToolPolicyService extends Service {
 
   private readonly layers = new ScopedLayers(scope => new PolicyLayer(scope), () => {})
   private readonly agents = new WeakMap<Agent, AgentPolicyState>()
+  private stateHandle!: ProjectionHandle<LyteboatStateValue>
 
   constructor(ctx: Context) {
     super(ctx, 'toolPolicy')
-    ctx.sessionProjections.register(lyteboatStateProjectionDefinition)
     ctx.systemPrompt.context({
       name: 'lyteboat:state',
       order: LYTEBOAT_STATE_CONTEXT_ORDER,
       text: (context) => {
         const agent = context.agent
         if (agent === undefined) return ''
-        return renderLyteboatState(ctx.sessionProjections.stateOf(agent.session, 'lyteboatState'))
+        return renderLyteboatState(this.stateHandle.stateOf(agent.session))
       },
     })
     // After `next()`: listeners registered later (a `--plugin` row, a preset
@@ -126,6 +127,19 @@ export class ToolPolicyService extends Service {
       await next()
       this.reconcile(payload.agent)
     })
+  }
+
+  async [Service.init](): Promise<void> {
+    this.stateHandle = await this.ctx.sessionProjections.register(lyteboatStateProjectionDefinition)
+  }
+
+  /**
+   * The session's lyteboat state: every successful top-level `stateDelta` folded in log order.
+   * @param session - the session to read.
+   * @returns the live state; do not mutate it.
+   */
+  sessionState(session: Session): LyteboatStateValue {
+    return this.stateHandle.stateOf(session)
   }
 
   /**

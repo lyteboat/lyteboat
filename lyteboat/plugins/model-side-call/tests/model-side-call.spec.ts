@@ -2,20 +2,19 @@
  * The side-call service: an answered call, a failed one, a timeout, an answer
  * cut off at maxTokens, the configured reasoning effort, the caller's own
  * abort, and an agent without a model; every call that reached a model leaves
- * exactly one ignorable record.
+ * exactly one `plugin:lyteboat/aux-llm-call` record.
  */
 import { describe, expect, it } from 'vitest'
 import type { Context } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { ReasoningEffortId } from '@deepseek-ai/dsh-llm'
-import { SessionId, type SessionEvent } from '@deepseek-ai/dsh-session'
-import LyteboatDistroService from '@lyteboat/distro'
+import { SessionId, pluginRecordOf, type PluginRecord } from '@deepseek-ai/dsh-session'
+import { LYTEBOAT_AUX_LLM_CALL_RECORD, lyteboatAuxLlmCallRecordSchema, type LyteboatAuxLlmCallRecord } from '@lyteboat/contracts'
 import ModelSideCallService, { type ModelSideCall, type Config } from '@lyteboat/model-side-call'
 import { MockAdapter, createLyteboatUnitHost, maxTokensResponse, textResponse } from '@lyteboat/testkit'
 
 async function harness(adapter: MockAdapter, config: Config = {}): Promise<Context> {
   const ctx = await createLyteboatUnitHost(adapter)
-  await ctx.plugin(LyteboatDistroService)
   await ctx.plugin(ModelSideCallService, config)
   return ctx
 }
@@ -24,11 +23,14 @@ function call(agent: Agent, signal: AbortSignal): ModelSideCall {
   return { agent, purpose: 'classify', system: 'CLASSIFIER', prompt: '这句话属于哪一类？', maxTokens: 50, timeoutMs: 1000, signal }
 }
 
-const records = (agent: Agent): SessionEvent<'lyteboat/aux-llm-call'>[] =>
-  agent.session.snapshotEvents().filter((event): event is SessionEvent<'lyteboat/aux-llm-call'> => event.type === 'lyteboat/aux-llm-call')
+const records = (agent: Agent): (PluginRecord & { data: LyteboatAuxLlmCallRecord })[] =>
+  agent.session.snapshotEvents().flatMap((event) => {
+    const record = pluginRecordOf(event)
+    return record?.type === LYTEBOAT_AUX_LLM_CALL_RECORD ? [{ ...record, data: lyteboatAuxLlmCallRecordSchema.parse(record.data) }] : []
+  })
 
 describe('ctx.modelSideCall.generate', () => {
-  it('answers from the agent\'s model and records the call ignorable, prompt and answer included', async () => {
+  it('answers from the agent\'s model and records the call as a plugin record, prompt and answer included', async () => {
     const adapter = new MockAdapter([textResponse('{"accepted": true}')])
     const ctx = await harness(adapter)
     const agent = await ctx.agentLoop.create(SessionId('answer'), { provider: 'mock', model: 'mock' })
@@ -38,7 +40,6 @@ describe('ctx.modelSideCall.generate', () => {
     expect(outcome).toMatchObject({ kind: 'answer', text: '{"accepted": true}', route: { provider: 'mock', model: 'mock' } })
     expect(adapter.requests[0]).toMatchObject({ system: 'CLASSIFIER', maxTokens: 50, temperature: 0, sessionId: agent.session.id })
     const [record] = records(agent)
-    expect(record?.ignorable).toBe(true)
     expect(record?.data).toMatchObject({ purpose: 'classify', route: { provider: 'mock', model: 'mock' }, system: 'CLASSIFIER', prompt: '这句话属于哪一类？', maxTokens: 50, temperature: 0, output: '{"accepted": true}' })
     expect(agent.session.surface.nodes).toEqual([])
   })
@@ -90,8 +91,7 @@ describe('ctx.modelSideCall.generate', () => {
 
   it('rejects a host row whose reasoning effort is empty', async () => {
     const ctx = await createLyteboatUnitHost(new MockAdapter([]))
-    await ctx.plugin(LyteboatDistroService)
-    await expect(ctx.plugin(ModelSideCallService, { reasoningEffort: '' })).rejects.toThrow(/reasoningEffort/u)
+      await expect(ctx.plugin(ModelSideCallService, { reasoningEffort: '' })).rejects.toThrow(/reasoningEffort/u)
   })
 
   it('propagates the caller\'s abort and records nothing', async () => {

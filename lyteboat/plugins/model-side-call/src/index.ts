@@ -2,11 +2,11 @@
  * @lyteboat/model-side-call — the side model calls a plugin makes for an agent: a
  * routing decision, an intake classification. One host service, `ctx.modelSideCall`,
  * sends one prompt under its own deadline and records the call in the agent's
- * session as a `lyteboat/aux-llm-call` record: route, system, prompt, answer
- * or failure, duration. An answer is complete or it is a failure: a response
- * cut off at `maxTokens` is reported as one. No reader needs the record to
- * rebuild the session, so it is appended ignorable (the kernel extension
- * `session-append-ignorable`) and the official release reads the log past it.
+ * session as a `plugin:lyteboat/aux-llm-call` record: route, system, prompt,
+ * answer or failure, duration. An answer is complete or it is a failure: a
+ * response cut off at `maxTokens` is reported as one. No reader needs the
+ * record to rebuild the session, so it is a dsh plugin record
+ * (`appendPluginRecord`), which a reader that does not know it skips.
  * @module @lyteboat/model-side-call
  */
 
@@ -14,9 +14,9 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { BlockAssembler, ReasoningEffortId, createUserMessage, type GenerateOptions } from '@deepseek-ai/dsh-llm'
-import type {} from '@deepseek-ai/dsh-session'
+import { appendPluginRecord } from '@deepseek-ai/dsh-session'
 import { deadline, timeoutOf } from '@deepseek-ai/dsh-timeout'
-import { LYTEBOAT_AUX_LLM_SOURCE } from '@lyteboat/contracts'
+import { LYTEBOAT_AUX_LLM_CALL_RECORD, LYTEBOAT_AUX_LLM_SOURCE } from '@lyteboat/contracts'
 import type { LyteboatAuxLlmCallRecord } from '@lyteboat/contracts'
 
 declare module '@deepseek-ai/cordis' {
@@ -92,8 +92,7 @@ function recordOf(call: ModelSideCall, route: ModelSideCallRoute, controls: { te
 
 /** Host service: one audited side call at a time per caller. */
 export class ModelSideCallService extends Service {
-  // lyteboatDistro: the record rides the kernel extension session-append-ignorable.
-  static inject = ['llm', 'lyteboatDistro']
+  static inject = ['llm']
   // The loader applies a class plugin's static Config, not the module's.
   static Config = Config
 
@@ -130,7 +129,7 @@ export class ModelSideCallService extends Service {
         outcome = { kind: 'failed', reason, message, durationMs: elapsed() }
       }
     }
-    call.agent.session.append('lyteboat/aux-llm-call', recordOf(call, route, controls, outcome), { ignorable: true })
+    appendPluginRecord(call.agent.session, LYTEBOAT_AUX_LLM_CALL_RECORD, recordOf(call, route, controls, outcome))
     return outcome
   }
 

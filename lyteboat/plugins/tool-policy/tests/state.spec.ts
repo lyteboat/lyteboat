@@ -33,8 +33,7 @@ describe('mergeStateDelta', () => {
 })
 
 describe('renderLyteboatState', () => {
-  it('renders nothing for an empty or absent state', () => {
-    expect(renderLyteboatState(undefined)).toBe('')
+  it('renders nothing for an empty state', () => {
     expect(renderLyteboatState({})).toBe('')
   })
 

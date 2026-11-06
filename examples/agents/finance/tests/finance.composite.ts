@@ -4,7 +4,7 @@
  * `context` and is admitted at its turn's first step (the unauthorized card and
  * the service scope answer without a loop request); the persona is the whole
  * system prompt, the official tools are narrowed away, the routed skill's tool
- * alone reaches the model at temperature 0, and the cards are placed where the
+ * alone reaches the model, and the cards are placed where the
  * answer marks them. A routed session reopens under dsh's persistence, and a
  * continued session keeps the context it began with.
  */
@@ -69,7 +69,7 @@ describe('finance agent in the serve composition (in process, scripted model)', 
     lyteboat?: { cards?: { area: string; emission: string; surfaceId: string }[] }
   } | undefined
 
-  it('"看看我的资产": the persona is the whole system prompt and only the routed tool reaches the model, at temperature 0', async () => {
+  it('"看看我的资产": the persona is the whole system prompt and only the routed tool reaches the model', async () => {
     const { requests, records, reply } = await ask('young-idle-cash', '看看我的资产')
     // The answer's marker became the card's place: the card follows the text.
     expect(reply).toMatchObject({ outcome: 'completed', response: 'FINANCE-OK\n', cards: [{ area: 'asset_overview' }] })
@@ -79,7 +79,6 @@ describe('finance agent in the serve composition (in process, scripted model)', 
     expect(loop[0]!.body.system).not.toContain('coding agent')
     expect(loop[0]!.toolNames.filter(name => FINANCE_TOOLS.includes(name))).toEqual(['asset_overview'])
     expect(loop[0]!.toolNames.filter(name => !FINANCE_TOOLS.includes(name))).toEqual(['skill'])
-    expect(loop[0]!.body['temperature']).toBe(0)
     expect(lastToolResult(loop[1]!)).toContain('【事实】\n- 已授权资产合计 80,000.00 元（约 8.00 万元）')
     expect(lastToolResult(loop[1]!)).toContain('稳健资产（存款、货币基金、债券） 54,400.00 元（约 5.44 万元），占 68.0%')
     expect(lastToolResult(loop[1]!)).toContain('【不可答】')
@@ -135,11 +134,11 @@ describe('finance agent in the serve composition (in process, scripted model)', 
     expect(resultMeta(records)?.lyteboat).toBeUndefined()
   })
 
-  it('a routed session reopens under dsh persistence: every fact rides a dsh envelope, the side calls ignorable records', async () => {
+  it('a routed session reopens under dsh persistence: every fact rides a dsh envelope, the side calls plugin records', async () => {
     const { records } = await ask('young-idle-cash', '看看我的资产')
     expect(reopenRefusal(records)).toBeUndefined()
-    const own = records.filter(record => record.type.startsWith('lyteboat/'))
-    expect(own.map(record => [record.type, record.ignorable, record.data?.['purpose']])).toEqual([['lyteboat/aux-llm-call', true, 'intake'], ['lyteboat/aux-llm-call', true, 'skill-router']])
+    const own = records.filter(record => record.type.includes('lyteboat/'))
+    expect(own.map(record => [record.type, record.ignorable, record.data?.['purpose']])).toEqual([['plugin:lyteboat/aux-llm-call', true, 'intake'], ['plugin:lyteboat/aux-llm-call', true, 'skill-router']])
   })
 
   it('a continued session: the diagnosis turn keeps the customer and sees the overview it already gave', async () => {

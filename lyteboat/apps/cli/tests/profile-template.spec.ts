@@ -1,6 +1,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { PROFILE_TEMPLATES as DSH_PROFILE_TEMPLATES, initProfile, resolveProfileDir } from '@deepseek-ai/dsh-app-boot'
+import { initProfile, resolveProfileDir } from '@deepseek-ai/dsh-app-boot'
+import { PROFILE_TEMPLATES as DSH_PROFILE_TEMPLATES } from '@deepseek-ai/dsh-official-bundles'
 import { LYTEBOAT_EVAL_BUNDLES, LYTEBOAT_SERVE_BUNDLES, LYTEBOAT_STUDIO_BUNDLES } from '@lyteboat/testkit/composition'
 import { lyteboatTempDir } from '@lyteboat/testkit/scratch'
 import { afterEach, describe, expect, test, vi } from 'vitest'

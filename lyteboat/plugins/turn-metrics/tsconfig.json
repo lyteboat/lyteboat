@@ -7,8 +7,8 @@
   "include": ["src"],
   "references": [
     { "path": "../../../dsh/core/session" },
-    { "path": "../../../dsh/session/session-projection" },
     { "path": "../../core/contracts" },
+    { "path": "../skill-router" },
     { "path": "../turn-outcome" }
   ]
 }

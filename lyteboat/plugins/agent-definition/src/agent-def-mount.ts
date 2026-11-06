@@ -13,7 +13,6 @@ import { fileURLToPath } from 'node:url'
 import type { Context, Events } from '@deepseek-ai/cordis'
 import * as dshPersona from '@deepseek-ai/dsh-persona'
 import * as dshSkillFilesystem from '@deepseek-ai/dsh-skill-filesystem'
-import type { LlmCallConfig } from '@deepseek-ai/dsh-llm'
 import type {} from '@deepseek-ai/dsh-agent'
 import type {} from '@lyteboat/a2ui'
 import type {} from '@lyteboat/request-admission'
@@ -22,7 +21,7 @@ import type {} from '@lyteboat/request-context'
 import type {} from '@lyteboat/skill-router'
 import type {} from '@lyteboat/tool-policy'
 import { checkedLyteboatAgentEventListeners, checkedLyteboatAgentTools, checkLyteboatAgentDef } from './agent-def-schema.ts'
-import type { LyteboatAgentDef, LyteboatAgentEventListeners, LyteboatAgentEventName, LyteboatAgentHost, LyteboatAgentModelRequest } from './index.ts'
+import type { LyteboatAgentDef, LyteboatAgentEventListeners, LyteboatAgentEventName, LyteboatAgentHost } from './index.ts'
 
 /** Where an agent keeps its skills when its definition names no directory. */
 const DEFAULT_SKILL_DIR = 'assets/skills'
@@ -50,16 +49,6 @@ function skillDirsOf(agentDef: LyteboatAgentDef, agentPath: (relativePath: strin
     if (!existsSync(skillDir) || !statSync(skillDir).isDirectory()) throw new Error(`skill directory not found: ${skillDir}`)
     return skillDir
   })
-}
-
-/** The fields a model request override lays over the loop's call config. */
-function callConfigOverrideOf(modelRequest: LyteboatAgentModelRequest): Partial<LlmCallConfig> {
-  const { temperature, maxTokens, stop } = modelRequest
-  return {
-    ...temperature === undefined ? {} : { temperature },
-    ...maxTokens === undefined ? {} : { maxTokens },
-    ...stop === undefined ? {} : { stop: [...stop] },
-  }
 }
 
 /** Register one listener; generic so an event name and its listener stay paired. */
@@ -95,7 +84,7 @@ export async function mountLyteboatAgent(ctx: Context, agentDef: LyteboatAgentDe
     }
   }
   const agentPath = (relativePath: string): string => resolve(agentDir, relativePath)
-  const { persona, skillRouting, toolPolicy, modelRequest, admission, tools, a2uiRenderTool, eventListeners } = agentDef
+  const { persona, skillRouting, toolPolicy, admission, tools, a2uiRenderTool, eventListeners } = agentDef
   if (persona !== undefined) await step('persona', () => ctx.plugin(dshPersona, persona))
   if (skillRouting !== undefined) await step('skillRouting', () => ctx.skillRouter.declare(skillRouting))
   if (toolPolicy !== undefined) {
@@ -108,10 +97,6 @@ export async function mountLyteboatAgent(ctx: Context, agentDef: LyteboatAgentDe
     const skillDirs = skillDirsOf(agentDef, agentPath)
     if (skillDirs.length > 0) await ctx.plugin(dshSkillFilesystem, { providerName: agentDef.agentId, includeDefaultRoots: false, customSkillDirs: skillDirs, watch: false })
   })
-  if (modelRequest !== undefined) {
-    const override = callConfigOverrideOf(modelRequest)
-    ctx.on('agent/request', async (_payload, next) => ({ ...await next(), ...override }))
-  }
   // Built on first use: the four services are injected only when the definition has a hook. The host
   // holds bound methods, not the services, so a hook reaches nothing beyond what its type names.
   let host: LyteboatAgentHost | undefined

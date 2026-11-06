@@ -17,7 +17,7 @@
     - id: lyteboat-tool-policy
       name: '@lyteboat/tool-policy'
 
-    # Side model calls (the router's, an intake classifier's), each recorded ignorable.
+    # Side model calls (the router's, an intake classifier's), each recorded as a plugin record.
     - id: lyteboat-model-side-call
       name: '@lyteboat/model-side-call'
 
@@ -77,8 +77,6 @@
 - id: subagent-fork-in-process
   disabled: true
 - id: tool-subagent-control
-  disabled: true
-- id: tool-subagent-list-agents
   disabled: true
 - id: tool-subagent
   disabled: true

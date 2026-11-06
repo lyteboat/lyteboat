@@ -11,7 +11,7 @@
  * @module @lyteboat/cli/templates
  */
 
-import { PROFILE_TEMPLATES as DSH_PROFILE_TEMPLATES } from '@deepseek-ai/dsh-app-boot'
+import { PROFILE_TEMPLATES as DSH_PROFILE_TEMPLATES } from '@deepseek-ai/dsh-official-bundles'
 
 /** One lyteboat profile template: the ordered bundle layers. */
 interface LyteboatProfileTemplate {

@@ -11,10 +11,10 @@ import type { RawData } from './transforms.ts'
 import { isA2uiRecord } from './a2ui-record.ts'
 
 /** The reference `_collect_raw_data`: each state key namespaced and flattened. */
-export function collectRawData(state: LyteboatStateValue | undefined, stateKeys: readonly string[]): RawData {
+export function collectRawData(state: LyteboatStateValue, stateKeys: readonly string[]): RawData {
   const raw: RawData = {}
   for (const key of stateKeys) {
-    let data: unknown = state?.[key]
+    let data: unknown = state[key]
     if (data === undefined || data === null) continue
     if (typeof data === 'string') {
       try {

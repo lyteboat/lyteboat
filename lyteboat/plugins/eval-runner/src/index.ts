@@ -20,6 +20,7 @@ import { Context, Service } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import type {} from '@deepseek-ai/dsh-api-session-controller'
 import type {} from '@deepseek-ai/dsh-llm'
+import type {} from '@deepseek-ai/dsh-session-query'
 import type { AgentCatalogEntry } from '@lyteboat/agent-catalog'
 import type { LyteboatAgentModel } from '@lyteboat/contracts'
 import type {} from '@lyteboat/request-context'
@@ -107,7 +108,7 @@ function replaySourceOf(options: EvalRunOptions): string {
 
 /** Host service: run an agent's eval cases, compare two runs, and release an agent. */
 export class EvalRunnerService extends Service {
-  static inject = ['sessionController', 'agentCatalog', 'requestContext', 'a2ui', 'turnOutcome', 'llm']
+  static inject = ['sessionController', 'sessionQuery', 'agentCatalog', 'requestContext', 'a2ui', 'turnOutcome', 'llm']
   // The loader applies a class plugin's static Config, not the module's.
   static Config = Config
 
@@ -207,9 +208,9 @@ export class EvalRunnerService extends Service {
       results.push({ case: evalCase.id, turn: index + 1, message: turn.message, observed, checks, pass: checks.every(check => check.pass) })
     }
     if (options.mode === 'real') {
-      const inspection = await this.ctx.sessionController.inspect(sessionId)
-      writeRecordedSession(recordedSessionFile(options.out, evalCase.id), inspection)
-      for (const model of recordedModelsOf(inspection.events)) models.set(JSON.stringify(model), model)
+      using observation = await this.ctx.sessionQuery.observeSession(sessionId, { projectionMode: 'none' })
+      writeRecordedSession(recordedSessionFile(options.out, evalCase.id), observation)
+      for (const model of recordedModelsOf(observation.events)) models.set(JSON.stringify(model), model)
     }
     return results
   }

@@ -65,9 +65,13 @@ function readCommits(range: string): DistCommit[] {
   })
 }
 
-/** Commits under `dsh/` since the first import that break the discipline, one line each. */
-export function violations(commits: readonly DistCommit[]): string[] {
-  const extensionIds = new Set(readExtensions().map(extension => extension.id))
+/**
+ * Commits under `dsh/` since the first import that break the discipline, one line each.
+ * A `drop` commit retires the extensions its `Dist-Extension` trailers name: they must be gone from
+ * extensions.yml, and the `extend` commits that named them stay valid history.
+ */
+export function violations(commits: readonly DistCommit[], extensionIds: ReadonlySet<string> = new Set(readExtensions().map(extension => extension.id))): string[] {
+  const retired = new Set(commits.filter(commit => commit.trailers.get('Dist-Change')?.[0] === 'drop').flatMap(commit => commit.trailers.get('Dist-Extension') ?? []))
   const named = new Set<string>()
   const found: string[] = []
   for (const commit of commits) {
@@ -84,7 +88,11 @@ export function violations(commits: readonly DistCommit[]): string[] {
     const outsidePatches = changeClass === 'policy' ? commit.files.filter(file => !file.endsWith('/cordis.patch.yml')) : []
     if (outsidePatches.length > 0) found.push(`${where}: a policy change edits bundles' cordis.patch.yml only, not ${outsidePatches.join(', ')}`)
     for (const id of commit.trailers.get('Dist-Extension') ?? []) {
-      if (!extensionIds.has(id)) found.push(`${where}: Dist-Extension ${id} is not in dsh-compat/contract/extensions.yml`)
+      if (changeClass === 'drop') {
+        if (extensionIds.has(id)) found.push(`${where}: drops ${id}, which is still in dsh-compat/contract/extensions.yml`)
+        continue
+      }
+      if (!extensionIds.has(id) && !retired.has(id)) found.push(`${where}: Dist-Extension ${id} is not in dsh-compat/contract/extensions.yml`)
       named.add(id)
     }
   }
