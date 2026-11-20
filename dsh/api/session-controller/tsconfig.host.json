@@ -26,6 +26,7 @@
     "src/media-references.ts",
     "src/archived-session-gate.ts",
     "src/skill-catalog.ts",
+    "src/continuation.ts",
     "src/lyteboat/prompt-source.ts"
   ],
   "references": [
