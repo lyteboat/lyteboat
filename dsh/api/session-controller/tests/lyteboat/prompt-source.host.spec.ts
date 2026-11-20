@@ -5,19 +5,22 @@
 import { Context } from '@deepseek-ai/cordis'
 import AgentRegistry from '@deepseek-ai/dsh-agent'
 import type { Agent } from '@deepseek-ai/dsh-agent'
-import { createInboxStub, unsupportedModel } from '@deepseek-ai/dsh-agent-loop-testkit'
+import AgentLoop from '@deepseek-ai/dsh-agent-loop'
+import { createInboxStub, mountAgentLoopTestDependencies, unsupportedModel } from '@deepseek-ai/dsh-agent-loop-testkit'
 import AttachmentStore from '@deepseek-ai/dsh-attachment'
 import CommandRuntime from '@deepseek-ai/dsh-commands'
 import FileUploads from '@deepseek-ai/dsh-client-file-upload'
+import { createUserMessage, LlmError } from '@deepseek-ai/dsh-llm'
 import type { MessageSource, UserMessage } from '@deepseek-ai/dsh-llm'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import TypertRegistry from '@deepseek-ai/dsh-typert-registry'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { MockAdapter, textResponse } from '../../../../core/agent-loop/tests/mock-adapter.ts'
 import { ApiSessionAgentController } from '../../src/agent.ts'
 import { SessionCommandController } from '../../src/commands.ts'
 import type { SessionPromptRequest, SessionRequestId } from '../../src/types.ts'
-import { installSessionReadTestServices } from '../test-remote.ts'
+import { createSessionTestRemote, installSessionReadTestServices } from '../test-remote.ts'
 
 const SESSION = SessionId('prompt-source-session')
 // The source the Remote method builds before it hands the prompt to the command controller.
@@ -95,5 +98,26 @@ describe('SessionCommandController.prompt with sourceFields', () => {
     await expect(controller.prompt(promptRequest({ principal: 'forged' }), CONTROLLER_SOURCE))
       .rejects.toMatchObject({ code: 'gateway/bad-request', message: 'sourceFields cannot set principal: the controller writes them' })
     expect(followup).not.toHaveBeenCalled()
+  })
+
+  it('adds the fields to the retry message an empty prompt continues a failed turn with', async () => {
+    const ctx = new Context()
+    onTestFinished(() => ctx.fiber.dispose())
+    await mountAgentLoopTestDependencies(ctx)
+    await ctx.plugin(AgentLoop, { agents: [] })
+    const adapter = new MockAdapter([() => { throw new LlmError('busy', 'SERVER') }, textResponse('done')])
+    ctx.effect(() => ctx.llm.registerAdapter(['mock'], adapter))
+    const remote = await createSessionTestRemote(ctx, { defaultModelSelection: () => ({ provider: 'mock', model: 'mock' }), cwd: '/workspace' })
+    const agent = await ctx.agentLoop.create(SessionId('prompt-source-continuation'), { provider: 'mock', model: 'mock' })
+    agent.followup(createUserMessage({ content: [{ type: 'text', text: 'original task' }], source: { kind: 'user' } }))
+    await agent.whenIdle()
+    const request = { requestId: 'r-10' }
+
+    const reply = await remote.prompt({ sessionId: agent.id, requestId: 'continue-1' as SessionRequestId, content: [], mode: 'queue', sourceFields: { lyteboatRequest: request } })
+    await agent.whenIdle()
+
+    expect(reply.ok).toBe(true)
+    const retries = agent.session.snapshotEvents().flatMap(event => event.type === 'user/message' && event.data.source.kind === 'retry' ? [event.data] : [])
+    expect(retries.map(retry => retry.source)).toEqual([{ kind: 'retry', rpcId: 'continue-1', lyteboatRequest: request }])
   })
 })
