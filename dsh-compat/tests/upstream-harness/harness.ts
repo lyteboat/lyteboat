@@ -16,7 +16,7 @@
  *   build and adds the runtime values of its `declare const enum`s
  *   (`FiberState`, …): upstream compiles against cordis sources, where those
  *   enums exist at runtime; the published build erases them.
- * - Two imports of files no published package ships resolve to shims.
+ * - Imports of files no published package ships resolve to shims.
  * - TypeScript sources with standard decorators are lowered before vite parses
  *   them, as upstream's `standardDecoratorPlugin` (vitest.shared.ts) does.
  * - Tests of upstream's repository scripts are excluded.
@@ -63,6 +63,8 @@ const SHIMS: Readonly<Record<string, string>> = {
   '../../../settings/settings/tests/configuration-fixture.ts': 'shims/configuration-fixture.ts',
   '@deepseek-ai/dsh-subagent/src/projection.ts': 'shims/subagent-projection.ts',
   '@deepseek-ai/dsh-subagent/src/catalog.ts': 'shims/subagent-catalog.ts',
+  '../../../client/ui-conversation/tests/continuation-fixture.ts': 'shims/continuation-fixture.ts',
+  '../../../subagent/subagent/tests/working-directory-fixture.ts': 'shims/working-directory-fixture.ts',
 }
 
 const CORDIS_SHIM = '\0lyteboat-upstream-tests:cordis'

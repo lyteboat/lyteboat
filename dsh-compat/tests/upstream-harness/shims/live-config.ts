@@ -3,7 +3,7 @@
  * package's tests (`packages/settings/settings/tests/live-config.ts`), which no
  * published package ships. This is that helper: mount a plugin behind a Loader
  * and edit its raw configuration the way profile reconciliation does.
- * Adapted from deepseek-ai/deepseek-harness @ dsh-v0.2.2-rc.1 (66491b05), MIT,
+ * Adapted from deepseek-ai/deepseek-harness @ dsh-v0.2.2-rc.5 (9c2670d3), MIT,
  * without the `omitsGeneratedPage` helper, which the ported specs do not use.
  */
 import { Context, type Plugin } from '@deepseek-ai/cordis'
