@@ -14,8 +14,10 @@
 # G5. The canaries are the clean candidates, up to three per category in ranking order
 # (fewer where a category has fewer clean ones).
 #
-# The list is validated on dsh 0.2.2-rc.1 (2026-11-05): G5 runs every canary on the official release as well, and
-# each one runs clean there and on lyteboat, unchanged from the 0.2.1-rc.2 list (replacements chosen 2026-10-18). Five canaries of the 0.2.0-rc.2 list fail on the official 0.2.1-rc.2
+# The list is validated on dsh 0.2.2-rc.5 (2026-11-20): G5 runs every canary on the official release as well, and
+# each one runs clean there and on lyteboat. One pin moved from the 0.2.2-rc.1 list: dsh-plugin-heartbeat 0.4.2 fails on
+# the official 0.2.2-rc.5 itself (`ctx.agents.roots is not a function`) and moves to 0.8.1, its newest version, which
+# runs clean. The rest is unchanged from the 0.2.1-rc.2 list (replacements chosen 2026-10-18). Five canaries of the 0.2.0-rc.2 list fail on the official 0.2.1-rc.2
 # itself: dsh-permission-rules 0.7.4, dsh-git-ui, and @yadsh/dsh-kv-persist are refused at install by their dsh peers,
 # dsh-file-review-kcoder was unpublished, and dsh-loom stays pending on the credentials service. dsh-permission-rules
 # moves to 0.7.15, its newest version, whose peers admit the release; the other four have no such version and are replaced by the next clean candidates of their
@@ -40,7 +42,7 @@ canaries:
   - { name: dsh-defend, version: 0.3.21, bundle: true, risk: tools-pre-execute }
   - { name: dsh-rate-shield, version: 0.1.0, bundle: true, risk: tools-pre-execute }
   - { name: dsh-survival-mode, version: 0.1.1, bundle: true, risk: tools-pre-execute }
-  - { name: dsh-plugin-heartbeat, version: 0.4.2, bundle: true, risk: step }
+  - { name: dsh-plugin-heartbeat, version: 0.8.1, bundle: true, risk: step }
   - { name: dsh-llm-fallbacks, version: 0.6.6, bundle: true, risk: llm }
   - { name: dsh-llm-gateway-compat, version: 0.4.0, bundle: true, risk: llm }
   - { name: '@chang416/deepsee', version: 4.0.2, bundle: true, risk: llm }
