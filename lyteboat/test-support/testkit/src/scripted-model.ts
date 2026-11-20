@@ -53,6 +53,8 @@ export interface RecordedRequest {
   toolNames: string[]
   /** The tools the history's assistant messages called, by name, in call order. */
   calledTools: string[]
+  /** The request's `User-Agent` header. */
+  userAgent: string
 }
 
 export type ScriptedReply =
@@ -70,14 +72,14 @@ export interface ScriptedModel {
   close(): Promise<void>
 }
 
-/** The sentence dsh-system-prompt's `joinContextSections` opens every runtime-context snapshot with. */
-const DSH_RUNTIME_CONTEXT_OPENING = 'Current runtime context.'
+/** The tag dsh-agent-loop wraps every runtime-context message in (a snapshot and the cleared marker alike). */
+const DSH_RUNTIME_CONTEXT_OPENING = '<system-reminder>\n'
 
 function textOf(blocks: readonly ChatBlock[]): string {
   return blocks.filter(block => block.type === 'text').map(block => block.text ?? '').join('')
 }
 
-function classify(body: ChatRequest): RecordedRequest {
+function classify(body: ChatRequest, userAgent: string): RecordedRequest {
   const updates = body.messages.filter(message => message.role === 'system').map(message => textOf(message.content))
   const systemText = [body.system ?? '', ...updates].filter(text => text !== '').join('\n')
   const users = body.messages.filter(message => message.role === 'user' && message.content.some(block => block.type === 'text'))
@@ -91,7 +93,7 @@ function classify(body: ChatRequest): RecordedRequest {
   let purpose: RequestPurpose = 'loop'
   if (/concise title/iu.test(systemText)) purpose = 'title'
   else if (/skill 路由器/u.test(systemText)) purpose = 'router'
-  return { purpose, body, lastUser, latestMessage, systemText, toolNames, calledTools }
+  return { purpose, body, lastUser, latestMessage, systemText, toolNames, calledTools, userAgent }
 }
 
 async function readJson(request: IncomingMessage): Promise<ChatRequest> {
@@ -149,7 +151,7 @@ export async function startScriptedModel(script: Script, options: { apiKey?: str
         response.end(JSON.stringify({ error: { message: 'unauthorized' } }))
         return
       }
-      const recorded = classify(await readJson(request))
+      const recorded = classify(await readJson(request), request.headers['user-agent'] ?? '')
       requests.push(recorded)
       const reply = await script(recorded)
       // A held reply may outlive the caller, who aborted the request.

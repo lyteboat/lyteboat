@@ -28,7 +28,7 @@
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "catalog:cordis",
-    "@deepseek-ai/dsh-agent-preset-registry": "0.2.2-rc.1",
+    "@deepseek-ai/dsh-agent-preset-registry": "0.2.2-rc.5",
     "@deepseek-ai/dsh-tools": "workspace:*"
   },
   "devDependencies": {
