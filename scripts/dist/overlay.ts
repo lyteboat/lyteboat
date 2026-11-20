@@ -229,6 +229,8 @@ function typertArtifactFiles(artifacts: readonly WorkspaceEmitResult[]): Map<str
 function compareTypertFiles(name: string, dir: string, generated: ReadonlyMap<string, string>, write: boolean): number {
   let failures = 0
   for (const file of kernelTypertFiles(dir)) {
+    // A declaration map is written by upstream's release build, not by the generator; it comes with the import.
+    if (file.endsWith('.map')) continue
     const text = generated.get(file)
     const path = join(repoRoot, 'dsh', dir, file)
     if (text === undefined) {
