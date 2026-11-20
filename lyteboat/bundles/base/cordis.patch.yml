@@ -82,6 +82,10 @@
   disabled: true
 - id: tool-subagent-fork
   disabled: true
+- id: agent-team
+  disabled: true
+- id: tool-agent-team
+  disabled: true
 - id: ptc-runtime
   disabled: true
 - id: workflow-ptc

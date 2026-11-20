@@ -126,7 +126,7 @@ describe('lyteboat serve (in process, scripted model)', () => {
     // directory, a required context of dsh's working-directory service, which the skill tool needs.
     expect(loop?.body.messages).toEqual([{ role: 'user', content: [
       { type: 'text', text: 'what do you see' },
-      { type: 'text', text: `Current runtime context. This snapshot supersedes earlier runtime-context snapshots.\n\nCurrent working directory: ${JSON.stringify(join(home, 'agent-workdirs', 'beta'))}.` },
+      { type: 'text', text: `<system-reminder>\nThe following information describes your current session:\n\nCurrent working directory: ${JSON.stringify(join(home, 'agent-workdirs', 'beta'))}.\n</system-reminder>` },
     ] }])
     // The kernel's dsh-base keeps the session uploads off.
     expect(loop?.body['dsh_plugin_packages']).toBeUndefined()

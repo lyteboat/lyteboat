@@ -149,10 +149,13 @@ describe('finance agent in the serve composition (in process, scripted model)', 
 
     const loop = requests.filter(isLoop)
     expect(loop[0]!.toolNames.filter(name => FINANCE_TOOLS.includes(name))).toEqual(['allocation_diagnosis'])
-    // dsh's default DeepSeek route updates tools in history (addition-only): the switched skill's
-    // tool is declared deferred and activated by a system update after the new user turn.
-    expect(loop[0]!.body.tools?.find(tool => tool.name === 'allocation_diagnosis')).toMatchObject({ defer_loading: true })
-    expect(loop[0]!.body.messages.at(-1)).toEqual({ role: 'system', content: [{ type: 'tool_addition', tool: { type: 'tool_reference', name: 'allocation_diagnosis' } }] })
+    // dsh's default DeepSeek route updates tools in history (addition-only), and a switch that
+    // also removes a tool rebuilds the declarations: the new skill's tool is declared in full,
+    // with no system update in the messages.
+    const declared = loop[0]!.body.tools?.find(tool => tool.name === 'allocation_diagnosis')
+    expect(declared).toBeDefined()
+    expect(declared).not.toHaveProperty('defer_loading')
+    expect(loop[0]!.body.messages.flatMap(message => message.content).filter(block => block.type === 'tool_addition')).toEqual([])
     const earlier = loop[0]!.body.messages.flatMap(message => message.content.filter(block => block.type === 'tool_result')).map(blockText)
     expect(earlier).toHaveLength(1)
     expect(earlier[0]).toMatch(/^\[tool:asset_overview status=ok areas=asset_overview\]/u)
