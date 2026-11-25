@@ -3,13 +3,13 @@
 > 本文把参考实现的能力逐项对到 lyteboat 的代码上：lyteboat 有没有这项能力、在哪个包哪个文件；只有一部分的，缺什么。然后写下决定能力怎样落进 lyteboat 的设计规则，以及接下来引入能力的顺序。
 >
 > **基线**
-> - lyteboat：本仓库的代码。内核是 dsh 0.2.2-rc.1（tag `dsh-v0.2.2-rc.1`，`dsh.upstream.json`）的 16 个包，带三项登记过的扩展；dsh-base 另带一项发行版策略。
+> - lyteboat：本仓库的代码。内核是 dsh 0.2.2-rc.5（tag `dsh-v0.2.2-rc.5`，`dsh.upstream.json`）的 16 个包，带三项登记过的扩展；dsh-base 另带一项发行版策略。
 > - 参考实现：它的 master 分支。
 >
 > **路径约定**
 > - 不带前缀的路径从 lyteboat 仓库根算起，例如 `lyteboat/plugins/tool-policy/src/state.ts`；内核包引用 lyteboat 里的源码路径，例如 `dsh/core/agent-loop/src/agent.ts`。
 > - `ref:` 指参考实现的 Python 包根目录，例如 `ref:core/runtime/base_agent.py`；`ref 仓库:` 指参考实现的仓库根。参考实现只按文件路径引用。
-> - `dsh:` 指 dsh 0.2.0-rc.2 上游 monorepo 的根，例如 `dsh:packages/preset/agent-preset-registry/README.md`。行号取自 `dsh-v0.2.0-rc.2`（提交 `639ed015`）的 checkout；当前跟踪版本是 0.2.2-rc.1，见 `dsh.upstream.json`。
+> - `dsh:` 指 dsh 0.2.0-rc.2 上游 monorepo 的根，例如 `dsh:packages/preset/agent-preset-registry/README.md`。行号取自 `dsh-v0.2.0-rc.2`（提交 `639ed015`）的 checkout；当前跟踪版本是 0.2.2-rc.5，见 `dsh.upstream.json`。
 > - `CLAUDE.md` 按节标题和规则名引用，例如 `CLAUDE.md`「Architecture boundaries」的 "Outside the kernel first"；`.claude/rules/` 下的细则按文件名和规则名引用，例如 `.claude/rules/kernel.md` 的 "Promotion"。
 >
 > **数据说明**
@@ -147,12 +147,13 @@
 - **当数据读，用 schema 校验。** `lyteboatRequestOf(source)`（`lyteboat/plugins/request-context/src/request-projection.ts`）先看 kind 是不是 `'user'`，再把 `lyteboatRequest` 字段取出来用 `lyteboatRequestSchema` 校验，不合 schema 就抛错；不用 `'lyteboatRequest' in source` 这类能力探测（`.claude/rules/typescript.md`的 "No capability probing"）。插件之间只能 `import type`，a2ui 用同样的读法取判定里的卡片（`cardsOfRequest`，`lyteboat/plugins/a2ui/src/cards-projection.ts`）。
 - **上下文只落日志，不给模型看。** 调用方给的上下文原样记在 `context` 上，工具经 `ctx.requestContext.contextOf(agent)` 读取；凭证不放进上下文（`lyteboat/plugins/request-context/src/index.ts` 的模块注释）。实跑：金融智能体几次运行的所有请求体（准入分类、路由、主循环）里都没有 `lyteboatRequest` 字段，也没有上下文里的客户名。
 
-### 2.3 工具集变化按 dsh 0.2.2-rc.1 的工具更新走
+### 2.3 工具集变化按 dsh 0.2.2-rc.5 的工具更新走
 
 - tool-policy 在每次 `lyteboat/pre-assemble` 之后重算 agent 的 `restrict`，被拒的名单变了才重发（`reconcile`，`lyteboat/plugins/tool-policy/src/index.ts`）。技能切换就是一次工具集变化。
 - 内核把两次请求之间的工具集变化记成一条 `developer/message`：source 是 `tool-registry`，内容是 `tool-addition`、`tool-removal`，`headerSeq` 指向变化后的那条 `request/header`。
-- 路由声明了 `toolUpdate` 时，工具变化不开新的请求序列：新出现的工具带 `defer_loading` 声明，由新 user 轮之后的一个 `tool_addition` 块启用。dsh 默认的 `deepseek-flash` 是 `addition-only`（`dsh:packages/llm/llm-deepseek/src/models.ts:13`）。路由没声明 `toolUpdate`（例如同一目录里的 `deepseek-v4-pro`）时，工具变化开一个新序列：`request/header` 带 `startsSeries`，系统提示替换（`dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.step`）。请求带 `toolHistory`（同文件 `ReactLoopAgent.buildRequest`）。
-- 所以动态路由在 `addition-only` 路由上切换技能不打断前缀。两种路由都在 G4 里；lyteboat 这边由 `lyteboat/plugins/tool-policy/tests/tool-policy.spec.ts` 和 `examples/agents/finance/tests/finance.composite.ts` 覆盖，实跑见 5.4。
+- 路由声明了 `toolUpdate` 时，工具变化不开新的请求序列。dsh 默认的 `deepseek-flash` 是 `addition-only`（`dsh:packages/llm/llm-deepseek/src/models.ts:13`）。路由没声明 `toolUpdate`（例如同一目录里的 `deepseek-v4-pro`）时，工具变化开一个新序列：`request/header` 带 `startsSeries`，系统提示替换（`dsh/core/agent-loop/src/agent.ts` `ReactLoopAgent.step`）。请求带 `toolHistory`（同文件 `ReactLoopAgent.buildRequest`）。
+- `addition-only` 路由上，只增不减的变化保住请求前缀：新工具带 `defer_loading` 声明，由新 user 轮之后的一个 `tool_addition` 块启用。有工具被移除，或者往空工具集里新增时，声明重建：当前可用的工具完整声明，`tool_addition` 块不再发，前缀改变（`dsh/llm/llm/src/content.ts` `rebaseAdditionOnlyHistory`）。
+- 切换技能通常既加又减，所以动态路由切换技能会改掉前缀，只是不开新序列、系统提示不重写。两种路由都在 G4 里；lyteboat 这边由 `lyteboat/plugins/tool-policy/tests/tool-policy.spec.ts` 和 `examples/agents/finance/tests/finance.composite.ts` 覆盖，实跑见 5.4。
 
 ### 2.4 沿用 dsh 的做法
 
@@ -200,7 +201,7 @@
 | tool | `dsh/core/tools` | dsh-base 的 `tools` 行 | 有，用 dsh |
 | skill | `dsh/skill/skill` | dsh-base 的 `skill`、`skill-filesystem`、`tool-skill` 行；agent 的 `lyteboatAgentDef` 挂自己的技能目录（`skillDirs`，缺省是 `assets/skills`） | 有，用 dsh |
 | session | `dsh/core/session` 与持久化 seam | dsh-base 的 `session-persistence-jsonl` 行 | 有，只有 JSONL |
-| memory | dsh 0.2.2-rc.1 的 `packages/` 下没有记忆分组 | lyteboat 自有 seam | 无（6.3） |
+| memory | dsh 0.2.2-rc.5 的 `packages/` 下没有记忆分组 | lyteboat 自有 seam | 无（6.3） |
 
 规则：
 - **seam 一直在，策略可以关。** 参考实现的记忆由 `ENABLE_MEMORY` 控制，默认关（`ref 仓库:.env-sample`）；lyteboat 让记忆 seam 在每个业务 profile 里都挂着，由 agent 决定开不开记忆策略，这样各业务 profile 的启动行为一致。
@@ -464,7 +465,7 @@
 
 **参考实现。** 每个 (agent, user) 有一份按标题组织的 MEMORY.md（`ref:plugins/memory/manager.py`）。会话开始时冻结一份截断后的快照，注入 `<memory_context>`，并声明它不是当前用户输入（`ref:plugins/memory/prompts.py`）。每轮结束后用一次模型调用抽取要写回的内容，另外定期做 dream 整理。资产诊断 agent 的「外部资产」小节由诊断工具在代码里独占读写；它的模块注释写明，会话末的抽取轮虽然被告知不要动这个标题，模型仍会去「整理」它（加空格、改单位、换全角括号），读取时只好放宽正则。
 
-**dsh。** dsh 0.2.2-rc.1 的 `packages/` 下没有记忆分组。最接近的是 agent-instructions：它把用户级和项目级的 AGENTS.md 类文件作为带来源的 user/message 注入，被压缩遮蔽后重新注入（`dsh:packages/context/agent-instructions/README.md`「Summary」）；这是人写的静态说明，不会自己学习。session-query 能检索历史会话，dsh-base 默认不打开它的全文检索。
+**dsh。** dsh 0.2.2-rc.5 的 `packages/` 下没有记忆分组。最接近的是 agent-instructions：它把用户级和项目级的 AGENTS.md 类文件作为带来源的 user/message 注入，被压缩遮蔽后重新注入（`dsh:packages/context/agent-instructions/README.md`「Summary」）；这是人写的静态说明，不会自己学习。session-query 能检索历史会话，dsh-base 默认不打开它的全文检索。
 
 **社区插件。** npm 上有多个 dsh 记忆插件。G5 金丝雀之一 `@zzerx/dsh-plugin-memory` 0.4.2（`dsh-compat/tests/canaries/canaries.yml`）在 lyteboat 内核上原样可用，但它按「全局」和「项目（以工作区目录为键）」两个作用域存记忆（它的 README「能做什么」），面向编码助手，不按业务用户分区，也没有多实例存储；它发布自己的服务，没有可以挂 provider 的公共 seam。
 
@@ -689,7 +690,7 @@ $ curl -s 127.0.0.1:<端口>/chat -H 'content-type: application/json' \
 
 - 第二轮也是先记一条准入分类，再记一条路由调用。新的人类消息只带请求 id、发起者和 agent 的身份，没有带上下文；准入分类出 `asset` 后放行，没有回复「未识别身份」，诊断工具也读到了客户（模型拿到的结果头是 `[tool:allocation_diagnosis status=ok verdict=cautious areas=allocation_diagnosis,allocation_plan]`，【事实】里有「风险资产占 32.0%；按「100 减年龄」，28 岁的建议区间是 62%–82%」），说明 `lyteboatRequest` 投影沿用了第一轮的上下文。
 - 路由从 asset-overview 切到 allocation-diagnosis：新的 skill-invocation 消息先写一句 `Skill "asset-overview" is no longer active; follow the skill below instead.`。
-- 进程换了一个，所以 `request/header` 的 reason 是 `resume`；紧接着一条 `developer/message`，source `tool-registry`，内容是 `tool-addition allocation_diagnosis`、`tool-removal asset_overview`，`headerSeq` 指向这条 header。默认路由是 `addition-only`：请求的工具是 `skill` 和带 `defer_loading` 的 `allocation_diagnosis`，最后一条消息是 system 角色的 `tool_addition` 块（2.3）。
+- 进程换了一个，所以 `request/header` 的 reason 是 `resume`；紧接着一条 `developer/message`，source `tool-registry`，内容是 `tool-addition allocation_diagnosis`、`tool-removal asset_overview`，`headerSeq` 指向这条 header。默认路由是 `addition-only`，这次更新去掉了一个工具，声明重建：请求的工具是 `skill` 和完整声明的 `allocation_diagnosis`，消息里没有 `tool_addition` 块，最后一条是这一轮的 user 消息（2.3）。
 - 第一轮的工具结果没有被替换：日志里没有 surface replace 的 `tool/result`，第二轮的请求里第一轮 `asset_overview` 的 digest 是完整的。
 
 ### 5.5 与参考实现的行为差异

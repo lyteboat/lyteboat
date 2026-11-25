@@ -97,15 +97,13 @@
           "constructor": "constructor(ctx: Context);",
           "create": "create(options: CreateAgentOptions): Promise<AgentHandle>;",
           "currentInitiator": "currentInitiator(): Agent | undefined;",
-          "enter": "enter(agent: Agent, owner: Agent | undefined): () => void;",
+          "enter": "enter(agent: Agent): () => void;",
           "get": "get(id: SessionId): Agent | undefined;",
           "inject": "static inject: string[];",
-          "isOwnedBy": "isOwnedBy(id: SessionId, owner: Agent): boolean;",
           "list": "list(): Agent[];",
           "register": "register(agent: Agent): ReturnType<Context['effect']>;",
           "requireInitiator": "requireInitiator(): Agent;",
           "resume": "resume(options: ResumeAgentOptions): Promise<AgentHandle>;",
-          "roots": "roots(): Agent[];",
           "setFactory": "setFactory(factory: AgentFactory): () => void;",
           "turnBoundaryOf": "turnBoundaryOf(session: Session): TurnBoundaryProjection;",
           "withInitiator": "withInitiator<T>(agent: Agent, operation: () => T): T;",
@@ -133,7 +131,6 @@
           "agentOptions": "readonly agentOptions?: AgentOptions;",
           "inheritedEventCount": "readonly inheritedEventCount?: SessionLogOffset;",
           "meta": "readonly meta?: { readonly cwd?: string; readonly parentSession?: SessionId; readonly isSeeded?: boolean; readonly origin?: 'subagent'; readonly delegationDepth?: number; readonly agentPreset?: string; };",
-          "parentAgent": "readonly parentAgent?: Agent;",
           "seed": "readonly seed?: readonly SessionEvent[];",
           "sessionId": "readonly sessionId: SessionId;",
           "setup": "readonly setup?: AgentSetup;",
@@ -187,7 +184,6 @@
         "ResumeAgentOptions": {
           "$declaration": "interface ResumeAgentOptions { }",
           "agentOptions": "readonly agentOptions?: AgentOptions;",
-          "parentAgent": "readonly parentAgent?: Agent;",
           "resumeSessionId": "readonly resumeSessionId: SessionId;",
           "setup": "readonly setup?: AgentSetup;",
           "signal": "readonly signal?: AbortSignal;"
@@ -210,15 +206,13 @@
           "constructor": "constructor(ctx: Context);",
           "create": "create(options: CreateAgentOptions): Promise<AgentHandle>;",
           "currentInitiator": "currentInitiator(): Agent | undefined;",
-          "enter": "enter(agent: Agent, owner: Agent | undefined): () => void;",
+          "enter": "enter(agent: Agent): () => void;",
           "get": "get(id: SessionId): Agent | undefined;",
           "inject": "static inject: string[];",
-          "isOwnedBy": "isOwnedBy(id: SessionId, owner: Agent): boolean;",
           "list": "list(): Agent[];",
           "register": "register(agent: Agent): ReturnType<Context['effect']>;",
           "requireInitiator": "requireInitiator(): Agent;",
           "resume": "resume(options: ResumeAgentOptions): Promise<AgentHandle>;",
-          "roots": "roots(): Agent[];",
           "setFactory": "setFactory(factory: AgentFactory): () => void;",
           "turnBoundaryOf": "turnBoundaryOf(session: Session): TurnBoundaryProjection;",
           "withInitiator": "withInitiator<T>(agent: Agent, operation: () => T): T;",
@@ -351,9 +345,11 @@
   "@deepseek-ai/dsh-api-session-controller": {
     "augmentations": {
       "@deepseek-ai/dsh-llm#MessageSourceMap": {
+        "retry-rpc": "'retry-rpc': { kind: 'retry'; rpcId: SessionRequestId; clientTimeZone?: string; principal?: Principal; };",
         "user-rpc": "'user-rpc': { kind: 'user'; rpcId: SessionRequestId; clientTimeZone?: string; principal?: Principal; };"
       },
       "@deepseek-ai/dsh-session-projection/types#SessionProjectionMap": {
+        "conversationContinuation": "conversationContinuation: SessionSeq | null;",
         "imageLimits": "imageLimits: SessionProjectionSummaryExcluded<ImageAttachmentLimits>;",
         "sessionListMetadata": "sessionListMetadata: SessionListMetadata;"
       },
@@ -915,7 +911,8 @@
           "beginSubmission": "beginSubmission(input: BeginSubmissionInput): SubmissionHandle;",
           "cancel": "cancel(): Promise<RemoteResult<{ accepted: true; }>>;",
           "command": "command(line: string): Promise<RemoteResult<{ matched: boolean; }>>;",
-          "loadOlder": "loadOlder(): Promise<void>;",
+          "consumeOlder": "consumeOlder(): boolean;",
+          "loadOlder": "loadOlder(options?: { deferConsumption?: boolean; }): Promise<void>;",
           "loadThrough": "loadThrough(seq: SessionSeq): Promise<void>;",
           "projections": "readonly projections: ProjectionsFace;",
           "prompt": "prompt(content: PromptContentPart[], mode: 'queue' | 'steer', signal?: AbortSignal, requestId?: SessionRequestId): Promise<RemoteResult<{ accepted: true; }>>;",
@@ -1014,8 +1011,9 @@
           "bindScope": "bindScope(actx: Context): void;",
           "cancel": "cancel(): Promise<RemoteResult<{ accepted: true; }>>;",
           "command": "command(line: string): Promise<RemoteResult<{ matched: boolean; }>>;",
-          "configureSubagent": "configureSubagent(address: SubagentAddress | undefined, parentAvailable?: boolean): void;",
+          "configureSubagent": "configureSubagent(address: SubagentAddress | undefined): void;",
           "constructor": "constructor(sessionId: SessionId, remote: SessionRemotes, options?: SessionOptions);",
+          "consumeOlder": "consumeOlder(): boolean;",
           "dispose": "dispose(): Promise<void>;",
           "eventSource": "readonly eventSource: MutableSessionEventSource;",
           "getSnapshot": "getSnapshot(): SessionSnapshot;",
@@ -1023,8 +1021,7 @@
           "handleBlank": "handleBlank(blank: boolean): void;",
           "handleRemoved": "handleRemoved(): void;",
           "handleRunning": "handleRunning(running: boolean): void;",
-          "handleSubagentParentAvailable": "handleSubagentParentAvailable(available: boolean): void;",
-          "loadOlder": "loadOlder(): Promise<void>;",
+          "loadOlder": "loadOlder(options?: { deferConsumption?: boolean; }): Promise<void>;",
           "loadThrough": "loadThrough(seq: SessionSeq): Promise<void>;",
           "open": "open(): Promise<void>;",
           "projections": "readonly projections: ProjectionValueStore;",
@@ -1115,6 +1112,7 @@
         "SessionLiveEventEntry": "type SessionLiveEventEntry = Extract<SessionEventLikeEntry, { readonly type: 'event'; }>;",
         "SessionProjectionMap": {
           "$declaration": "interface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }",
+          "conversationContinuation": "conversationContinuation: SessionSeq | null;",
           "imageLimits": "imageLimits: SessionProjectionSummaryExcluded<ImageAttachmentLimits>;",
           "inbox": "inbox: InboxWireState;",
           "modelSelection": "modelSelection: ModelSelectionProjection;",
@@ -1164,6 +1162,8 @@
           "awaitingFirstTurn": "readonly awaitingFirstTurn: boolean;",
           "blank": "readonly blank: boolean;",
           "hasMore": "readonly hasMore: boolean;",
+          "historyLoadStatus": "readonly historyLoadStatus: 'idle' | 'loading' | 'pendingConsumption' | 'error';",
+          "historyWasPartial": "readonly historyWasPartial: boolean;",
           "lastAgentError": "readonly lastAgentError: string | null;",
           "loadingOlder": "readonly loadingOlder: boolean;",
           "openError": "readonly openError: RemoteFailure | null;",
@@ -1174,7 +1174,7 @@
           "removed": "readonly removed: boolean;",
           "running": "readonly running: boolean;",
           "sessionId": "readonly sessionId: SessionId;",
-          "subagent": "readonly subagent: { readonly address: SubagentAddress; readonly parentAvailable?: boolean; } | null;"
+          "subagent": "readonly subagent: { readonly address: SubagentAddress; } | null;"
         },
         "SessionSummary": {
           "$declaration": "interface SessionSummary { }",
@@ -1770,6 +1770,7 @@
         "AppIdentity": {
           "$declaration": "interface AppIdentity { }",
           "product": "product: string;",
+          "suffix": "suffix?: string | undefined;",
           "url": "url: string;",
           "version": "version: string;"
         },
@@ -1807,6 +1808,7 @@
           "replayState": "get replayState(): ReplayEnvelope | undefined;",
           "usage": "get usage(): TokenUsage | undefined;"
         },
+        "BuiltinLlmFailureCode": "type BuiltinLlmFailureCode = keyof typeof LLM_FAILURE_CODES | `HTTP_${number}`;",
         "CONTEXT_SUMMARY_MAX_CHARS": "const CONTEXT_SUMMARY_MAX_CHARS = 120;",
         "CONTEXT_WINDOW_EXCEEDED_CODE": "const CONTEXT_WINDOW_EXCEEDED_CODE = \"CONTEXT_WINDOW_EXCEEDED\";",
         "ConfigureCall": "type ConfigureCall = (controls: Readonly<LlmCallControls>, model: Readonly<LlmResolvedModelInfo>) => LlmCallControls;",
@@ -1887,6 +1889,7 @@
           "offloaded": "offloaded?: true;",
           "type": "type: 'image';"
         },
+        "LLM_FAILURE_CODES": "const LLM_FAILURE_CODES: { readonly ABORTED: {}; readonly ACCOUNT_QUOTA: {}; readonly ACCOUNT_SIGN_IN_REQUIRED: {}; readonly ACCOUNT_TOKEN_INVALID: {}; readonly AUTH: {}; readonly CLIENT_UPGRADE_REQUIRED: {}; readonly CONTENT_REFUSED: {}; readonly CONTEXT_WINDOW_EXCEEDED: {}; readonly DISCOVERY_FAILED: {}; readonly DISCOVERY_UNSUPPORTED: {}; readonly DUPLICATE_ADAPTER: {}; readonly DUPLICATE_DIRECTORY: {}; readonly DUPLICATE_DISCOVERY: {}; readonly EMPTY_RESPONSE: { readonly retryChoice: true; }; readonly FILES_API: {}; readonly IMAGE_OFFLOAD_REQUIRED: {}; readonly INVALID_ADAPTER: {}; readonly INVALID_CATALOG: {}; readonly INVALID_CONFIG: {}; readonly INVALID_CREDENTIAL: {}; readonly INVALID_DIRECTORY: {}; readonly INVALID_DISCOVERY: {}; readonly INVALID_MODEL_CONTEXT: {}; readonly INVALID_MODEL_INFO: {}; readonly INVALID_MODEL_MAX_TOKENS: {}; readonly INVALID_MODEL_REASONING: {}; readonly INVALID_PREPARED_CALL: {}; readonly INVALID_REPLAY_STATE: {}; readonly INVALID_REQUEST: {}; readonly INVALID_RESPONSE: {}; readonly MALFORMED_RESPONSE: { readonly retryChoice: true; }; readonly MISSING_CREDENTIAL: {}; readonly MODEL_SWITCH_COMPACTION_FAILED: {}; readonly MODEL_UNSUPPORTED: {}; readonly NO_ADAPTER: {}; readonly NO_CREDENTIAL_STORE: {}; readonly NO_DISCOVERY: {}; readonly PI_AI_ERROR: {}; readonly QUOTA: { readonly retryChoice: true; }; readonly RATE_LIMIT: { readonly retryChoice: true; }; readonly REGISTRATION_DISPOSED: {}; readonly REQUEST_EXTENSION: {}; readonly REQUEST_HEADERS: {}; readonly SERVER: { readonly retryChoice: true; }; readonly STREAM_CLOSED: { readonly retryChoice: true; }; readonly TIMEOUT: { readonly retryChoice: true; }; readonly TRANSPORT: { readonly retryChoice: true; }; readonly UNKNOWN: {}; readonly UNKNOWN_MODEL: {}; readonly UNSTORABLE_PROVIDER_ID: {}; readonly UNSUPPORTED_CONTENT: {}; readonly UNSUPPORTED_OPTION: {}; readonly UNSUPPORTED_REASONING_EFFORT: {}; };",
         "LlmAdapter": {
           "$declaration": "abstract class LlmAdapter { }",
           "imageRequestPricing": "imageRequestPricing(_provider: string, _model: string): LlmImageRequestPricing | undefined;",
@@ -1938,8 +1941,9 @@
         },
         "LlmError": {
           "$declaration": "class LlmError extends HarnessError { }",
-          "constructor": "constructor(message: string, code: string, options?: LlmErrorOptions);",
-          "failure": "readonly failure: LlmFailure;"
+          "constructor": "constructor(message: string, code: BuiltinLlmFailureCode, options?: LlmErrorOptions);",
+          "failure": "readonly failure: LlmFailure;",
+          "fromFailure": "static fromFailure(failure: LlmFailure, options?: ErrorOptions): LlmError;"
         },
         "LlmErrorOptions": {
           "$declaration": "interface LlmErrorOptions extends ErrorOptions { }",
@@ -2073,6 +2077,7 @@
           "compact-checkpoint": "'compact-checkpoint': CompactionCheckpointSource;",
           "model": "model: ModelMessageSource;",
           "model-selection": "'model-selection': { kind: 'model-selection'; } & ContextFormed;",
+          "retry-rpc": "'retry-rpc': { kind: 'retry'; rpcId: SessionRequestId; clientTimeZone?: string; principal?: Principal; };",
           "skill-invocation": "'skill-invocation': SkillInvocationSource;",
           "system-prompt": "'system-prompt': SystemPromptMessageSource;",
           "tool": "tool: ToolMessageSource;",
@@ -2121,6 +2126,7 @@
         },
         "ProviderRequestId": "function ProviderRequestId(id: string): ProviderRequestId;\ntype ProviderRequestId = Branded<'ProviderRequestId'>;",
         "QUOTA_EXCEEDED_CODE": "const QUOTA_EXCEEDED_CODE = \"QUOTA\";",
+        "RETRY_CODE_CHOICES": "const RETRY_CODE_CHOICES: readonly BuiltinLlmFailureCode[];",
         "RawStreamChunkType": "type RawStreamChunkType = Exclude<StreamChunk['type'], 'text-delta' | 'reasoning-delta' | 'tool-call-delta'>;",
         "ReasoningBlock": {
           "$declaration": "interface ReasoningBlock { }",
@@ -2783,8 +2789,9 @@
         "SESSION_FORMAT_VERSION": "const SESSION_FORMAT_VERSION = 4;",
         "Session": {
           "$declaration": "class Session { }",
-          "append": "append<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [ opts: SurfaceIntent<T> ] : [ ]): SessionEvent<T>;",
+          "append": "append(inputs: readonly SessionEventInput[]): readonly SessionEvent[];\nappend<T extends SessionEventType>(type: T, data: SessionEventMap[T], ...opts: T extends SurfaceEventType ? [ opts: SurfaceIntent<T> ] : [ ]): SessionEvent<T>;",
           "create": "static create(id: SessionId, seed?: readonly SessionEvent[], header?: SessionHeader, inheritedEventCount?: SessionLogOffset, projections?: readonly SessionMessageProjection[]): Session;",
+          "currentBatchPublication": "get currentBatchPublication(): SessionEvent | undefined;",
           "deriveEventMessage": "deriveEventMessage(event: SessionEvent): Message | null;",
           "deriveMessages": "deriveMessages(): Message[];",
           "eventAt": "eventAt(seq: SessionSeq): SessionEvent | undefined;",
@@ -2804,6 +2811,7 @@
           "toolHistory": "toolHistory(): ToolHistory;"
         },
         "SessionEvent": "type SessionEvent<T extends SessionEventType = SessionEventType> = { [K in SessionEventType]: { type: K; seq: SessionSeq; time: number; data: SessionEventMap[K]; ignorable?: true; } & (K extends SurfaceEventType ? SurfaceIntent<K> : { surfaceOp?: never; sourceEventSeqs?: never; }); }[T];",
+        "SessionEventInput": "type SessionEventInput = { [K in SessionEventType]: readonly [ type: K, data: SessionEventMap[K], ...opts: K extends SurfaceEventType ? [ opts: SurfaceIntent<K> ] : [ ] ]; }[SessionEventType];",
         "SessionEventMap": {
           "$declaration": "interface SessionEventMap { }\ninterface SessionEventMap { }\ninterface SessionEventMap { }\ninterface SessionEventMap { }\ninterface SessionEventMap { }\ninterface SessionEventMap { }\ninterface SessionEventMap { }",
           "agent/inbox/spliced": "'agent/inbox/spliced': { target: InboxTarget; start: number; removedCount?: number; inserted: UserMessage[]; outcome?: 'canceled'; };",
@@ -3026,6 +3034,7 @@
           "contentGeneration": "get contentGeneration(): number;",
           "deriveEventMessage": "deriveEventMessage(event: SessionEvent): Message | null;",
           "nodes": "get nodes(): readonly SessionSeq[];",
+          "prepareBatch": "prepareBatch(events: readonly SessionEvent[]): () => void;",
           "replaceGeneration": "get replaceGeneration(): number;",
           "validateNext": "validateNext(event: SessionEvent): void;"
         },
@@ -3083,6 +3092,7 @@
         },
         "SESSION_FORMAT_VERSION": "const SESSION_FORMAT_VERSION = 4;",
         "SessionEvent": "type SessionEvent<T extends SessionEventType = SessionEventType> = { [K in SessionEventType]: { type: K; seq: SessionSeq; time: number; data: SessionEventMap[K]; ignorable?: true; } & (K extends SurfaceEventType ? SurfaceIntent<K> : { surfaceOp?: never; sourceEventSeqs?: never; }); }[T];",
+        "SessionEventInput": "type SessionEventInput = { [K in SessionEventType]: readonly [ type: K, data: SessionEventMap[K], ...opts: K extends SurfaceEventType ? [ opts: SurfaceIntent<K> ] : [ ] ]; }[SessionEventType];",
         "SessionEventMap": {
           "$declaration": "interface SessionEventMap { }\ninterface SessionEventMap { }\ninterface SessionEventMap { }\ninterface SessionEventMap { }\ninterface SessionEventMap { }\ninterface SessionEventMap { }\ninterface SessionEventMap { }",
           "agent/inbox/spliced": "'agent/inbox/spliced': { target: InboxTarget; start: number; removedCount?: number; inserted: UserMessage[]; outcome?: 'canceled'; };",
@@ -3352,6 +3362,7 @@
         },
         "SessionProjectionMap": {
           "$declaration": "interface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }",
+          "conversationContinuation": "conversationContinuation: SessionSeq | null;",
           "imageLimits": "imageLimits: SessionProjectionSummaryExcluded<ImageAttachmentLimits>;",
           "inbox": "inbox: InboxWireState;",
           "modelSelection": "modelSelection: ModelSelectionProjection;",
@@ -3402,6 +3413,7 @@
       "./types": {
         "SessionProjectionMap": {
           "$declaration": "interface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }\ninterface SessionProjectionMap { }",
+          "conversationContinuation": "conversationContinuation: SessionSeq | null;",
           "imageLimits": "imageLimits: SessionProjectionSummaryExcluded<ImageAttachmentLimits>;",
           "inbox": "inbox: InboxWireState;",
           "modelSelection": "modelSelection: ModelSelectionProjection;",
@@ -3768,7 +3780,7 @@
         },
         "ParameterPropertySpec": "type ParameterPropertySpec = ValueSchemaSpec & { required?: true; };",
         "ParameterSchemaSpec": "type ParameterSchemaSpec = { [key: string]: ParameterPropertySpec; [key: symbol]: never; };",
-        "PostToolDecision": "type PostToolDecision = { kind: 'accept'; content?: ContentBlock[]; value?: never; additionalContexts?: UserMessage[]; } | { kind: 'accept'; value: JsonValue; content?: never; additionalContexts?: UserMessage[]; } | { kind: 'block'; feedback: ContentBlock[]; additionalContexts?: UserMessage[]; };",
+        "PostToolDecision": "type PostToolDecision = { kind: 'accept'; content?: ContentBlock[]; value?: never; additionalContexts?: UserMessage[]; } | { kind: 'accept'; value: JsonValue; content?: never; additionalContexts?: UserMessage[]; } | { kind: 'block'; feedback: ContentBlock[]; info?: ToolErrorInfo; additionalContexts?: UserMessage[]; };",
         "PreToolDecision": "type PreToolDecision = { kind: 'allow'; } | { kind: 'deny'; reason: string; info?: ToolErrorInfo; } | { kind: 'cancel'; } | { kind: 'ask'; reason?: string; displayReason?: { readonly en: string; readonly [locale: string]: string; }; };",
         "RUN_CODE_NAME": "const RUN_CODE_NAME = \"run_code\";",
         "ReadFileLine": {
@@ -3886,6 +3898,10 @@
           "result": "readonly result: ToolExecutionResult;"
         },
         "ToolCallView": "type ToolCallView = GenericCallView | TerminalCallView | DiffCallView;",
+        "ToolContextUnavailableError": {
+          "$declaration": "class ToolContextUnavailableError extends HarnessError { }",
+          "constructor": "constructor(message: string, options?: ErrorOptions);"
+        },
         "ToolDefinition": {
           "$declaration": "interface ToolDefinition extends ToolSchema { }",
           "execute": "execute(args: unknown, exec: ToolRunContext): Promise<unknown>;",
@@ -3962,7 +3978,12 @@
           "info": "info?: ToolErrorInfo;",
           "message": "message: string;"
         },
-        "ToolGuard": "type ToolGuard = (execution: Readonly<ToolExecution>) => string | undefined;",
+        "ToolGuard": "type ToolGuard = (execution: Readonly<ToolExecution>) => string | ToolGuardDenial | undefined;",
+        "ToolGuardDenial": {
+          "$declaration": "interface ToolGuardDenial { }",
+          "info": "readonly info?: ToolErrorInfo;",
+          "reason": "readonly reason: string;"
+        },
         "ToolModelInput": "type ToolModelInput = Pick<ToolProviderResult, 'schemas' | 'knownNames'>;",
         "ToolNotFoundError": {
           "$declaration": "class ToolNotFoundError extends HarnessError { }",
@@ -4007,7 +4028,7 @@
         "ToolRuntime": {
           "$declaration": "class ToolsService extends Service { }",
           "Config": "static Config: z<Schemastery.ObjectS<NoInfer<{ mode: z<never, never, \"plain\">; maxParallelSubCalls: z<never, never, \"plain\">; }>>, Schemastery.ObjectT<NoInfer<{ mode: z<never, never, \"plain\">; maxParallelSubCalls: z<never, never, \"plain\">; }>>, \"plain\">;",
-          "checkGuards": "checkGuards(exec: ToolExecution): string | undefined;",
+          "checkGuards": "checkGuards(exec: ToolExecution): ToolGuardDenial | undefined;",
           "constructor": "constructor(ctx: Context);",
           "definitions": "definitions(scope?: ScopeKey, toolSet?: ResolvedToolSet): readonly ToolDefinition[];",
           "executable": "executable(name: string, scope?: ScopeKey, toolSet?: ResolvedToolSet): ToolDefinition | undefined;",
@@ -4024,7 +4045,7 @@
         "ToolsService": {
           "$declaration": "class ToolsService extends Service { }",
           "Config": "static Config: z<Schemastery.ObjectS<NoInfer<{ mode: z<never, never, \"plain\">; maxParallelSubCalls: z<never, never, \"plain\">; }>>, Schemastery.ObjectT<NoInfer<{ mode: z<never, never, \"plain\">; maxParallelSubCalls: z<never, never, \"plain\">; }>>, \"plain\">;",
-          "checkGuards": "checkGuards(exec: ToolExecution): string | undefined;",
+          "checkGuards": "checkGuards(exec: ToolExecution): ToolGuardDenial | undefined;",
           "constructor": "constructor(ctx: Context);",
           "definitions": "definitions(scope?: ScopeKey, toolSet?: ResolvedToolSet): readonly ToolDefinition[];",
           "executable": "executable(name: string, scope?: ScopeKey, toolSet?: ResolvedToolSet): ToolDefinition | undefined;",
@@ -4077,7 +4098,7 @@
         "default": {
           "$declaration": "class ToolsService extends Service { }",
           "Config": "static Config: z<Schemastery.ObjectS<NoInfer<{ mode: z<never, never, \"plain\">; maxParallelSubCalls: z<never, never, \"plain\">; }>>, Schemastery.ObjectT<NoInfer<{ mode: z<never, never, \"plain\">; maxParallelSubCalls: z<never, never, \"plain\">; }>>, \"plain\">;",
-          "checkGuards": "checkGuards(exec: ToolExecution): string | undefined;",
+          "checkGuards": "checkGuards(exec: ToolExecution): ToolGuardDenial | undefined;",
           "constructor": "constructor(ctx: Context);",
           "definitions": "definitions(scope?: ScopeKey, toolSet?: ResolvedToolSet): readonly ToolDefinition[];",
           "executable": "executable(name: string, scope?: ScopeKey, toolSet?: ResolvedToolSet): ToolDefinition | undefined;",

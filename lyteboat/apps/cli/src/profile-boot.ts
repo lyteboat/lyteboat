@@ -14,7 +14,7 @@
  * are provided to the tree through `ctx.cmdlineArgs`.
  *
  * Adapted from deepseek-ai/deepseek-harness apps/cli/src/profile-boot.ts
- * @ dsh-v0.2.2-rc.1 (66491b05), MIT — see THIRD_PARTY_NOTICES.md. Changes:
+ * @ dsh-v0.2.2-rc.5 (9c2670d3), MIT — see THIRD_PARTY_NOTICES.md. Changes:
  * lyteboat's own template table replaces dsh's shipped-profile initialization,
  * `--from-default-profile` and the application-owned profile runtime are
  * dropped, a skipped bundle the profile's lyteboat template lists fails the
@@ -219,12 +219,25 @@ interface RunProfileOptions {
 }
 
 /**
+ * Render a profile name as an RFC 9110 `User-Agent` product version: bytes outside `tchar`, and `%`, are
+ * percent-encoded, so spaces, `/`, and non-ASCII names stay readable and reversible.
+ * @param name - the booted profile name.
+ * @returns the encoded name.
+ */
+function userAgentProfile(name: string): string {
+  // encodeURIComponent leaves only `(` and `)` outside tchar.
+  return encodeURIComponent(name).replace(/[()]/gu, char => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
+}
+
+/**
  * Boot one profile invocation end to end and leave process lifetime to the
  * mounted plugins (or to a one-shot runner the composition mounts).
  * @param options - environment snapshot, profile name, overlays, and the booted app's own arguments.
  * @returns the settled root context and the shutdown controller.
  */
 export async function runProfile(options: RunProfileOptions): Promise<{ ctx: Context; shutdown: ProcessShutdown }> {
+  // Model providers see which profile sent a request (dsh-llm reads it for the User-Agent).
+  process.env['DSH_USER_AGENT_SUFFIX'] = `dsh-profile/${userAgentProfile(options.profile)}`
   // Before the first plugin mounts: Node's fetch ignores the proxy environment on its own.
   const disposeProxy = await installProxyFromEnvironment(
     options.environment,

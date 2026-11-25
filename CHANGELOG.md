@@ -4,7 +4,7 @@ lyteboat's releases, newest first. Every package under `lyteboat/` carries the r
 
 ## Unreleased
 
-lyteboat tracks dsh 0.2.2-rc.1 (tag `dsh-v0.2.2-rc.1`, upstream commit `66491b05`) and cordis 4.1.0, and needs Node 24.9 or later.
+lyteboat tracks dsh 0.2.2-rc.5 (tag `dsh-v0.2.2-rc.5`, upstream commit `9c2670d3`) and cordis 4.1.0, and needs Node 24.9 or later.
 
 - The kernel carries three extensions: `agent-loop-intake`, `agent-loop-pre-assemble`, `session-controller-prompt-source`. `session-append-ignorable` is retired: dsh now writes plugin records itself (`appendPluginRecord`). `headless-hooks` is retired: nothing listened to it, and `lyteboat headless` runs dsh's own runner. `lyteboatDistro.extensions` lists the three.
 - A side model call is recorded as `plugin:lyteboat/aux-llm-call`, a dsh plugin record declared in `PluginRecordMap` and read back with `pluginRecordOf` and `lyteboatAuxLlmCallRecordSchema`. A log written by an earlier build keeps its `lyteboat/aux-llm-call` records and still reopens, but the Studio timeline, the turn outcome's `auxCalls`, and eval replay no longer read them; record an eval baseline again, or rename the type in its `session.v4.jsonl` files, before replaying it.
@@ -16,9 +16,15 @@ lyteboat tracks dsh 0.2.2-rc.1 (tag `dsh-v0.2.2-rc.1`, upstream commit `66491b05
 - The CLI reads dsh's profile templates from `@deepseek-ai/dsh-official-bundles`. Tests define content tool fixtures with `@deepseek-ai/dsh-tool-testkit`.
 - `pnpm run dist:delta -- --check` accepts a `Dist-Extension` id that a `Dist-Change: drop` commit retired, and refuses a drop whose id is still registered.
 - `{{cwd}}` is no longer a prompt variable: a persona that keeps it fails before the request with `unknown prompt variable {{cwd}}`.
-- A business mode's model requests carry one more host trace: every loop request holds dsh's working-directory runtime context, `Current working directory: "<path>".`, the absolute path of the agent's working directory on the server (`$LYTEBOAT_HOME/agent-workdirs/<agent>`). dsh-tool-skill needs the `workingDirectory` service, so `@lyteboat/base` keeps that row and turns off only `tool-working-directory` (the `working_directory` tool).
+- A business mode's model requests carry one more host trace: every loop request holds dsh's working-directory runtime context, `Current working directory: "<path>".` inside dsh's `<system-reminder>` wrapper (below), the absolute path of the agent's working directory on the server (`$LYTEBOAT_HOME/agent-workdirs/<agent>`). dsh-tool-skill needs the `workingDirectory` service, so `@lyteboat/base` keeps that row and turns off only `tool-working-directory` (the `working_directory` tool).
 - `@lyteboat/testkit` no longer mounts dsh's invariant registry: upstream removed `@deepseek-ai/dsh-invariants` and the kernel packages' `./invariant` subpaths. That a request is reconstructable from the log is held by G2's `dsh/core/agent-loop/tests/request-reconstruction.spec.ts`.
-- The default catalog's `zod` is 4.4.3, the version the kernel publishes with, so the install holds one copy.
+- The default catalog's `zod` is 4.6.6, the version the kernel publishes with, so the install holds one copy.
+- A tool-set change on an `addition-only` route (dsh's default `deepseek-flash`) no longer always keeps the request prefix. A change that only adds tools to a non-empty set is sent as before: the new tools are declared with `defer_loading` and enabled by a `tool_addition` block in the conversation. A change that removes a tool, or adds to an empty set, rebuilds the declarations: the tools now available are declared in full, without `defer_loading`, and that change's `tool_addition` blocks and the earlier ones are no longer sent, so the request prefix changes. Additions after a rebuild are deferred again. A skill switch usually adds and removes tools, so it rebuilds: the finance example's continued turn now requests `skill` and a fully declared `allocation_diagnosis`, with no `tool_addition` block. The session log is the same: the `request/header` (no `startsSeries`) and the `tool-registry` `developer/message` are written as before.
+- dsh wraps every runtime-context message as `<system-reminder>\nThe following information describes your current session:\n\n…\n</system-reminder>`; a later snapshot's opening line adds that it replaces earlier versions of this context. The `lyteboat:state` context goes through the same seam, so its wrapper changes with it and its content does not.
+- dsh-base adds the rows `agent-team` and `tool-agent-team`; `@lyteboat/base` turns both off, so a business agent gets no agent-team tool.
+- The launcher sets `DSH_USER_AGENT_SUFFIX=dsh-profile/<profile>` before it boots a profile, as upstream's launcher does: the User-Agent of a model request ends with `dsh-profile/serve` under the `serve` profile.
+- An empty prompt continues the last turn, as upstream does: the session controller's `prompt()` appends a continuation whose source is `kind: 'retry'`. `session-controller-prompt-source` merges `sourceFields` ahead of that branch, so the continuation carries `lyteboatRequest` too.
+- The CLI no longer depends on `@deepseek-ai/dsh-experimental-agent-team-profile`, which upstream removed; it depends on `@deepseek-ai/dsh-cua-bundle` and `@deepseek-ai/dsh-deepseek-chat-import` instead.
 
 ## 0.1.1
 

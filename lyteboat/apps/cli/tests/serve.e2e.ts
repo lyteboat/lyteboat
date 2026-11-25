@@ -53,6 +53,8 @@ describe('lyteboat serve (built bin, scripted model)', () => {
       expect(reply).toMatchObject({ status: 200, body: { outcome: 'completed', response: 'SERVE-SMOKE-OK' } })
       expect(stream.frames.map(frame => frame.event).filter(event => event !== 'text_message_content')).toEqual(['run_started', 'text_message_start', 'text_message_end', 'run_finished'])
       expect(stream.frames.at(-1)?.data).toMatchObject({ turn: 2, ui_data: 'SERVE-SMOKE-OK', extra: { run_outcome: 'completed' } })
+      // The model provider sees which profile sent the request.
+      expect(new Set(model.requests.map(request => request.userAgent.split(' ').at(-1)))).toEqual(new Set(['dsh-profile/serve']))
     } finally {
       const code = await lyteboat.stop('SIGTERM')
       expect(code, lyteboat.output()).toBe(0)
